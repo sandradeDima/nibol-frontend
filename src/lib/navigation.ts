@@ -130,11 +130,12 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
 
 export const SIDEBAR_ITEMS: SidebarConfigItem[] = [
   ...CORE_SIDEBAR_ITEMS,
-  ...generatedSidebarItems.map((item) => ({
-    ...item,
-    group: "Administracion",
-    label: item.label === "Products" ? "Catalogos" : item.label,
-  })),
+  ...generatedSidebarItems
+    .filter((item) => item.route !== "/products")
+    .map((item) => ({
+      ...item,
+      group: "Administracion",
+    })),
 ];
 
 const routeLabelMap = new Map(
