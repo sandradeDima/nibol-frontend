@@ -1,26 +1,330 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f6f8;
+  --background-muted: #edf1f5;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --surface-muted: #f2f5f8;
+  --foreground: #07142d;
+  --foreground-strong: #000814;
+  --foreground-soft: #334155;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --border-strong: #cbd5e1;
+  --primary: #07142d;
+  --secondary: #000814;
+  --accent: #d71920;
+  --primary-soft: color-mix(in srgb, var(--primary) 7%, white);
+  --primary-muted: color-mix(in srgb, var(--primary) 15%, white);
+  --accent-soft: color-mix(in srgb, var(--accent) 9%, white);
+  --success: #0f766e;
+  --success-soft: color-mix(in srgb, var(--success) 10%, white);
+  --info: #1d4ed8;
+  --info-soft: color-mix(in srgb, var(--info) 10%, white);
+  --warning: #475569;
+  --warning-soft: color-mix(in srgb, var(--warning) 12%, white);
+  --shadow-panel: 0 14px 38px rgba(7, 20, 45, 0.08);
+  --shadow-panel-strong: 0 22px 55px rgba(7, 20, 45, 0.12);
+  --shadow-sidebar: 20px 0 54px rgba(7, 20, 45, 0.18);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-primary: var(--primary);
+  --font-sans: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--background);
 }
 
 body {
+  min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+input[type="search"] {
+  appearance: none;
+}
+
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 16%, white);
+  color: var(--secondary);
+}
+
+.font-display {
+  font-family: var(--font-barlow-semi-condensed), sans-serif;
+}
+
+.nibol-panel {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.nibol-panel-muted {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-soft) 100%);
+  box-shadow: var(--shadow-panel);
+}
+
+.nibol-panel-dark {
+  border: 1px solid color-mix(in srgb, var(--primary) 72%, white);
+  background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+  box-shadow: var(--shadow-panel-strong);
+}
+
+.nibol-eyebrow {
+  font-family: var(--font-barlow-semi-condensed), sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.nibol-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  padding: 0.8rem 1rem;
+  color: white;
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+  box-shadow: 0 8px 22px rgba(7, 20, 45, 0.12);
+}
+
+.nibol-btn-primary:hover {
+  background: color-mix(in srgb, var(--primary) 92%, white);
+}
+
+.nibol-btn-primary:focus-visible,
+.nibol-btn-secondary:focus-visible,
+.nibol-btn-ghost:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, white);
+}
+
+.nibol-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  border: 1px solid var(--border-strong);
+  background: white;
+  padding: 0.8rem 1rem;
+  color: var(--foreground);
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.nibol-btn-secondary:hover {
+  border-color: var(--primary);
+  background: var(--surface-soft);
+}
+
+.nibol-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0.8rem 1rem;
+  color: var(--foreground-soft);
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.nibol-btn-ghost:hover {
+  background: var(--surface-soft);
+  color: var(--foreground);
+}
+
+.nibol-field {
+  height: 3rem;
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  padding: 0 1rem;
+  color: var(--foreground);
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.nibol-field::placeholder {
+  color: var(--muted);
+}
+
+.nibol-field:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--primary) 32%, white);
+  background: white;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, white);
+}
+
+.nibol-field:disabled {
+  cursor: not-allowed;
+  background: var(--surface-muted);
+  color: color-mix(in srgb, var(--foreground) 58%, white);
+}
+
+.nibol-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  padding: 0.35rem 0.7rem;
+  color: var(--foreground-soft);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.nibol-badge-primary {
+  border-color: color-mix(in srgb, var(--primary) 18%, white);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.nibol-badge-accent {
+  border-color: color-mix(in srgb, var(--accent) 18%, white);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.nibol-badge-success {
+  border-color: color-mix(in srgb, var(--success) 18%, white);
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.nibol-badge-info {
+  border-color: color-mix(in srgb, var(--info) 18%, white);
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.nibol-badge-warning {
+  border-color: color-mix(in srgb, var(--warning) 18%, white);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.rounded-\[2rem\],
+.rounded-\[1\.9rem\],
+.rounded-\[1\.75rem\],
+.rounded-\[1\.6rem\],
+.rounded-\[1\.5rem\],
+.rounded-\[1\.4rem\],
+.rounded-\[1\.35rem\],
+.rounded-\[1\.25rem\],
+.rounded-\[1\.2rem\],
+.rounded-\[1rem\],
+.rounded-3xl,
+.rounded-2xl,
+.rounded-xl,
+.rounded-lg {
+  border-radius: 0.125rem;
+}
+
+.text-amber-700,
+.text-amber-800,
+.text-amber-900 {
+  color: var(--primary) !important;
+}
+
+.text-amber-100,
+.text-amber-200 {
+  color: #d9e4f7 !important;
+}
+
+.bg-amber-50,
+.bg-amber-50\/80,
+.bg-amber-50\/90 {
+  background: var(--primary-soft) !important;
+}
+
+.bg-amber-100 {
+  background: var(--primary-muted) !important;
+}
+
+.border-amber-200,
+.border-amber-200\/80 {
+  border-color: color-mix(in srgb, var(--primary) 18%, white) !important;
+}
+
+.bg-amber-500 {
+  background-color: var(--accent) !important;
+}
+
+.bg-stone-950 {
+  background-color: var(--primary) !important;
+}
+
+.border-stone-950 {
+  border-color: var(--primary) !important;
+}
+
+.hover\:bg-stone-800:hover {
+  background-color: color-mix(in srgb, var(--primary) 92%, white) !important;
+}
+
+.focus\:border-amber-500:focus {
+  border-color: color-mix(in srgb, var(--primary) 32%, white) !important;
+}
+
+.focus\:ring-amber-200:focus,
+.focus\:ring-amber-300:focus {
+  --tw-ring-color: color-mix(in srgb, var(--primary) 12%, white) !important;
 }
