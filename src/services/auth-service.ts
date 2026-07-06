@@ -22,9 +22,13 @@ const authApi = axios.create({
   withCredentials: true,
 });
 
-const loginCallbackUrl = `/`;
-const verificationCallbackUrl = `/login?verified=1`;
-const resetCallbackUrl = `/reset-password`;
+const buildAppUrl = (path: string): string => {
+  return new URL(path, `${APP_CONFIG.appBaseUrl}/`).toString();
+};
+
+const loginCallbackUrl = buildAppUrl("/");
+const verificationCallbackUrl = buildAppUrl("/login?verified=1");
+const resetCallbackUrl = buildAppUrl("/reset-password");
 
 const request = async <T>(promise: Promise<{ data: T }>): Promise<T> => {
   try {
