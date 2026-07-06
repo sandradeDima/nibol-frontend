@@ -60,7 +60,9 @@ const fetchJson = async <T>(
 
 export const getServerSession = cache(async (): Promise<AuthSession | null> => {
   try {
-    return await fetchJson<AuthSession | null>(`${APP_CONFIG.authBaseUrl}/get-session`);
+    return await fetchJson<AuthSession | null>(
+      `${APP_CONFIG.serverAuthBaseUrl}/get-session`,
+    );
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return null;
@@ -75,7 +77,7 @@ export const getServerAuthorization = cache(
     try {
       const response =
         await fetchJson<ApiSuccessResponse<AuthorizationSummary>>(
-          `${APP_CONFIG.apiBaseUrl}/permissions/me`,
+          `${APP_CONFIG.serverApiBaseUrl}/permissions/me`,
         );
 
       return response.data;

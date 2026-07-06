@@ -13,7 +13,7 @@ import type {
 import { getApiErrorMessage } from "@/utils";
 
 const authApi = axios.create({
-  baseURL: APP_CONFIG.apiBaseUrl,
+  baseURL: APP_CONFIG.browserAuthBaseUrl,
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -22,7 +22,8 @@ const authApi = axios.create({
   withCredentials: true,
 });
 
-const loginCallbackUrl = `/login?verified=1`;
+const loginCallbackUrl = `/`;
+const verificationCallbackUrl = `/login?verified=1`;
 const resetCallbackUrl = `/reset-password`;
 
 const request = async <T>(promise: Promise<{ data: T }>): Promise<T> => {
@@ -37,7 +38,7 @@ const request = async <T>(promise: Promise<{ data: T }>): Promise<T> => {
 export const authService = {
   async forgotPassword(input: ForgotPasswordInput): Promise<AuthMessageResponse> {
     return request(
-      authApi.post("/auth/request-password-reset", {
+      authApi.post("/request-password-reset", {
         email: input.email,
         redirectTo: resetCallbackUrl,
       }),
@@ -45,12 +46,12 @@ export const authService = {
   },
 
   async getSession(): Promise<AuthSession | null> {
-    return request(authApi.get("/auth/get-session"));
+    return request(authApi.get("/get-session"));
   },
 
   async login(input: LoginInput): Promise<void> {
     await request(
-      authApi.post("/auth/sign-in/email", {
+      authApi.post("/sign-in/email", {
         ...input,
         callbackURL: loginCallbackUrl,
       }),
@@ -58,22 +59,22 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    await request(authApi.post("/auth/sign-out"));
+    await request(authApi.post("/sign-out"));
   },
 
   async register(input: RegisterInput): Promise<void> {
     await request(
-      authApi.post("/auth/sign-up/email", {
+      authApi.post("/sign-up/email", {
         ...input,
-        callbackURL: loginCallbackUrl,
+        callbackURL: verificationCallbackUrl,
       }),
     );
   },
 
   async resendVerificationEmail(email: string): Promise<AuthActionResponse> {
     return request(
-      authApi.post("/auth/send-verification-email", {
-        callbackURL: loginCallbackUrl,
+      authApi.post("/send-verification-email", {
+        callbackURL: verificationCallbackUrl,
         email,
       }),
     );
@@ -81,7 +82,7 @@ export const authService = {
 
   async resetPassword(input: ResetPasswordInput): Promise<AuthActionResponse> {
     return request(
-      authApi.post("/auth/reset-password", {
+      authApi.post("/reset-password", {
         newPassword: input.newPassword,
         token: input.token,
       }),

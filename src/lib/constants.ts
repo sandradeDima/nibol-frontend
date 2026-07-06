@@ -1,21 +1,58 @@
-const backendBase = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:4000").replace(/\/$/, "");
-const rawAuthUrl = process.env.NEXT_PUBLIC_AUTH_URL;
+const trimTrailingSlash = (value: string): string => value.replace(/\/$/, "");
 
-const authBaseUrl = rawAuthUrl
-  ? rawAuthUrl.includes("/api")
-    ? rawAuthUrl.replace(/\/$/, "")
-    : `${rawAuthUrl.replace(/\/$/, "")}/api/auth`
-  : `${backendBase}/api/auth`;
+const appBaseUrl = trimTrailingSlash(
+  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+);
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? `${backendBase}/api`).replace(/\/$/, "");
+const backendBaseUrl = trimTrailingSlash(
+  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:4000",
+);
+
+const resolveUrl = (value: string, fallbackBaseUrl = appBaseUrl): URL => {
+  return new URL(value, `${fallbackBaseUrl}/`);
+};
+
+const normalizeApiBaseUrl = (value: string): string => {
+  const url = resolveUrl(value);
+  const pathname = trimTrailingSlash(url.pathname);
+
+  url.pathname = pathname.endsWith("/api") ? pathname : `${pathname || ""}/api`;
+
+  return trimTrailingSlash(url.toString());
+};
+
+const normalizeAuthBaseUrl = (value: string): string => {
+  const url = resolveUrl(value);
+  const pathname = trimTrailingSlash(url.pathname);
+
+  if (pathname.endsWith("/api/auth")) {
+    return trimTrailingSlash(url.toString());
+  }
+
+  url.pathname = pathname.endsWith("/api")
+    ? `${pathname}/auth`
+    : `${pathname || ""}/api/auth`;
+
+  return trimTrailingSlash(url.toString());
+};
+
+const serverApiBaseUrl = normalizeApiBaseUrl(
+  process.env.NEXT_PUBLIC_API_URL ?? backendBaseUrl,
+);
+
+const serverAuthBaseUrl = normalizeAuthBaseUrl(
+  process.env.NEXT_PUBLIC_AUTH_URL ?? process.env.NEXT_PUBLIC_API_URL ?? backendBaseUrl,
+);
 
 export const APP_CONFIG = {
-  appBaseUrl: (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, ""),
-  authBaseUrl,
-  backendBaseUrl: backendBase,
+  appBaseUrl,
+  backendBaseUrl,
+  browserApiBaseUrl: "/api",
+  browserAuthBaseUrl: "/api/auth",
   name: "NIBOL | Sistema de Seguimiento de Riesgos",
   description: "Plataforma corporativa para seguimiento, control y gobierno operativo.",
-  apiBaseUrl,
+  serverApiBaseUrl,
+  serverAuthBaseUrl,
   apiTimeoutMs: 10000,
 } as const;
 

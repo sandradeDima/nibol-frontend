@@ -4,7 +4,7 @@ import { APP_CONFIG } from "@/lib/constants";
 import { getApiErrorMessage } from "@/utils";
 
 export const apiClient = axios.create({
-  baseURL: APP_CONFIG.apiBaseUrl,
+  baseURL: APP_CONFIG.browserApiBaseUrl,
   timeout: APP_CONFIG.apiTimeoutMs,
   withCredentials: true,
   headers: {
