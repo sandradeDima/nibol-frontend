@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import {
   Copy,
   Eye,
+  Mail,
   Pencil,
   Power,
   Trash2,
@@ -39,7 +40,20 @@ const userColumns: ColumnDef<UserTableRow>[] = [
   },
   {
     accessorKey: "email",
-    cell: ({ row }) => <span className="text-stone-700">{row.original.email}</span>,
+    cell: ({ row }) => (
+      <div className="min-w-[15rem] space-y-2">
+        <p className="text-stone-700">{row.original.email}</p>
+        <span
+          className={
+            row.original.emailVerified
+              ? "nibol-badge nibol-badge-success"
+              : "nibol-badge nibol-badge-warning"
+          }
+        >
+          {row.original.emailVerified ? "Verificado" : "Sin verificar"}
+        </span>
+      </div>
+    ),
     header: "Email",
   },
   {
@@ -178,6 +192,22 @@ export function UserTable() {
         type: "select",
       },
       {
+        id: "emailVerified",
+        label: "Correo",
+        options: [
+          {
+            label: "Verificado",
+            value: "true",
+          },
+          {
+            label: "Sin verificar",
+            value: "false",
+          },
+        ],
+        placeholder: "Todos los correos",
+        type: "select",
+      },
+      {
         id: "roles",
         label: "Rol",
         options: (rolesQuery.data ?? []).map((role) => ({
@@ -204,6 +234,18 @@ export function UserTable() {
         id: "edit",
         label: "Editar",
         variant: "edit",
+      },
+      {
+        hidden: (row) => row.emailVerified,
+        icon: Mail,
+        id: "resend-verification",
+        label: "Reenviar verificacion",
+        onClick: async (row) => {
+          await userService.resendVerificationEmail(row.id);
+        },
+        successMessage: (rows) =>
+          `Se reenvio el correo de verificacion a ${rows[0]?.email ?? "este usuario"}.`,
+        variant: "custom",
       },
       {
         confirmation: {

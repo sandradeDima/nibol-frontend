@@ -40,6 +40,7 @@ type DataTableBaseAction<TRow> = {
   id: string;
   invalidateAfterSuccess?: boolean;
   label: string;
+  successMessage?: string | ((rows: TRow[]) => string);
   tone?: DataTableActionTone;
 };
 

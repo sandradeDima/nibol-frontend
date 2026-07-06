@@ -33,6 +33,7 @@ export function UserDetail({ userId }: UserDetailProps) {
     null,
   );
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const userQuery = useQuery({
     queryFn: () => userService.getUserById(userId),
@@ -49,6 +50,7 @@ export function UserDetail({ userId }: UserDetailProps) {
     },
     onSuccess: async () => {
       setActionError(null);
+      setActionMessage(null);
       setPendingAction(null);
       await Promise.all([
         queryClient.invalidateQueries({
@@ -68,6 +70,7 @@ export function UserDetail({ userId }: UserDetailProps) {
     mutationFn: async () => userService.deleteUser(userId),
     onSuccess: async () => {
       setActionError(null);
+      setActionMessage(null);
       setPendingAction(null);
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.users,
@@ -75,6 +78,20 @@ export function UserDetail({ userId }: UserDetailProps) {
       window.location.assign("/users");
     },
     onError: (error) => {
+      setActionError(getApiErrorMessage(error));
+    },
+  });
+
+  const resendVerificationMutation = useMutation({
+    mutationFn: async () => userService.resendVerificationEmail(userId),
+    onSuccess: () => {
+      setActionError(null);
+      setActionMessage(
+        `Se reenvio un correo de verificacion a ${userQuery.data?.email ?? "este usuario"}.`,
+      );
+    },
+    onError: (error) => {
+      setActionMessage(null);
       setActionError(getApiErrorMessage(error));
     },
   });
@@ -184,6 +201,16 @@ export function UserDetail({ userId }: UserDetailProps) {
             </Link>
           </div>
         </div>
+        {actionMessage ? (
+          <div className="mt-5 border border-[color:color-mix(in_srgb,var(--success)_18%,white)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)]">
+            {actionMessage}
+          </div>
+        ) : null}
+        {actionError ? (
+          <div className="mt-5 border border-[color:color-mix(in_srgb,var(--accent)_18%,white)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent)]">
+            {actionError}
+          </div>
+        ) : null}
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
@@ -245,6 +272,23 @@ export function UserDetail({ userId }: UserDetailProps) {
           </dl>
 
           <div className="mt-5 flex flex-wrap gap-3">
+            {!user.emailVerified ? (
+              <button
+                className="nibol-btn-secondary px-4 py-2.5 text-sm"
+                disabled={resendVerificationMutation.isPending}
+                onClick={() => {
+                  setActionError(null);
+                  setActionMessage(null);
+                  resendVerificationMutation.mutate();
+                }}
+                type="button"
+              >
+                <Mail className="h-4 w-4" />
+                {resendVerificationMutation.isPending
+                  ? "Reenviando..."
+                  : "Reenviar verificacion"}
+              </button>
+            ) : null}
             <button
               className="nibol-btn-secondary px-4 py-2.5 text-sm"
               onClick={() => {
@@ -266,12 +310,6 @@ export function UserDetail({ userId }: UserDetailProps) {
               Eliminar usuario
             </button>
           </div>
-
-          {actionError ? (
-            <div className="mt-4 rounded-[1.5rem] border border-rose-200/80 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {actionError}
-            </div>
-          ) : null}
         </section>
       </section>
 

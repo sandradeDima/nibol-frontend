@@ -81,7 +81,7 @@ export function LoginForm() {
     mutationFn: authService.resendVerificationEmail,
     onSuccess: () => {
       setResendError(null);
-      setResendMessage("A fresh verification email is on its way.");
+      setResendMessage("Enviamos un nuevo correo de verificacion.");
     },
     onError: (error) => {
       setResendMessage(null);
@@ -100,7 +100,7 @@ export function LoginForm() {
 
     if (!email) {
       form.setError("email", {
-        message: "Enter your email first so we know where to send it.",
+        message: "Ingrese su correo para saber a donde reenviar la verificacion.",
       });
       return;
     }
@@ -110,7 +110,7 @@ export function LoginForm() {
 
   return (
     <AuthShell
-      description="Sign in with your email and password. Verification and session cookies are handled for you."
+      description="Ingrese con su correo y contrasena. La verificacion y la sesion se administran automaticamente."
       footer={<AuthLinkRow href="/register" label="Necesita una cuenta?" linkLabel="Solicitar acceso" />}
       title="Iniciar sesion"
     >

@@ -1,6 +1,14 @@
 "use client";
 
-import { useDeferredValue, useEffect, useEffectEvent, useRef, useState } from "react";
+import {
+  type RefObject,
+  useDeferredValue,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -63,6 +71,8 @@ type PendingAction<TRow> =
     };
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+const FLOATING_MENU_GAP_PX = 8;
+const FLOATING_MENU_VIEWPORT_PADDING_PX = 16;
 
 const buttonClassName =
   "inline-flex items-center gap-2 border px-3.5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50";
@@ -128,6 +138,90 @@ const isBulkActionDisabled = <TRow,>(
   return action.disabled ?? false;
 };
 
+const resolveActionSuccessMessage = <TRow,>(
+  action: DataTableBulkAction<TRow> | DataTableRowAction<TRow>,
+  rows: TRow[],
+): string | null => {
+  if (typeof action.successMessage === "function") {
+    return action.successMessage(rows);
+  }
+
+  return action.successMessage ?? null;
+};
+
+const useFloatingMenuPosition = <TAnchor extends HTMLElement>(
+  isOpen: boolean,
+  anchorRef: RefObject<TAnchor | null>,
+  menuRef: RefObject<HTMLDivElement | null>,
+) => {
+  const [position, setPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
+
+  const updatePosition = useEffectEvent(() => {
+    const anchor = anchorRef.current;
+    const menu = menuRef.current;
+
+    if (!anchor || !menu) {
+      return;
+    }
+
+    const anchorRect = anchor.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const openUpward =
+      anchorRect.bottom + FLOATING_MENU_GAP_PX + menuRect.height >
+        window.innerHeight - FLOATING_MENU_VIEWPORT_PADDING_PX &&
+      anchorRect.top - FLOATING_MENU_GAP_PX - menuRect.height >=
+        FLOATING_MENU_VIEWPORT_PADDING_PX;
+    const left = Math.min(
+      window.innerWidth - FLOATING_MENU_VIEWPORT_PADDING_PX - menuRect.width,
+      Math.max(
+        FLOATING_MENU_VIEWPORT_PADDING_PX,
+        anchorRect.right - menuRect.width,
+      ),
+    );
+    const top = openUpward
+      ? Math.max(
+          FLOATING_MENU_VIEWPORT_PADDING_PX,
+          anchorRect.top - FLOATING_MENU_GAP_PX - menuRect.height,
+        )
+      : Math.min(
+          window.innerHeight -
+            FLOATING_MENU_VIEWPORT_PADDING_PX -
+            menuRect.height,
+          anchorRect.bottom + FLOATING_MENU_GAP_PX,
+        );
+
+    setPosition({
+      left,
+      top,
+    });
+  });
+
+  useEffect(() => {
+    if (!isOpen) {
+      setPosition(null);
+      return;
+    }
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      updatePosition();
+    });
+
+    window.addEventListener("resize", updatePosition);
+    document.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      window.removeEventListener("resize", updatePosition);
+      document.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [isOpen]);
+
+  return position;
+};
+
 const renderSortIcon = (isSorted: false | "asc" | "desc") => {
   if (isSorted === "asc") {
     return <ArrowUp className="h-4 w-4" />;
@@ -156,10 +250,17 @@ function RowActionsMenu<TRow>({
   rowActions: DataTableRowAction<TRow>[];
 }) {
   const actions = rowActions.filter((action) => !isRowActionHidden(action, row));
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuPosition = useFloatingMenuPosition(isOpen, buttonRef, menuRef);
 
   const handleDocumentPointerDown = useEffectEvent((event: PointerEvent) => {
-    if (!containerRef.current?.contains(event.target as Node)) {
+    const target = event.target as Node;
+
+    if (
+      !buttonRef.current?.contains(target) &&
+      !menuRef.current?.contains(target)
+    ) {
       onOpenChange(null);
     }
   });
@@ -189,66 +290,80 @@ function RowActionsMenu<TRow>({
   }
 
   return (
-    <div className="relative isolate" ref={containerRef}>
-      <button
-        aria-expanded={isOpen}
-        aria-haspopup="menu"
-        className="flex h-10 w-10 items-center justify-center border border-[var(--border)] bg-white text-[var(--foreground-soft)] transition hover:border-[var(--primary)] hover:text-[var(--foreground)]"
-        onClick={() => {
-          onOpenChange(isOpen ? null : menuId);
-        }}
-        type="button"
-      >
-        <Ellipsis className="h-4 w-4" />
-      </button>
-      {isOpen ? (
-        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-[70] min-w-[12rem] border border-[var(--border)] bg-white p-2 shadow-[var(--shadow-panel-strong)]">
-          <div className="grid gap-1">
-            {actions.map((action) => {
-              const Icon = action.icon;
-              const className = cn(
-                "flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium transition",
-                action.tone === "danger"
-                  ? "text-[var(--accent)] hover:bg-[var(--accent-soft)]"
-                  : "text-[var(--foreground-soft)] hover:bg-[var(--surface-soft)]",
-              );
+    <>
+      <div className="relative isolate">
+        <button
+          aria-expanded={isOpen}
+          aria-haspopup="menu"
+          className="flex h-10 w-10 items-center justify-center border border-[var(--border)] bg-white text-[var(--foreground-soft)] transition hover:border-[var(--primary)] hover:text-[var(--foreground)]"
+          onClick={() => {
+            onOpenChange(isOpen ? null : menuId);
+          }}
+          ref={buttonRef}
+          type="button"
+        >
+          <Ellipsis className="h-4 w-4" />
+        </button>
+      </div>
+      {isOpen
+        ? createPortal(
+            <div
+              className="fixed z-[80] min-w-[12rem] border border-[var(--border)] bg-white p-2 shadow-[var(--shadow-panel-strong)]"
+              ref={menuRef}
+              style={{
+                left: menuPosition?.left ?? 0,
+                top: menuPosition?.top ?? 0,
+                visibility: menuPosition ? "visible" : "hidden",
+              }}
+            >
+              <div className="grid gap-1">
+                {actions.map((action) => {
+                  const Icon = action.icon;
+                  const className = cn(
+                    "flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium transition",
+                    action.tone === "danger"
+                      ? "text-[var(--accent)] hover:bg-[var(--accent-soft)]"
+                      : "text-[var(--foreground-soft)] hover:bg-[var(--surface-soft)]",
+                  );
 
-              if (action.href) {
-                return (
-                  <Link
-                    key={action.id}
-                    className={className}
-                    href={action.href(row)}
-                    onClick={() => {
-                      onOpenChange(null);
-                    }}
-                  >
-                    {Icon ? <Icon className="h-4 w-4" /> : null}
-                    {action.label}
-                  </Link>
-                );
-              }
+                  if (action.href) {
+                    return (
+                      <Link
+                        key={action.id}
+                        className={className}
+                        href={action.href(row)}
+                        onClick={() => {
+                          onOpenChange(null);
+                        }}
+                      >
+                        {Icon ? <Icon className="h-4 w-4" /> : null}
+                        {action.label}
+                      </Link>
+                    );
+                  }
 
-              return (
-                <button
-                  key={action.id}
-                  className={className}
-                  disabled={isRowActionDisabled(action, row)}
-                  onClick={() => {
-                    onOpenChange(null);
-                    onActionClick(action, row);
-                  }}
-                  type="button"
-                >
-                  {Icon ? <Icon className="h-4 w-4" /> : null}
-                  {action.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-    </div>
+                  return (
+                    <button
+                      key={action.id}
+                      className={className}
+                      disabled={isRowActionDisabled(action, row)}
+                      onClick={() => {
+                        onOpenChange(null);
+                        onActionClick(action, row);
+                      }}
+                      type="button"
+                    >
+                      {Icon ? <Icon className="h-4 w-4" /> : null}
+                      {action.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
 
@@ -264,10 +379,17 @@ function ColumnVisibilityMenu<TRow>({
   const hideableColumns = table
     .getAllLeafColumns()
     .filter((column) => column.getCanHide() && !column.id.startsWith("__"));
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuPosition = useFloatingMenuPosition(isOpen, buttonRef, menuRef);
 
   const handleDocumentPointerDown = useEffectEvent((event: PointerEvent) => {
-    if (!containerRef.current?.contains(event.target as Node)) {
+    const target = event.target as Node;
+
+    if (
+      !buttonRef.current?.contains(target) &&
+      !menuRef.current?.contains(target)
+    ) {
       onOpenChange(null);
     }
   });
@@ -297,42 +419,56 @@ function ColumnVisibilityMenu<TRow>({
   }
 
   return (
-    <div className="relative" ref={containerRef}>
-      <button
-        aria-expanded={isOpen}
-        aria-haspopup="menu"
-        className={getActionButtonClassName()}
-        onClick={() => {
-          onOpenChange(isOpen ? null : "__columns");
-        }}
-        type="button"
-      >
-        <Columns3 className="h-4 w-4" />
-        Columnas
-      </button>
-      {isOpen ? (
-        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-[70] min-w-[14rem] border border-[var(--border)] bg-white p-3 shadow-[var(--shadow-panel-strong)]">
-          <div className="grid gap-2">
-            {hideableColumns.map((column) => (
-              <label
-                key={column.id}
-                className="flex items-center gap-3 px-2 py-2 text-sm text-[var(--foreground-soft)] transition hover:bg-[var(--surface-soft)]"
-              >
-                <input
-                  checked={column.getIsVisible()}
-                  className="h-4 w-4 border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--primary)]"
-                  onChange={(event) => {
-                    column.toggleVisibility(event.target.checked);
-                  }}
-                  type="checkbox"
-                />
-                {String(column.columnDef.header ?? column.id)}
-              </label>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </div>
+    <>
+      <div className="relative">
+        <button
+          aria-expanded={isOpen}
+          aria-haspopup="menu"
+          className={getActionButtonClassName()}
+          onClick={() => {
+            onOpenChange(isOpen ? null : "__columns");
+          }}
+          ref={buttonRef}
+          type="button"
+        >
+          <Columns3 className="h-4 w-4" />
+          Columnas
+        </button>
+      </div>
+      {isOpen
+        ? createPortal(
+            <div
+              className="fixed z-[80] min-w-[14rem] border border-[var(--border)] bg-white p-3 shadow-[var(--shadow-panel-strong)]"
+              ref={menuRef}
+              style={{
+                left: menuPosition?.left ?? 0,
+                top: menuPosition?.top ?? 0,
+                visibility: menuPosition ? "visible" : "hidden",
+              }}
+            >
+              <div className="grid gap-2">
+                {hideableColumns.map((column) => (
+                  <label
+                    key={column.id}
+                    className="flex items-center gap-3 px-2 py-2 text-sm text-[var(--foreground-soft)] transition hover:bg-[var(--surface-soft)]"
+                  >
+                    <input
+                      checked={column.getIsVisible()}
+                      className="h-4 w-4 border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--primary)]"
+                      onChange={(event) => {
+                        column.toggleVisibility(event.target.checked);
+                      }}
+                      type="checkbox"
+                    />
+                    {String(column.columnDef.header ?? column.id)}
+                  </label>
+                ))}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
 
@@ -374,6 +510,7 @@ export function DataTable<TRow>({
   const [pendingAction, setPendingAction] = useState<PendingAction<TRow> | null>(null);
   const [isExecutingAction, setIsExecutingAction] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const filters = config.filters ?? [];
@@ -393,6 +530,8 @@ export function DataTable<TRow>({
 
   useEffect(() => {
     setRowSelection({});
+    setActionError(null);
+    setActionSuccess(null);
   }, [requestSignature]);
 
   useEffect(() => {
@@ -520,6 +659,7 @@ export function DataTable<TRow>({
   };
 
   const handleActionError = (error: unknown) => {
+    setActionSuccess(null);
     setActionError(getApiErrorMessage(error));
   };
 
@@ -532,6 +672,7 @@ export function DataTable<TRow>({
     }
 
     setActionError(null);
+    setActionSuccess(null);
     setIsExecutingAction(true);
 
     try {
@@ -539,6 +680,12 @@ export function DataTable<TRow>({
 
       if (action.invalidateAfterSuccess ?? action.variant === "delete") {
         await invalidateTable();
+      }
+
+      const successMessage = resolveActionSuccessMessage(action, [row]);
+
+      if (successMessage) {
+        setActionSuccess(successMessage);
       }
     } catch (error) {
       handleActionError(error);
@@ -552,6 +699,7 @@ export function DataTable<TRow>({
     currentRows: TRow[],
   ): Promise<void> => {
     setActionError(null);
+    setActionSuccess(null);
     setIsExecutingAction(true);
 
     try {
@@ -559,6 +707,12 @@ export function DataTable<TRow>({
 
       if (action.invalidateAfterSuccess ?? action.variant === "delete") {
         await invalidateTable();
+      }
+
+      const successMessage = resolveActionSuccessMessage(action, currentRows);
+
+      if (successMessage) {
+        setActionSuccess(successMessage);
       }
     } catch (error) {
       handleActionError(error);
@@ -772,6 +926,11 @@ export function DataTable<TRow>({
         {actionError ? (
           <div className="mt-4 border border-[color:color-mix(in_srgb,var(--accent)_18%,white)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent)]">
             {actionError}
+          </div>
+        ) : null}
+        {actionSuccess ? (
+          <div className="mt-4 border border-[color:color-mix(in_srgb,var(--success)_18%,white)] bg-[var(--success-soft)] px-4 py-3 text-sm text-[var(--success)]">
+            {actionSuccess}
           </div>
         ) : null}
       </div>

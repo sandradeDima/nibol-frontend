@@ -83,6 +83,10 @@ export const userService = {
     return response.data.data;
   },
 
+  async resendVerificationEmail(userId: string) {
+    await apiClient.post(`/users/${userId}/resend-verification`);
+  },
+
   async updateProfile(input: UpdateProfileInput): Promise<UserProfile> {
     const response = await apiClient.put<ApiSuccessResponse<UserProfile>>(
       "/users/profile",
