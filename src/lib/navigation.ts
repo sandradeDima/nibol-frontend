@@ -58,6 +58,13 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
   },
   {
     group: "Control",
+    icon: "CalendarPlus2",
+    label: "Ampliaciones de plazo",
+    permission: "extension_requests.view",
+    route: "/ampliaciones-plazo",
+  },
+  {
+    group: "Control",
     icon: "ClipboardList",
     label: "Registro de actividad",
     permission: "activity_logs.view",

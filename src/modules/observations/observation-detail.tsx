@@ -25,16 +25,19 @@ import {
   getRiskLevelClasses,
   getStatusClasses,
 } from "./presentation";
+import { ObservationExtensionPanel } from "../extension-requests/observation-extension-panel";
 import { ObservationCollaborationWorkspace } from "../progress/observation-collaboration-workspace";
 import { RemediationWorkspace } from "../remediation/remediation-workspace";
 
 type ObservationDetailProps = {
+  canAccessExtensions: boolean;
   canDelete: boolean;
   canEdit: boolean;
   observationId: string;
 };
 
 export function ObservationDetail({
+  canAccessExtensions,
   canDelete,
   canEdit,
   observationId,
@@ -399,6 +402,10 @@ export function ObservationDetail({
               El detalle operativo del plan se administra mas abajo, con estrategia del area, cronograma y flujo de auditoria integrados sobre la misma observacion.
             </div>
           </section>
+
+          {canAccessExtensions ? (
+            <ObservationExtensionPanel observationId={observationId} />
+          ) : null}
 
         </section>
       </section>

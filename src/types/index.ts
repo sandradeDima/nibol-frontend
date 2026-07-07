@@ -2,6 +2,7 @@ export * from "./api";
 export * from "./auth";
 export * from "./authorization";
 export * from "./configuration";
+export * from "./extensions";
 export * from "./invitations";
 export * from "./logs";
 export * from "./notifications";

@@ -27,6 +27,10 @@ export const generatedPermissionResources = [
     key: "observations",
     label: "Observaciones",
   },
+  {
+    key: "extension_requests",
+    label: "Ampliaciones de plazo",
+  },
 ] as const;
 
 export const generatedSidebarItems = [

@@ -83,6 +83,9 @@ export const QUERY_KEYS = {
     ["observations", "evidences", observationId] as const,
   observationProgressWorkspace: (observationId: string) =>
     ["observations", "progress-workspace", observationId] as const,
+  extensionRequestDetails: (requestId: string) =>
+    ["extension-requests", "detail", requestId] as const,
+  extensionRequests: ["extension-requests"] as const,
   remediationWorkspace: (observationId: string, areaId?: string) =>
     ["remediation", "workspace", observationId, areaId ?? "default"] as const,
   remediationPlanCommitments: (planId: string) =>

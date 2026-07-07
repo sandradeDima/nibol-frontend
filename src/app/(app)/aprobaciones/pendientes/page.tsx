@@ -1,19 +1,25 @@
 import { PageHeader } from "@/components/ui/page-header";
-import { requirePermission } from "@/lib/server-auth";
-import { PendingProgressApprovals } from "@/modules/progress/pending-progress-approvals";
+import { requireAnyPermission } from "@/lib/server-auth";
+import { PendingApprovalsWorkspace } from "@/modules/extension-requests/pending-approvals-workspace";
 
 export default async function PendingApprovalsPage() {
-  await requirePermission("observations.view");
+  const authorization = await requireAnyPermission([
+    "observations.view",
+    "extension_requests.view",
+  ]);
 
   return (
     <main className="space-y-6">
       <PageHeader
-        description="Revise exclusivamente los avances enviados a Auditoria y emita su dictamen sin salir del circuito corporativo."
+        description="Centralice los dictámenes pendientes de avances y ampliaciones de plazo dentro del circuito corporativo de revisión."
         eyebrow="Aprobaciones"
         title="Pendientes de aprobacion"
       />
 
-      <PendingProgressApprovals />
+      <PendingApprovalsWorkspace
+        canViewExtensions={authorization.permissions.includes("extension_requests.view")}
+        canViewProgress={authorization.permissions.includes("observations.view")}
+      />
     </main>
   );
 }
