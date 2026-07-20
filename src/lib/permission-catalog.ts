@@ -22,6 +22,18 @@ const CORE_PERMISSION_RESOURCES = [
     label: "Notifications",
   },
   {
+    key: "automatic_jobs",
+    label: "Automatic jobs",
+  },
+  {
+    key: "notification_rules",
+    label: "Notification rules",
+  },
+  {
+    key: "activity",
+    label: "Business activity",
+  },
+  {
     key: "activity_logs",
     label: "Activity Logs",
   },

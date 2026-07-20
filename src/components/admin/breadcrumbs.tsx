@@ -16,7 +16,7 @@ export function Breadcrumbs() {
       <ol className="flex min-w-max items-center gap-2 text-sm text-[var(--muted)]">
         {breadcrumbs.map((item, index) => {
           const isLast = index === breadcrumbs.length - 1;
-          const isHome = item.href === "/";
+          const isHome = item.href === "/" || item.href === "/dashboard";
 
           return (
             <li key={item.href} className="flex items-center gap-1">

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCheck, Eye, Send } from "lucide-react";
 
@@ -114,11 +115,20 @@ const commitmentColumns: ColumnDef<CommitmentScheduleRow>[] = [
 ];
 
 export function CommitmentScheduleTable() {
+  const searchParams = useSearchParams();
   const optionsQuery = useQuery({
     queryFn: observationService.getObservationOptions,
     queryKey: QUERY_KEYS.configurationBootstrap,
     staleTime: 60_000,
   });
+
+  const defaultAreaId = searchParams.get("filter.areaId") ?? undefined;
+  const defaultDueDateFrom = searchParams.get("filter.dueDateFrom") ?? undefined;
+  const defaultDueDateTo = searchParams.get("filter.dueDateTo") ?? undefined;
+  const defaultOverdue = searchParams.get("filter.overdue") ?? undefined;
+  const defaultResponsibleUserId =
+    searchParams.get("filter.responsibleUserId") ?? undefined;
+  const defaultStatus = searchParams.get("filter.status") ?? undefined;
 
   const tableConfig: DataTableConfig<CommitmentScheduleRow> = {
     columns: commitmentColumns,
@@ -135,6 +145,7 @@ export function CommitmentScheduleTable() {
       {
         id: "areaId",
         label: "Area",
+        defaultValue: defaultAreaId,
         options: (optionsQuery.data?.areas ?? []).map((area) => ({
           label: area.name,
           value: area.id,
@@ -145,6 +156,7 @@ export function CommitmentScheduleTable() {
       {
         id: "responsibleUserId",
         label: "Responsable",
+        defaultValue: defaultResponsibleUserId,
         options: (optionsQuery.data?.users ?? []).map((user) => ({
           label: user.name,
           value: user.id,
@@ -153,6 +165,7 @@ export function CommitmentScheduleTable() {
         type: "select",
       },
       {
+        defaultValue: defaultStatus,
         id: "status",
         label: "Estado",
         options: [
@@ -168,16 +181,19 @@ export function CommitmentScheduleTable() {
         type: "select",
       },
       {
+        defaultValue: defaultDueDateFrom,
         id: "dueDateFrom",
         label: "Desde",
         type: "date",
       },
       {
+        defaultValue: defaultDueDateTo,
         id: "dueDateTo",
         label: "Hasta",
         type: "date",
       },
       {
+        defaultValue: defaultOverdue,
         id: "overdue",
         label: "Vencidos",
         options: [
@@ -228,4 +244,3 @@ export function CommitmentScheduleTable() {
 
   return <DataTable config={tableConfig} endpoint="/commitments" />;
 }
-

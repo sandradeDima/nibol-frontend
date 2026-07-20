@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CalendarClock,
+  History,
   Pencil,
   ShieldAlert,
   Trash2,
@@ -28,11 +29,13 @@ import {
 import { ObservationExtensionPanel } from "../extension-requests/observation-extension-panel";
 import { ObservationCollaborationWorkspace } from "../progress/observation-collaboration-workspace";
 import { RemediationWorkspace } from "../remediation/remediation-workspace";
+import { EntityActivityLatest, EntityActivityTimeline } from "../activity/entity-activity-timeline";
 
 type ObservationDetailProps = {
   canAccessExtensions: boolean;
   canDelete: boolean;
   canEdit: boolean;
+  canViewTechnical: boolean;
   observationId: string;
 };
 
@@ -40,11 +43,13 @@ export function ObservationDetail({
   canAccessExtensions,
   canDelete,
   canEdit,
+  canViewTechnical,
   observationId,
 }: ObservationDetailProps) {
   const queryClient = useQueryClient();
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const observationQuery = useQuery({
     queryFn: () => observationService.getObservationById(observationId),
@@ -151,11 +156,28 @@ export function ObservationDetail({
                 Editar
               </Link>
             ) : null}
+            <button className="nibol-btn-secondary px-4 py-2.5 text-sm" onClick={() => setShowHistory((value) => !value)} type="button">
+              <History className="h-4 w-4" />
+              {showHistory ? "Ocultar historial" : "Ver historial"}
+            </button>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {showHistory ? (
+        <section className="nibol-panel border-t-4 border-t-[var(--primary)] p-6">
+          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">Trazabilidad del hallazgo</p>
+              <h3 className="mt-2 text-2xl font-semibold text-stone-950">Historial completo</h3>
+            </div>
+            <p className="text-sm text-stone-500">Eventos ordenados del más reciente al más antiguo</p>
+          </div>
+          <EntityActivityTimeline canViewTechnical={canViewTechnical} observationId={observationId} />
+        </section>
+      ) : null}
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <article className="nibol-panel p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
             Fecha limite
@@ -168,6 +190,12 @@ export function ObservationDetail({
               ? "Requiere atencion prioritaria por vencimiento."
               : "Dentro del plazo comprometido."}
           </p>
+        </article>
+
+        <article className="nibol-panel p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Última actividad</p>
+          <p className="mt-3 text-sm font-semibold text-stone-950"><EntityActivityLatest observationId={observationId} /></p>
+          <button className="mt-3 text-xs font-semibold text-[var(--primary)] hover:underline" onClick={() => setShowHistory(true)} type="button">Ver historial completo →</button>
         </article>
 
         <article className="nibol-panel p-5">

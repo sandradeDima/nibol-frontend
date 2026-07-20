@@ -1,6 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, Send } from "lucide-react";
 
@@ -129,11 +130,22 @@ const progressUpdateColumns: ColumnDef<ProgressUpdateTableRow>[] = [
 ];
 
 export function ProgressUpdatesTable() {
+  const searchParams = useSearchParams();
   const optionsQuery = useQuery({
     queryFn: observationService.getObservationOptions,
     queryKey: QUERY_KEYS.configurationBootstrap,
     staleTime: 60_000,
   });
+
+  const defaultAreaId = searchParams.get("filter.areaId") ?? undefined;
+  const defaultDateFrom = searchParams.get("filter.dateFrom") ?? undefined;
+  const defaultDateTo = searchParams.get("filter.dateTo") ?? undefined;
+  const defaultEvidencePending = searchParams.get("filter.evidencePending") ?? undefined;
+  const defaultResponsibleUserId =
+    searchParams.get("filter.responsibleUserId") ?? undefined;
+  const defaultRiskLevelId = searchParams.get("filter.riskLevelId") ?? undefined;
+  const defaultStatus = searchParams.get("filter.status") ?? undefined;
+  const defaultType = searchParams.get("filter.type") ?? undefined;
 
   const tableConfig: DataTableConfig<ProgressUpdateTableRow> = {
     columns: progressUpdateColumns,
@@ -148,6 +160,7 @@ export function ProgressUpdatesTable() {
     },
     filters: [
       {
+        defaultValue: defaultStatus,
         id: "status",
         label: "Estado",
         options: [
@@ -161,6 +174,7 @@ export function ProgressUpdatesTable() {
         type: "select",
       },
       {
+        defaultValue: defaultType,
         id: "type",
         label: "Tipo",
         options: [
@@ -174,6 +188,7 @@ export function ProgressUpdatesTable() {
       {
         id: "areaId",
         label: "Area",
+        defaultValue: defaultAreaId,
         options: (optionsQuery.data?.areas ?? []).map((area) => ({
           label: area.name,
           value: area.id,
@@ -184,6 +199,7 @@ export function ProgressUpdatesTable() {
       {
         id: "responsibleUserId",
         label: "Responsable",
+        defaultValue: defaultResponsibleUserId,
         options: (optionsQuery.data?.users ?? []).map((user) => ({
           label: user.name,
           value: user.id,
@@ -194,6 +210,7 @@ export function ProgressUpdatesTable() {
       {
         id: "riskLevelId",
         label: "Riesgo",
+        defaultValue: defaultRiskLevelId,
         options: (optionsQuery.data?.riskLevels ?? []).map((riskLevel) => ({
           label: riskLevel.name,
           value: riskLevel.id,
@@ -202,6 +219,7 @@ export function ProgressUpdatesTable() {
         type: "select",
       },
       {
+        defaultValue: defaultEvidencePending,
         id: "evidencePending",
         label: "Evidencia pendiente",
         options: [
@@ -212,11 +230,13 @@ export function ProgressUpdatesTable() {
         type: "select",
       },
       {
+        defaultValue: defaultDateFrom,
         id: "dateFrom",
         label: "Desde",
         type: "date",
       },
       {
+        defaultValue: defaultDateTo,
         id: "dateTo",
         label: "Hasta",
         type: "date",

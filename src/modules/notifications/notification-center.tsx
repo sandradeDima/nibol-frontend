@@ -1,9 +1,10 @@
 "use client";
 
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Filter, Inbox, LoaderCircle } from "lucide-react";
+import Link from "next/link";
 
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -34,7 +35,10 @@ export function NotificationCenter({
   const [typeFilter, setTypeFilter] = useState<"all" | "error" | "info" | "success" | "warning">(
     "all",
   );
-  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState<"all" | "unread" | "deadlines" | "approvals" | "system">("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const deferredSearch = useDeferredValue(search);
 
   const notificationListQuery = useQuery({
@@ -43,8 +47,11 @@ export function NotificationCenter({
         page,
         perPage: pageSize,
         search: deferredSearch,
+        dateFrom: dateFrom ? `${dateFrom}T00:00:00.000Z` : undefined,
+        dateTo: dateTo ? `${dateTo}T23:59:59.999Z` : undefined,
+        priority: priorityFilter === "all" ? undefined : (priorityFilter as "LOW" | "NORMAL" | "HIGH" | "CRITICAL"),
         type: typeFilter === "all" ? undefined : typeFilter,
-        unreadOnly,
+        unreadOnly: activeTab === "unread",
       }),
     queryKey: [
       ...QUERY_KEYS.notifications,
@@ -54,7 +61,10 @@ export function NotificationCenter({
         pageSize,
         search: deferredSearch,
         typeFilter,
-        unreadOnly,
+        priorityFilter,
+        activeTab,
+        dateFrom,
+        dateTo,
       },
     ],
   });
@@ -117,6 +127,15 @@ export function NotificationCenter({
   }
 
   const notifications = notificationListQuery.data?.data ?? [];
+  const visibleNotifications = useMemo(() => {
+    if (activeTab === "all" || activeTab === "unread") return notifications;
+    return notifications.filter((notification) => {
+      const eventType = notification.eventType ?? "";
+      if (activeTab === "deadlines") return eventType.includes("DUE") || eventType.includes("OVERDUE");
+      if (activeTab === "approvals") return eventType.includes("REVIEW") || eventType.includes("APPROVED") || eventType.includes("RETURNED");
+      return eventType.length === 0;
+    });
+  }, [activeTab, notifications]);
   const pagination = notificationListQuery.data?.pagination;
   const totalNotifications = totalQuery.data?.pagination.total ?? 0;
   const unreadNotifications = unreadQuery.data?.pagination.total ?? 0;
@@ -175,7 +194,30 @@ export function NotificationCenter({
             </button>
           </div>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_14rem_11rem]">
+          <div className="mt-6 space-y-4">
+            <div className="flex flex-wrap gap-2 border-b border-[var(--border)] pb-4">
+              {([
+                ["all", "Todas"],
+                ["unread", "No leídas"],
+                ["deadlines", "Vencimientos"],
+                ["approvals", "Aprobaciones"],
+                ["system", "Sistema"],
+              ] as const).map(([value, label]) => (
+                <button
+                  className={activeTab === value ? "nibol-btn-primary px-3 py-2 text-xs" : "nibol-btn-secondary px-3 py-2 text-xs"}
+                  key={value}
+                  onClick={() => {
+                    setActiveTab(value);
+                    setPage(1);
+                  }}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_13rem_13rem_10rem_10rem]">
             <SearchField
               onChange={(value) => {
                 setPage(1);
@@ -203,20 +245,39 @@ export function NotificationCenter({
               ))}
             </select>
 
+            <select
+              className="nibol-field"
+              onChange={(event) => {
+                setPage(1);
+                setPriorityFilter(event.target.value);
+              }}
+              value={priorityFilter}
+            >
+              <option value="all">Todas las prioridades</option>
+              <option value="CRITICAL">Crítica</option>
+              <option value="HIGH">Alta</option>
+              <option value="NORMAL">Normal</option>
+              <option value="LOW">Baja</option>
+            </select>
+
+            <input className="nibol-field" onChange={(event) => setDateFrom(event.target.value)} type="date" value={dateFrom} />
+            <input className="nibol-field" onChange={(event) => setDateTo(event.target.value)} type="date" value={dateTo} />
+
             <button
               className={`inline-flex h-12 items-center justify-center border px-4 text-sm font-semibold transition ${
-                unreadOnly
+                activeTab === "unread"
                   ? "border-[var(--primary)] bg-[var(--primary)] text-white"
                   : "border-[var(--border-strong)] bg-white text-[var(--foreground)] hover:border-[var(--primary)] hover:bg-[var(--surface-soft)]"
               }`}
               onClick={() => {
                 setPage(1);
-                setUnreadOnly((current) => !current);
+                setActiveTab((current) => (current === "unread" ? "all" : "unread"));
               }}
               type="button"
             >
-              {unreadOnly ? "Solo no leidas" : "Todas las notificaciones"}
+              {activeTab === "unread" ? "Solo no leídas" : "Todas las notificaciones"}
             </button>
+            </div>
           </div>
 
           {actionError ? (
@@ -232,7 +293,7 @@ export function NotificationCenter({
                 Cargando notificaciones...
               </div>
             </div>
-          ) : notifications.length === 0 ? (
+          ) : visibleNotifications.length === 0 ? (
             <div className="mt-6">
               <EmptyState
                 description="Los nuevos eventos apareceran aqui automaticamente. Tambien puede limpiar filtros o enviar una notificacion manual."
@@ -242,7 +303,7 @@ export function NotificationCenter({
             </div>
           ) : (
             <div className="mt-6 space-y-4">
-              {notifications.map((notification) => (
+              {visibleNotifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}
                   actions={
@@ -258,6 +319,17 @@ export function NotificationCenter({
                         >
                           Marcar como leida
                         </button>
+                      ) : null}
+                      {notification.targetUrl ? (
+                        <Link
+                          className="nibol-btn-secondary px-3.5 py-2 text-sm"
+                          href={notification.targetUrl}
+                          onClick={() => {
+                            if (!notification.isRead) void markReadMutation.mutateAsync(notification.id);
+                          }}
+                        >
+                          Abrir registro
+                        </Link>
                       ) : null}
                       <NotificationDeleteButton
                         disabled={deleteNotificationMutation.isPending}

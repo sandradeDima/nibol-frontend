@@ -71,6 +71,9 @@ export const QUERY_KEYS = {
   invitationPreview: (token: string) => ["invitations", "preview", token] as const,
   invitations: ["invitations"] as const,
   activityLogUsers: ["activity-logs", "users"] as const,
+  entityActivity: ["entity-activity"] as const,
+  entityActivityObservation: (observationId: string) =>
+    ["entity-activity", "observation", observationId] as const,
   auditLogUsers: ["audit-logs", "users"] as const,
   configurationBootstrap: ["configuration", "bootstrap"] as const,
   observationOptions: ["observations", "options"] as const,

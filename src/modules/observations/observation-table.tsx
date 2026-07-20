@@ -1,6 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 
@@ -131,11 +132,21 @@ const observationColumns: ColumnDef<ObservationTableRow>[] = [
 ];
 
 export function ObservationTable({ canDelete, canEdit }: ObservationTableProps) {
+  const searchParams = useSearchParams();
   const optionsQuery = useQuery({
     queryFn: observationService.getObservationOptions,
     queryKey: QUERY_KEYS.configurationBootstrap,
     staleTime: 60_000,
   });
+
+  const defaultAreaId = searchParams.get("filter.areaId") ?? undefined;
+  const defaultDueDateFrom = searchParams.get("filter.dueDateFrom") ?? undefined;
+  const defaultDueDateTo = searchParams.get("filter.dueDateTo") ?? undefined;
+  const defaultOverdue = searchParams.get("filter.overdue") ?? undefined;
+  const defaultResponsibleUserId =
+    searchParams.get("filter.responsibleUserId") ?? undefined;
+  const defaultRiskLevelId = searchParams.get("filter.riskLevelId") ?? undefined;
+  const defaultStatusId = searchParams.get("filter.statusId") ?? undefined;
 
   const observationTableConfig: DataTableConfig<ObservationTableRow> = {
     columns: observationColumns,
@@ -152,6 +163,7 @@ export function ObservationTable({ canDelete, canEdit }: ObservationTableProps) 
       {
         id: "responsibleUserId",
         label: "Responsable",
+        defaultValue: defaultResponsibleUserId,
         options: (optionsQuery.data?.users ?? []).map((user) => ({
           label: user.name,
           value: user.id,
@@ -162,6 +174,7 @@ export function ObservationTable({ canDelete, canEdit }: ObservationTableProps) 
       {
         id: "riskLevelId",
         label: "Riesgo",
+        defaultValue: defaultRiskLevelId,
         options: (optionsQuery.data?.riskLevels ?? []).map((riskLevel) => ({
           label: riskLevel.name,
           value: riskLevel.id,
@@ -172,6 +185,7 @@ export function ObservationTable({ canDelete, canEdit }: ObservationTableProps) 
       {
         id: "statusId",
         label: "Estado",
+        defaultValue: defaultStatusId,
         options: (optionsQuery.data?.statuses ?? []).map((status) => ({
           label: status.name,
           value: status.id,
@@ -182,11 +196,35 @@ export function ObservationTable({ canDelete, canEdit }: ObservationTableProps) 
       {
         id: "areaId",
         label: "Area",
+        defaultValue: defaultAreaId,
         options: (optionsQuery.data?.areas ?? []).map((area) => ({
           label: area.name,
           value: area.id,
         })),
         placeholder: "Todas las areas",
+        type: "select",
+      },
+      {
+        defaultValue: defaultDueDateFrom,
+        id: "dueDateFrom",
+        label: "Desde",
+        type: "date",
+      },
+      {
+        defaultValue: defaultDueDateTo,
+        id: "dueDateTo",
+        label: "Hasta",
+        type: "date",
+      },
+      {
+        defaultValue: defaultOverdue,
+        id: "overdue",
+        label: "Vencidas",
+        options: [
+          { label: "Solo vencidas", value: "true" },
+          { label: "Ocultar vencidas", value: "false" },
+        ],
+        placeholder: "Todas",
         type: "select",
       },
     ],

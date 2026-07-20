@@ -6,7 +6,12 @@ type SidebarConfigItem = Omit<SidebarItem, "icon"> & {
 };
 
 const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
-  { group: "Principal", icon: "LayoutDashboard", label: "Dashboard", route: "/" },
+  {
+    group: "Principal",
+    icon: "LayoutDashboard",
+    label: "Dashboard",
+    route: "/dashboard",
+  },
   {
     group: "Gestion",
     icon: "MailPlus",
@@ -62,6 +67,13 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     label: "Ampliaciones de plazo",
     permission: "extension_requests.view",
     route: "/ampliaciones-plazo",
+  },
+  {
+    group: "Control",
+    icon: "Activity",
+    label: "Actividad",
+    permission: "observations.view",
+    route: "/actividad",
   },
   {
     group: "Control",
@@ -121,6 +133,13 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
   },
   {
     group: "Administracion",
+    icon: "BellRing",
+    label: "Notificaciones automáticas",
+    permission: "automatic_jobs.view",
+    route: "/administracion/notificaciones",
+  },
+  {
+    group: "Administracion",
     icon: "LibraryBig",
     label: "Catalogos",
     permission: "catalogs.view",
@@ -149,6 +168,8 @@ const routeLabelMap = new Map(
   SIDEBAR_ITEMS.map((item) => [item.route, item.label] as const),
 );
 
+routeLabelMap.set("/dashboard/auditoria", "Dashboard Auditoría");
+routeLabelMap.set("/dashboard/area", "Dashboard Área");
 routeLabelMap.set("/forbidden", "Acceso denegado");
 
 const titleCaseSegment = (segment: string): string => {
@@ -168,24 +189,28 @@ export const getRouteLabel = (route: string): string => {
 };
 
 export const buildBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
-  if (pathname === "/") {
+  if (pathname === "/" || pathname === "/dashboard") {
     return [
       {
-        href: "/",
+        href: "/dashboard",
         label: "Dashboard",
       },
     ];
   }
 
   const segments = pathname.split("/").filter(Boolean);
+  const pathSegments = segments[0] === "dashboard" ? segments.slice(1) : segments;
 
   return [
     {
-      href: "/",
+      href: "/dashboard",
       label: "Dashboard",
     },
-    ...segments.map((segment, index) => {
-      const href = `/${segments.slice(0, index + 1).join("/")}`;
+    ...pathSegments.map((segment, index) => {
+      const href =
+        segments[0] === "dashboard"
+          ? `/dashboard/${pathSegments.slice(0, index + 1).join("/")}`
+          : `/${pathSegments.slice(0, index + 1).join("/")}`;
 
       return {
         href,

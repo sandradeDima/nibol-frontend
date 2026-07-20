@@ -2,6 +2,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
+import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import {
   Bell,
@@ -120,7 +121,7 @@ export function NotificationBell({ canView }: { canView: boolean }) {
         type="button"
       >
         <Bell className="h-4 w-4" />
-        <span className="hidden sm:inline">Notifications</span>
+        <span className="hidden sm:inline">Notificaciones</span>
         {unreadNotificationsQuery.isLoading ? (
           <LoaderCircle className="h-4 w-4 animate-spin" />
         ) : unreadCount > 0 ? (
@@ -218,6 +219,9 @@ export function NotificationBell({ canView }: { canView: boolean }) {
                         <p className="text-sm leading-6 text-[var(--foreground-soft)]">
                           {notification.message}
                         </p>
+                        <time className="block text-xs text-[var(--muted)]" dateTime={notification.createdAt}>
+                          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                        </time>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         {!notification.isRead ? (
@@ -231,6 +235,18 @@ export function NotificationBell({ canView }: { canView: boolean }) {
                           >
                             Marcar como leida
                           </button>
+                        ) : null}
+                        {notification.targetUrl ? (
+                          <Link
+                            className="nibol-btn-secondary px-3 py-2 text-xs"
+                            href={notification.targetUrl}
+                            onClick={() => {
+                              if (!notification.isRead) void markReadMutation.mutateAsync(notification.id);
+                              setOpen(false);
+                            }}
+                          >
+                            Abrir registro
+                          </Link>
                         ) : null}
                         <button
                           className="nibol-btn-secondary px-3 py-2 text-xs"

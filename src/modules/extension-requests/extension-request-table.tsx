@@ -1,6 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Eye } from "lucide-react";
 
@@ -133,11 +134,24 @@ const statusOptions = [
 ] as const;
 
 export function ExtensionRequestTable() {
+  const searchParams = useSearchParams();
   const optionsQuery = useQuery({
     queryFn: observationService.getObservationOptions,
     queryKey: QUERY_KEYS.configurationBootstrap,
     staleTime: 60_000,
   });
+
+  const defaultAreaId = searchParams.get("filter.areaId") ?? undefined;
+  const defaultOverdue = searchParams.get("filter.overdue") ?? undefined;
+  const defaultPendingMine = searchParams.get("filter.pendingMine") ?? undefined;
+  const defaultRequestedByUserId =
+    searchParams.get("filter.requestedByUserId") ?? undefined;
+  const defaultRequestedDateFrom =
+    searchParams.get("filter.requestedDateFrom") ?? undefined;
+  const defaultRequestedDateTo =
+    searchParams.get("filter.requestedDateTo") ?? undefined;
+  const defaultRiskLevelId = searchParams.get("filter.riskLevelId") ?? undefined;
+  const defaultStatus = searchParams.get("filter.status") ?? undefined;
 
   const tableConfig: DataTableConfig<ExtensionRequestTableRow> = {
     columns: extensionRequestColumns,
@@ -152,6 +166,7 @@ export function ExtensionRequestTable() {
     },
     filters: [
       {
+        defaultValue: defaultStatus,
         id: "status",
         label: "Estado",
         options: [...statusOptions],
@@ -161,6 +176,7 @@ export function ExtensionRequestTable() {
       {
         id: "areaId",
         label: "Área",
+        defaultValue: defaultAreaId,
         options: (optionsQuery.data?.areas ?? []).map((area) => ({
           label: area.name,
           value: area.id,
@@ -171,6 +187,7 @@ export function ExtensionRequestTable() {
       {
         id: "requestedByUserId",
         label: "Solicitante",
+        defaultValue: defaultRequestedByUserId,
         options: (optionsQuery.data?.users ?? []).map((user) => ({
           label: user.name,
           value: user.id,
@@ -181,6 +198,7 @@ export function ExtensionRequestTable() {
       {
         id: "riskLevelId",
         label: "Riesgo",
+        defaultValue: defaultRiskLevelId,
         options: (optionsQuery.data?.riskLevels ?? []).map((riskLevel) => ({
           label: riskLevel.name,
           value: riskLevel.id,
@@ -189,16 +207,19 @@ export function ExtensionRequestTable() {
         type: "select",
       },
       {
+        defaultValue: defaultRequestedDateFrom,
         id: "requestedDateFrom",
         label: "Solicitada desde",
         type: "date",
       },
       {
+        defaultValue: defaultRequestedDateTo,
         id: "requestedDateTo",
         label: "Solicitada hasta",
         type: "date",
       },
       {
+        defaultValue: defaultPendingMine,
         id: "pendingMine",
         label: "Pendientes de mi revisión",
         options: [
@@ -209,6 +230,7 @@ export function ExtensionRequestTable() {
         type: "select",
       },
       {
+        defaultValue: defaultOverdue,
         id: "overdue",
         label: "Vencidas",
         options: [

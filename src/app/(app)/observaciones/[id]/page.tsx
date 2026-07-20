@@ -26,6 +26,7 @@ export default async function ObservationDetailPage({
         canAccessExtensions={authorization.permissions.includes("extension_requests.view")}
         canDelete={authorization.permissions.includes("observations.delete")}
         canEdit={authorization.permissions.includes("observations.edit")}
+        canViewTechnical={authorization.permissions.includes("activity.technical") || authorization.isAdmin}
         observationId={id}
       />
     </main>
