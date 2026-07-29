@@ -1,7 +1,7 @@
 export const generatedPermissionResources = [
   {
     key: "areas",
-    label: "Areas y gerencias",
+    label: "Áreas y gerencias",
   },
   {
     key: "risk_levels",
@@ -9,15 +9,15 @@ export const generatedPermissionResources = [
   },
   {
     key: "observation_statuses",
-    label: "Estados de observacion",
+    label: "Estados de observación",
   },
   {
     key: "system_parameters",
-    label: "Parametros generales",
+    label: "Parámetros generales",
   },
   {
     key: "catalogs",
-    label: "Catalogos basicos",
+    label: "Catálogos básicos",
   },
   {
     key: "products",

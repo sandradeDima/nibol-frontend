@@ -3,7 +3,7 @@ import { generatedPermissionResources } from "@/modules/generated-module-registr
 const CORE_PERMISSION_RESOURCES = [
   {
     key: "users",
-    label: "Users",
+    label: "Usuarios",
   },
   {
     key: "roles",
@@ -11,39 +11,39 @@ const CORE_PERMISSION_RESOURCES = [
   },
   {
     key: "permissions",
-    label: "Permissions",
+    label: "Permisos",
   },
   {
     key: "settings",
-    label: "Settings",
+    label: "Ajustes",
   },
   {
     key: "notifications",
-    label: "Notifications",
+    label: "Notificaciones",
   },
   {
     key: "automatic_jobs",
-    label: "Automatic jobs",
+    label: "Tareas automáticas",
   },
   {
     key: "notification_rules",
-    label: "Notification rules",
+    label: "Reglas de notificación",
   },
   {
     key: "activity",
-    label: "Business activity",
+    label: "Actividad empresarial",
   },
   {
     key: "activity_logs",
-    label: "Activity Logs",
+    label: "Registros de actividad",
   },
   {
     key: "audit_logs",
-    label: "Audit Logs",
+    label: "Registros de auditoría",
   },
   {
     key: "invitations",
-    label: "Invitations",
+    label: "Invitaciones",
   },
 ] as const;
 
@@ -55,19 +55,19 @@ export const PERMISSION_RESOURCES = [
 export const PERMISSION_ACTIONS = [
   {
     key: "view",
-    label: "View",
+    label: "Ver",
   },
   {
     key: "create",
-    label: "Create",
+    label: "Crear",
   },
   {
     key: "edit",
-    label: "Edit",
+    label: "Editar",
   },
   {
     key: "delete",
-    label: "Delete",
+    label: "Eliminar",
   },
 ] as const;
 
@@ -81,6 +81,9 @@ export const buildPermissionName = (
   return `${resource}.${action}`;
 };
 
-export const CRITICAL_ADMIN_PERMISSIONS = PERMISSION_RESOURCES.flatMap((resource) =>
-  PERMISSION_ACTIONS.map((action) => buildPermissionName(resource.key, action.key)),
+export const CRITICAL_ADMIN_PERMISSIONS = PERMISSION_RESOURCES.flatMap(
+  (resource) =>
+    PERMISSION_ACTIONS.map((action) =>
+      buildPermissionName(resource.key, action.key),
+    ),
 );

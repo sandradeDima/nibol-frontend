@@ -24,6 +24,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
+  const [microsoftMessage, setMicrosoftMessage] = useState<string | null>(null);
   const invitedEmail = searchParams.get("email");
 
   const form = useForm<LoginValues>({
@@ -53,9 +54,9 @@ export function LoginForm() {
         ? "Cuenta creada. Revise su bandeja para verificar el acceso."
         : searchParams.get("invited") === "1"
           ? "Invitacion aceptada. Inicie sesion con la contrasena que acaba de crear."
-        : searchParams.get("reset") === "1"
-          ? "Contrasena actualizada. Ingrese con su nueva credencial."
-          : null;
+          : searchParams.get("reset") === "1"
+            ? "Contrasena actualizada. Ingrese con su nueva credencial."
+            : null;
 
   const verificationError =
     searchParams.get("error") === "TOKEN_EXPIRED"
@@ -100,7 +101,8 @@ export function LoginForm() {
 
     if (!email) {
       form.setError("email", {
-        message: "Ingrese su correo para saber a donde reenviar la verificacion.",
+        message:
+          "Ingrese su correo para saber a donde reenviar la verificacion.",
       });
       return;
     }
@@ -111,16 +113,31 @@ export function LoginForm() {
   return (
     <AuthShell
       description="Ingrese con su correo y contrasena. La verificacion y la sesion se administran automaticamente."
-      footer={<AuthLinkRow href="/register" label="Necesita una cuenta?" linkLabel="Solicitar acceso" />}
+      footer={
+        <AuthLinkRow
+          href="/register"
+          label="Necesita una cuenta?"
+          linkLabel="Solicitar acceso"
+        />
+      }
       title="Iniciar sesion"
     >
-      {statusMessage ? <AuthBanner tone="success">{statusMessage}</AuthBanner> : null}
-      {verificationError ? <AuthBanner tone="info">{verificationError}</AuthBanner> : null}
+      {statusMessage ? (
+        <AuthBanner tone="success">{statusMessage}</AuthBanner>
+      ) : null}
+      {verificationError ? (
+        <AuthBanner tone="info">{verificationError}</AuthBanner>
+      ) : null}
       {loginMutation.error ? (
         <AuthBanner tone="error">{loginMutation.error.message}</AuthBanner>
       ) : null}
-      {resendMessage ? <AuthBanner tone="success">{resendMessage}</AuthBanner> : null}
+      {resendMessage ? (
+        <AuthBanner tone="success">{resendMessage}</AuthBanner>
+      ) : null}
       {resendError ? <AuthBanner tone="error">{resendError}</AuthBanner> : null}
+      {microsoftMessage ? (
+        <AuthBanner tone="info">{microsoftMessage}</AuthBanner>
+      ) : null}
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <AuthInput
@@ -149,13 +166,46 @@ export function LoginForm() {
           >
             Reenviar verificacion
           </button>
-          <Link className="font-semibold text-[var(--foreground-soft)] transition hover:text-[var(--foreground)]" href="/forgot-password">
+          <Link
+            className="font-semibold text-[var(--foreground-soft)] transition hover:text-[var(--foreground)]"
+            href="/forgot-password"
+          >
             Olvido su contrasena?
           </Link>
         </div>
 
-        <button className={authPrimaryButtonClass} disabled={loginMutation.isPending} type="submit">
+        <button
+          className={authPrimaryButtonClass}
+          disabled={loginMutation.isPending}
+          type="submit"
+        >
           {loginMutation.isPending ? "Ingresando..." : "Iniciar sesion"}
+        </button>
+
+        <div className="flex items-center gap-3" aria-hidden="true">
+          <span className="h-px flex-1 bg-[var(--border)]" />
+          <span className="text-xs font-medium tracking-[0.14em] text-[var(--muted)] uppercase">
+            o
+          </span>
+          <span className="h-px flex-1 bg-[var(--border)]" />
+        </div>
+
+        <button
+          className="nibol-btn-secondary w-full justify-center"
+          onClick={() => {
+            setMicrosoftMessage(
+              "Falta la configuración del inicio de sesión con Microsoft. Contacte al administrador.",
+            );
+          }}
+          type="button"
+        >
+          <span aria-hidden="true" className="grid h-4 w-4 grid-cols-2 gap-px">
+            <span className="bg-[#f35325]" />
+            <span className="bg-[#81bc06]" />
+            <span className="bg-[#05a6f0]" />
+            <span className="bg-[#ffba08]" />
+          </span>
+          Ingresar con Microsoft
         </button>
       </form>
     </AuthShell>

@@ -22,13 +22,18 @@ export function SearchField({
   value,
 }: SearchFieldProps) {
   return (
-    <label className={cn("group relative block min-w-[16rem] flex-1", className)}>
-      <span className="pointer-events-none absolute inset-y-0 left-0 flex w-12 items-center justify-center border-r border-[var(--border)] bg-white/72 text-[var(--muted)] transition group-focus-within:text-[var(--primary)]">
+    <label
+      className={cn("group relative block min-w-[16rem] flex-1", className)}
+    >
+      <span className="pointer-events-none absolute top-1/2 left-4 flex -translate-y-1/2 items-center justify-center text-[var(--muted)] transition group-focus-within:text-[var(--primary)]">
         <Search className="h-4 w-4" />
       </span>
       <input
         aria-label={placeholder}
-        className={cn("nibol-field h-12 pl-14 pr-12 text-sm", inputClassName)}
+        className={cn(
+          "nibol-field block h-12 pr-12 pl-11 text-sm leading-5",
+          inputClassName,
+        )}
         onChange={(event) => {
           onChange(event.target.value);
         }}
@@ -39,7 +44,7 @@ export function SearchField({
       {value ? (
         <button
           aria-label="Clear search"
-          className="absolute right-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center text-[var(--muted)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--foreground)]"
+          className="absolute top-1/2 right-2.5 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center text-[var(--muted)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--foreground)]"
           onClick={() => {
             onChange("");
           }}
@@ -48,7 +53,7 @@ export function SearchField({
           <X className="h-4 w-4" />
         </button>
       ) : isBusy ? (
-        <span className="absolute right-4 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-[var(--primary)]" />
+        <span className="absolute top-1/2 right-4 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-[var(--primary)]" />
       ) : null}
     </label>
   );

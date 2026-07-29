@@ -145,13 +145,6 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     permission: "catalogs.view",
     route: "/administracion/catalogos",
   },
-  {
-    group: "Administracion",
-    icon: "Settings",
-    label: "Ajustes base",
-    permission: "settings.view",
-    route: "/settings",
-  },
 ];
 
 export const SIDEBAR_ITEMS: SidebarConfigItem[] = [
@@ -199,7 +192,8 @@ export const buildBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
   }
 
   const segments = pathname.split("/").filter(Boolean);
-  const pathSegments = segments[0] === "dashboard" ? segments.slice(1) : segments;
+  const pathSegments =
+    segments[0] === "dashboard" ? segments.slice(1) : segments;
 
   return [
     {

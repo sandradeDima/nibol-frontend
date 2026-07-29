@@ -82,9 +82,7 @@ const getSegmentColor = (item: DashboardDistributionItem): string => {
   }
 };
 
-const getReviewStatusClasses = (
-  row: DashboardReviewQueueRow,
-): string => {
+const getReviewStatusClasses = (row: DashboardReviewQueueRow): string => {
   if (row.kind === "PROGRESS") {
     return getProgressStatusClasses(row.status.key as never);
   }
@@ -115,7 +113,11 @@ function DashboardSurface({
   children: ReactNode;
   className?: string;
 }) {
-  return <section className={cn("nibol-panel px-5 py-5", className)}>{children}</section>;
+  return (
+    <section className={cn("nibol-panel px-5 py-5", className)}>
+      {children}
+    </section>
+  );
 }
 
 function DashboardPanelHeader({
@@ -127,9 +129,13 @@ function DashboardPanelHeader({
 }) {
   return (
     <div className="space-y-1.5">
-      <h2 className="text-base font-semibold text-[var(--foreground)] sm:text-lg">{title}</h2>
+      <h2 className="text-base font-semibold text-[var(--foreground)] sm:text-lg">
+        {title}
+      </h2>
       {description ? (
-        <p className="text-sm leading-6 text-[var(--foreground-soft)]">{description}</p>
+        <p className="text-sm leading-6 text-[var(--foreground-soft)]">
+          {description}
+        </p>
       ) : null}
     </div>
   );
@@ -161,7 +167,7 @@ function DashboardMetricCard({
     >
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+          <p className="text-[11px] font-semibold tracking-[0.18em] text-[var(--muted)] uppercase">
             {label}
           </p>
           <p className="text-3xl font-semibold tracking-tight text-[var(--foreground)]">
@@ -174,7 +180,9 @@ function DashboardMetricCard({
         </div>
       </div>
 
-      <p className="text-sm leading-6 text-[var(--foreground-soft)]">{description}</p>
+      <p className="text-sm leading-6 text-[var(--foreground-soft)]">
+        {description}
+      </p>
     </article>
   );
 
@@ -203,11 +211,15 @@ function SecondaryMetric({
   const body = (
     <div className="flex items-start justify-between gap-4 border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-4">
       <div className="space-y-1.5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+        <p className="text-[11px] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
           {label}
         </p>
-        <p className="text-2xl font-semibold text-[var(--foreground)]">{value}</p>
-        <p className="text-sm leading-6 text-[var(--foreground-soft)]">{description}</p>
+        <p className="text-2xl font-semibold text-[var(--foreground)]">
+          {value}
+        </p>
+        <p className="text-sm leading-6 text-[var(--foreground-soft)]">
+          {description}
+        </p>
       </div>
     </div>
   );
@@ -223,11 +235,7 @@ function SecondaryMetric({
   );
 }
 
-function MiniEmpty({
-  description,
-}: {
-  description: string;
-}) {
+function MiniEmpty({ description }: { description: string }) {
   return (
     <div className="border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-4 py-8 text-center text-sm text-[var(--foreground-soft)]">
       {description}
@@ -306,29 +314,33 @@ function SplitSummaryPanel({
   items: DashboardDistributionItem[];
   title: string;
 }) {
-  const total = items.reduce((accumulator, item) => accumulator + item.value, 0);
-  const segments = items.reduce<Array<{ color: string; end: number; start: number }>>(
-    (accumulator, item) => {
-      const start = accumulator.at(-1)?.end ?? 0;
-      const share = total === 0 ? 0 : (item.value / total) * 100;
-      const end = start + share;
-
-      accumulator.push({
-        color: getSegmentColor(item),
-        end,
-        start,
-      });
-
-      return accumulator;
-    },
-    [],
+  const total = items.reduce(
+    (accumulator, item) => accumulator + item.value,
+    0,
   );
+  const segments = items.reduce<
+    Array<{ color: string; end: number; start: number }>
+  >((accumulator, item) => {
+    const start = accumulator.at(-1)?.end ?? 0;
+    const share = total === 0 ? 0 : (item.value / total) * 100;
+    const end = start + share;
+
+    accumulator.push({
+      color: getSegmentColor(item),
+      end,
+      start,
+    });
+
+    return accumulator;
+  }, []);
   const donutStyle = {
     background:
       total === 0
         ? "var(--surface-muted)"
         : `conic-gradient(${segments
-            .map((segment) => `${segment.color} ${segment.start}% ${segment.end}%`)
+            .map(
+              (segment) => `${segment.color} ${segment.start}% ${segment.end}%`,
+            )
             .join(", ")})`,
   } satisfies CSSProperties;
 
@@ -339,35 +351,39 @@ function SplitSummaryPanel({
       {items.length === 0 ? (
         <MiniEmpty description="No hay observaciones para resumir en esta vista." />
       ) : (
-        <div className="grid gap-5 sm:grid-cols-[10rem_1fr] sm:items-center">
+        <div className="grid min-w-0 gap-5">
           <div
             className="relative mx-auto h-40 w-40 rounded-full border border-[var(--border)]"
             style={donutStyle}
           >
             <div className="absolute inset-[24%] flex items-center justify-center rounded-full bg-[var(--surface)] text-center">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                <p className="text-[11px] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
                   Total
                 </p>
-                <p className="mt-1 text-3xl font-semibold text-[var(--foreground)]">{total}</p>
+                <p className="mt-1 text-3xl font-semibold text-[var(--foreground)]">
+                  {total}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="min-w-0 space-y-3">
             {items.map((item) => {
               const row = (
-                <div className="flex items-center justify-between gap-3 border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-3">
-                  <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center justify-between gap-3 border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span
-                      className="h-3 w-3"
+                      className="h-3 w-3 shrink-0"
                       style={{
                         background: getSegmentColor(item),
                       }}
                     />
-                    <span className="text-sm text-[var(--foreground)]">{item.label}</span>
+                    <span className="min-w-0 text-sm break-words text-[var(--foreground)]">
+                      {item.label}
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-[var(--foreground)]">
+                  <span className="shrink-0 text-sm font-semibold text-[var(--foreground)]">
                     {item.value}
                   </span>
                 </div>
@@ -395,7 +411,9 @@ function TrendPanel({
 }: {
   points: AuditDashboardData["charts"]["monthlyTrend"];
 }) {
-  const maxValue = Math.max(...points.flatMap((point) => [point.created, point.closed]), 0) || 1;
+  const maxValue =
+    Math.max(...points.flatMap((point) => [point.created, point.closed]), 0) ||
+    1;
 
   return (
     <DashboardSurface className="space-y-4">
@@ -408,7 +426,7 @@ function TrendPanel({
         <MiniEmpty description="No hay actividad suficiente para construir la tendencia." />
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-4 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+          <div className="flex flex-wrap items-center gap-4 text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
             <span className="inline-flex items-center gap-2">
               <span className="h-2.5 w-5 bg-[var(--primary)]" />
               Creadas
@@ -437,7 +455,7 @@ function TrendPanel({
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+                  <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
                     {point.monthLabel}
                   </p>
                   <p className="text-xs text-[var(--foreground-soft)]">
@@ -529,19 +547,17 @@ function TableShell({
   );
 }
 
-function ObservationsTable({
-  rows,
-}: {
-  rows: DashboardObservationRow[];
-}) {
+function ObservationsTable({ rows }: { rows: DashboardObservationRow[] }) {
   if (rows.length === 0) {
-    return <MiniEmpty description="No hay observaciones críticas ni vencidas en esta vista." />;
+    return (
+      <MiniEmpty description="No hay observaciones críticas ni vencidas en esta vista." />
+    );
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border-collapse text-left">
-        <thead className="bg-[var(--surface-soft)] text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+        <thead className="bg-[var(--surface-soft)] text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
           <tr>
             <th className="px-5 py-3">Observación</th>
             <th className="px-5 py-3">Área</th>
@@ -553,22 +569,30 @@ function ObservationsTable({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-[var(--border)] align-top">
+            <tr
+              key={row.id}
+              className="border-t border-[var(--border)] align-top"
+            >
               <td className="px-5 py-4">
                 <div className="min-w-[18rem] space-y-1.5">
-                  <Link className="font-semibold text-[var(--foreground)]" href={row.href}>
+                  <Link
+                    className="font-semibold text-[var(--foreground)]"
+                    href={row.href}
+                  >
                     {row.title}
                   </Link>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                  <p className="text-xs font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
                     {row.code}
                   </p>
                 </div>
               </td>
-              <td className="px-5 py-4 text-sm text-[var(--foreground-soft)]">{row.area.name}</td>
+              <td className="px-5 py-4 text-sm text-[var(--foreground-soft)]">
+                {row.area.name}
+              </td>
               <td className="px-5 py-4">
                 <span
                   className={cn(
-                    "inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]",
+                    "inline-flex items-center border px-3 py-1 text-xs font-semibold tracking-[0.14em] uppercase",
                     getRiskLevelClasses(row.riskLevel.colorToken),
                   )}
                 >
@@ -578,7 +602,7 @@ function ObservationsTable({
               <td className="px-5 py-4">
                 <span
                   className={cn(
-                    "inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]",
+                    "inline-flex items-center border px-3 py-1 text-xs font-semibold tracking-[0.14em] uppercase",
                     getStatusClasses(row.status.key),
                   )}
                 >
@@ -586,7 +610,9 @@ function ObservationsTable({
                 </span>
               </td>
               <td className="px-5 py-4 text-sm">
-                <span className={cn(row.isOverdue && "font-semibold text-rose-700")}>
+                <span
+                  className={cn(row.isOverdue && "font-semibold text-rose-700")}
+                >
                   {formatObservationDate(row.dueDate)}
                 </span>
               </td>
@@ -613,19 +639,17 @@ function ObservationsTable({
   );
 }
 
-function CommitmentsTable({
-  rows,
-}: {
-  rows: DashboardCommitmentRow[];
-}) {
+function CommitmentsTable({ rows }: { rows: DashboardCommitmentRow[] }) {
   if (rows.length === 0) {
-    return <MiniEmpty description="No hay compromisos próximos a vencer en esta vista." />;
+    return (
+      <MiniEmpty description="No hay compromisos próximos a vencer en esta vista." />
+    );
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border-collapse text-left">
-        <thead className="bg-[var(--surface-soft)] text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+        <thead className="bg-[var(--surface-soft)] text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
           <tr>
             <th className="px-5 py-3">Compromiso</th>
             <th className="px-5 py-3">Observación</th>
@@ -636,13 +660,19 @@ function CommitmentsTable({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-t border-[var(--border)] align-top">
+            <tr
+              key={row.id}
+              className="border-t border-[var(--border)] align-top"
+            >
               <td className="px-5 py-4">
                 <div className="min-w-[15rem] space-y-1.5">
-                  <Link className="font-semibold text-[var(--foreground)]" href={row.href}>
+                  <Link
+                    className="font-semibold text-[var(--foreground)]"
+                    href={row.href}
+                  >
                     {row.title}
                   </Link>
-                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--muted)]">
+                  <p className="text-xs tracking-[0.16em] text-[var(--muted)] uppercase">
                     {row.area.name}
                   </p>
                 </div>
@@ -652,7 +682,7 @@ function CommitmentsTable({
                   <p className="text-sm font-medium text-[var(--foreground)]">
                     {row.observation.title}
                   </p>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
+                  <p className="text-xs font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
                     {row.observation.code}
                   </p>
                 </div>
@@ -661,14 +691,16 @@ function CommitmentsTable({
                 {row.responsibleUser?.name ?? "Sin responsable"}
               </td>
               <td className="px-5 py-4 text-sm">
-                <span className={cn(row.isOverdue && "font-semibold text-rose-700")}>
+                <span
+                  className={cn(row.isOverdue && "font-semibold text-rose-700")}
+                >
                   {formatObservationDate(row.dueDate)}
                 </span>
               </td>
               <td className="px-5 py-4">
                 <span
                   className={cn(
-                    "inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]",
+                    "inline-flex items-center border px-3 py-1 text-xs font-semibold tracking-[0.14em] uppercase",
                     getCommitmentStatusClasses(row.status.key as never),
                   )}
                 >
@@ -683,19 +715,17 @@ function CommitmentsTable({
   );
 }
 
-function ReviewQueueTable({
-  rows,
-}: {
-  rows: DashboardReviewQueueRow[];
-}) {
+function ReviewQueueTable({ rows }: { rows: DashboardReviewQueueRow[] }) {
   if (rows.length === 0) {
-    return <MiniEmpty description="No hay elementos pendientes en esta bandeja." />;
+    return (
+      <MiniEmpty description="No hay elementos pendientes en esta bandeja." />
+    );
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border-collapse text-left">
-        <thead className="bg-[var(--surface-soft)] text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+        <thead className="bg-[var(--surface-soft)] text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
           <tr>
             <th className="px-5 py-3">Tipo</th>
             <th className="px-5 py-3">Detalle</th>
@@ -706,17 +736,27 @@ function ReviewQueueTable({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={`${row.kind}-${row.id}`} className="border-t border-[var(--border)] align-top">
+            <tr
+              key={`${row.kind}-${row.id}`}
+              className="border-t border-[var(--border)] align-top"
+            >
               <td className="px-5 py-4">
-                <span className="nibol-badge">{getReviewKindLabel(row.kind)}</span>
+                <span className="nibol-badge">
+                  {getReviewKindLabel(row.kind)}
+                </span>
               </td>
               <td className="px-5 py-4">
                 <div className="min-w-[18rem] space-y-1.5">
-                  <Link className="font-semibold text-[var(--foreground)]" href={row.href}>
+                  <Link
+                    className="font-semibold text-[var(--foreground)]"
+                    href={row.href}
+                  >
                     {row.title}
                   </Link>
-                  <p className="text-sm text-[var(--foreground-soft)]">{row.subtitle}</p>
-                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--muted)]">
+                  <p className="text-sm text-[var(--foreground-soft)]">
+                    {row.subtitle}
+                  </p>
+                  <p className="text-xs tracking-[0.16em] text-[var(--muted)] uppercase">
                     {row.areaName}
                   </p>
                 </div>
@@ -727,7 +767,7 @@ function ReviewQueueTable({
               <td className="px-5 py-4">
                 <span
                   className={cn(
-                    "inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]",
+                    "inline-flex items-center border px-3 py-1 text-xs font-semibold tracking-[0.14em] uppercase",
                     getReviewStatusClasses(row),
                   )}
                 >
@@ -745,19 +785,17 @@ function ReviewQueueTable({
   );
 }
 
-function ActivityTable({
-  rows,
-}: {
-  rows: DashboardActivityRow[];
-}) {
+function ActivityTable({ rows }: { rows: DashboardActivityRow[] }) {
   if (rows.length === 0) {
-    return <MiniEmpty description="No hay actualizaciones recientes para mostrar." />;
+    return (
+      <MiniEmpty description="No hay actualizaciones recientes para mostrar." />
+    );
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border-collapse text-left">
-        <thead className="bg-[var(--surface-soft)] text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
+        <thead className="bg-[var(--surface-soft)] text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
           <tr>
             <th className="px-5 py-3">Tipo</th>
             <th className="px-5 py-3">Detalle</th>
@@ -766,16 +804,26 @@ function ActivityTable({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={`${row.kind}-${row.id}`} className="border-t border-[var(--border)] align-top">
+            <tr
+              key={`${row.kind}-${row.id}`}
+              className="border-t border-[var(--border)] align-top"
+            >
               <td className="px-5 py-4">
-                <span className="nibol-badge">{getActivityKindLabel(row.kind)}</span>
+                <span className="nibol-badge">
+                  {getActivityKindLabel(row.kind)}
+                </span>
               </td>
               <td className="px-5 py-4">
                 <div className="min-w-[18rem] space-y-1.5">
-                  <Link className="font-semibold text-[var(--foreground)]" href={row.href}>
+                  <Link
+                    className="font-semibold text-[var(--foreground)]"
+                    href={row.href}
+                  >
                     {row.title}
                   </Link>
-                  <p className="text-sm text-[var(--foreground-soft)]">{row.description}</p>
+                  <p className="text-sm text-[var(--foreground-soft)]">
+                    {row.description}
+                  </p>
                 </div>
               </td>
               <td className="px-5 py-4 text-sm text-[var(--foreground-soft)]">
@@ -793,25 +841,31 @@ const buildAuditMetricCards = (
   data: AuditDashboardData,
   referenceDate: Date,
 ) => {
-  const dueThreshold = addDays(startOfDay(referenceDate), data.reminderDaysBeforeDue);
+  const dueThreshold = addDays(
+    startOfDay(referenceDate),
+    data.reminderDaysBeforeDue,
+  );
 
   return [
     {
-      description: "Observaciones registradas dentro del universo corporativo visible.",
+      description:
+        "Observaciones registradas dentro del universo corporativo visible.",
       href: "/observaciones",
       icon: <ClipboardList className="h-5 w-5" />,
       label: "Total observaciones",
       value: String(data.summary.totalObservations),
     },
     {
-      description: "Observaciones activas que aún no se encuentran en estado final.",
+      description:
+        "Observaciones activas que aún no se encuentran en estado final.",
       href: "/observaciones",
       icon: <FolderKanban className="h-5 w-5" />,
       label: "Abiertas",
       value: String(data.summary.openObservations),
     },
     {
-      description: "Observaciones fuera de plazo según fecha límite y estado vigente.",
+      description:
+        "Observaciones fuera de plazo según fecha límite y estado vigente.",
       href: "/observaciones?filter.overdue=true",
       icon: <AlertTriangle className="h-5 w-5" />,
       label: "Vencidas",
@@ -826,14 +880,16 @@ const buildAuditMetricCards = (
       value: String(data.summary.upcomingObservations),
     },
     {
-      description: "Solicitudes de revisión pendientes entre avances y ampliaciones.",
+      description:
+        "Solicitudes de revisión pendientes entre avances y ampliaciones.",
       href: "/aprobaciones/pendientes",
       icon: <BadgeCheck className="h-5 w-5" />,
       label: "Pendientes de revisión",
       value: String(data.summary.pendingReviews),
     },
     {
-      description: "Promedio de avance declarado sobre las observaciones visibles.",
+      description:
+        "Promedio de avance declarado sobre las observaciones visibles.",
       href: "/avances-evidencias",
       icon: <Gauge className="h-5 w-5" />,
       label: "Avance promedio",
@@ -842,29 +898,32 @@ const buildAuditMetricCards = (
   ];
 };
 
-const buildAreaMetricCards = (
-  data: AreaDashboardData,
-  referenceDate: Date,
-) => {
-  const dueThreshold = addDays(startOfDay(referenceDate), data.reminderDaysBeforeDue);
+const buildAreaMetricCards = (data: AreaDashboardData, referenceDate: Date) => {
+  const dueThreshold = addDays(
+    startOfDay(referenceDate),
+    data.reminderDaysBeforeDue,
+  );
 
   return [
     {
-      description: "Observaciones asociadas directamente a su usuario o carga operativa.",
+      description:
+        "Observaciones asociadas directamente a su usuario o carga operativa.",
       href: "/observaciones",
       icon: <ClipboardList className="h-5 w-5" />,
       label: "Mis observaciones asignadas",
       value: String(data.summary.assignedObservations),
     },
     {
-      description: "Observaciones bajo el alcance de su área o sus responsabilidades actuales.",
+      description:
+        "Observaciones bajo el alcance de su área o sus responsabilidades actuales.",
       href: "/observaciones",
       icon: <FolderKanban className="h-5 w-5" />,
       label: "Observaciones de mi área",
       value: String(data.summary.areaObservations),
     },
     {
-      description: "Compromisos aún activos dentro del cronograma operativo visible.",
+      description:
+        "Compromisos aún activos dentro del cronograma operativo visible.",
       href: "/cronograma",
       icon: <GitPullRequestArrow className="h-5 w-5" />,
       label: "Compromisos pendientes",
@@ -886,7 +945,8 @@ const buildAreaMetricCards = (
       value: String(data.summary.upcomingCommitments),
     },
     {
-      description: "Promedio de avance consolidado sobre las observaciones visibles.",
+      description:
+        "Promedio de avance consolidado sobre las observaciones visibles.",
       href: "/avances-evidencias",
       icon: <Gauge className="h-5 w-5" />,
       label: "Avance promedio",
@@ -901,12 +961,14 @@ const buildSecondaryMetrics = (
   if (data.scope === "auditoria") {
     return [
       {
-        description: "Observaciones en estado final dentro del periodo consultado.",
+        description:
+          "Observaciones en estado final dentro del periodo consultado.",
         label: "Observaciones cerradas",
         value: String(data.summary.closedObservations),
       },
       {
-        description: "Solicitudes de ampliación aún dentro del flujo de aprobación.",
+        description:
+          "Solicitudes de ampliación aún dentro del flujo de aprobación.",
         href: "/ampliaciones-plazo",
         label: "Ampliaciones pendientes",
         value: String(data.summary.pendingExtensions),
@@ -922,13 +984,15 @@ const buildSecondaryMetrics = (
 
   return [
     {
-      description: "Avances devueltos por Auditoría que requieren ajuste o corrección.",
+      description:
+        "Avances devueltos por Auditoría que requieren ajuste o corrección.",
       href: "/avances-evidencias?filter.status=RETURNED",
       label: "Avances devueltos por Auditoría",
       value: String(data.summary.returnedProgressUpdates),
     },
     {
-      description: "Solicitudes de ampliación activas dentro de su flujo de aprobación.",
+      description:
+        "Solicitudes de ampliación activas dentro de su flujo de aprobación.",
       href: "/ampliaciones-plazo",
       label: "Ampliaciones en proceso",
       value: String(data.summary.extensionsInProcess),
