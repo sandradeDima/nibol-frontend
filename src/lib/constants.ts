@@ -41,7 +41,9 @@ const serverApiBaseUrl = normalizeApiBaseUrl(
 );
 
 const serverAuthBaseUrl = normalizeAuthBaseUrl(
-  process.env.NEXT_PUBLIC_AUTH_URL ?? process.env.NEXT_PUBLIC_API_URL ?? backendBaseUrl,
+  process.env.NEXT_PUBLIC_AUTH_URL ??
+    process.env.NEXT_PUBLIC_API_URL ??
+    backendBaseUrl,
 );
 
 export const APP_CONFIG = {
@@ -50,7 +52,8 @@ export const APP_CONFIG = {
   browserApiBaseUrl: "/api",
   browserAuthBaseUrl: "/api/auth",
   name: "NIBOL | Sistema de Seguimiento de Riesgos",
-  description: "Plataforma corporativa para seguimiento, control y gobierno operativo.",
+  description:
+    "Plataforma corporativa para seguimiento, control y gobierno operativo.",
   serverApiBaseUrl,
   serverAuthBaseUrl,
   apiTimeoutMs: 10000,
@@ -68,7 +71,8 @@ export const QUERY_KEYS = {
   profile: ["profile"] as const,
   settings: ["settings"] as const,
   notifications: ["notifications"] as const,
-  invitationPreview: (token: string) => ["invitations", "preview", token] as const,
+  invitationPreview: (token: string) =>
+    ["invitations", "preview", token] as const,
   invitations: ["invitations"] as const,
   activityLogUsers: ["activity-logs", "users"] as const,
   entityActivity: ["entity-activity"] as const,
@@ -103,4 +107,18 @@ export const QUERY_KEYS = {
   userDetails: (userId: string) => ["users", "detail", userId] as const,
   roles: ["roles"] as const,
   permissions: ["permissions"] as const,
+  workflows: ["workflows"] as const,
+  workflowDetails: (workflowId: string) =>
+    ["workflows", "detail", workflowId] as const,
+  workflowVersions: (workflowId: string) =>
+    ["workflows", "versions", workflowId] as const,
+  workflowVersionDetails: (versionId: string) =>
+    ["workflows", "version", versionId] as const,
+  workflowActivity: (workflowId: string) =>
+    ["workflows", "activity", workflowId] as const,
+  workflowSummary: ["workflows", "summary"] as const,
+  workflowOptions: ["workflows", "options"] as const,
+  workflowDesigner: (versionId: string) =>
+    ["workflows", "designer", versionId] as const,
+  workflowDesignerOptions: ["workflows", "designer-options"] as const,
 } as const;

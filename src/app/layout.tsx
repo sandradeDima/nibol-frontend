@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import {
-  Barlow_Semi_Condensed,
-  Geist_Mono,
-  Manrope,
-} from "next/font/google";
+import { Barlow_Semi_Condensed, Geist_Mono, Manrope } from "next/font/google";
+import { Toaster } from "sonner";
 
 import { APP_CONFIG } from "@/lib/constants";
 import { QueryProvider } from "@/providers/query-provider";
@@ -43,6 +40,7 @@ export default function RootLayout({
     >
       <body className="min-h-full">
         <QueryProvider>{children}</QueryProvider>
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );

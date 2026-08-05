@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent } from "react";
+import { useEffect, useEffectEvent, type ReactNode } from "react";
 
 import { AlertTriangle, X } from "lucide-react";
 
@@ -8,6 +8,7 @@ import { cn } from "@/utils";
 
 type ConfirmDialogProps = {
   cancelLabel?: string;
+  children?: ReactNode;
   confirmLabel?: string;
   description: string;
   isLoading?: boolean;
@@ -20,6 +21,7 @@ type ConfirmDialogProps = {
 
 export function ConfirmDialog({
   cancelLabel = "Cancel",
+  children,
   confirmLabel = "Confirm",
   description,
   isLoading = false,
@@ -104,12 +106,13 @@ export function ConfirmDialog({
         </div>
 
         <div className="mt-5 space-y-3">
-          <h2 className="font-display text-3xl font-bold uppercase leading-none tracking-[-0.03em] text-[var(--foreground)]">
+          <h2 className="font-display text-3xl leading-none font-bold tracking-[-0.03em] text-[var(--foreground)] uppercase">
             {title}
           </h2>
           <p className="text-sm leading-7 text-[var(--foreground-soft)] sm:text-base">
             {description}
           </p>
+          {children ? <div className="pt-2">{children}</div> : null}
         </div>
 
         <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

@@ -133,6 +133,13 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
   },
   {
     group: "Administracion",
+    icon: "Workflow",
+    label: "Flujos",
+    permission: "workflows.view",
+    route: "/configuracion/flujos",
+  },
+  {
+    group: "Administracion",
     icon: "BellRing",
     label: "Notificaciones automáticas",
     permission: "automatic_jobs.view",
@@ -164,6 +171,9 @@ const routeLabelMap = new Map(
 routeLabelMap.set("/dashboard/auditoria", "Dashboard Auditoría");
 routeLabelMap.set("/dashboard/area", "Dashboard Área");
 routeLabelMap.set("/forbidden", "Acceso denegado");
+routeLabelMap.set("/configuracion", "Configuración");
+routeLabelMap.set("/configuracion/flujos", "Flujos");
+routeLabelMap.set("/configuracion/flujos/nuevo", "Nuevo flujo");
 
 const titleCaseSegment = (segment: string): string => {
   return segment

@@ -13,3 +13,4 @@ export * from "./roles";
 export * from "./remediation";
 export * from "./settings";
 export * from "./users";
+export * from "./workflows";
