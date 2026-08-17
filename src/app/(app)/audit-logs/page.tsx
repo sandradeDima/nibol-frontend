@@ -12,10 +12,7 @@ export default async function AuditLogsPage() {
       <PageHeader
         actions={
           authorization.permissions.includes("activity_logs.view") ? (
-            <Link
-              className="nibol-btn-secondary"
-              href="/activity-logs"
-            >
+            <Link className="nibol-btn-secondary" href="/activity-logs">
               Ver actividad
             </Link>
           ) : null

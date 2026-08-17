@@ -2,457 +2,407 @@
 
 import { useState } from "react";
 
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CalendarClock,
+  CheckCircle2,
+  FileText,
   History,
   Pencil,
   ShieldAlert,
   Trash2,
-  UserRound,
+  Users,
 } from "lucide-react";
+import Link from "next/link";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { QUERY_KEYS } from "@/lib/constants";
 import { observationService } from "@/services/observation-service";
-import { getApiErrorMessage } from "@/utils";
-import { cn } from "@/utils";
+import { cn, getApiErrorMessage } from "@/utils";
 
+import { EntityActivityTimeline } from "../activity/entity-activity-timeline";
+import { ObservationExtensionPanel } from "../extension-requests/observation-extension-panel";
+import { ObservationCollaborationWorkspace } from "../progress/observation-collaboration-workspace";
+import { RemediationWorkspace } from "../remediation/remediation-workspace";
+import { ObservationActionPanel } from "./observation-action-panel";
 import {
   formatObservationDate,
   getRiskLevelClasses,
   getStatusClasses,
 } from "./presentation";
-import { ObservationExtensionPanel } from "../extension-requests/observation-extension-panel";
-import { ObservationCollaborationWorkspace } from "../progress/observation-collaboration-workspace";
-import { RemediationWorkspace } from "../remediation/remediation-workspace";
-import { EntityActivityLatest, EntityActivityTimeline } from "../activity/entity-activity-timeline";
 
-type ObservationDetailProps = {
+type Props = {
   canAccessExtensions: boolean;
+  canClose: boolean;
   canDelete: boolean;
   canEdit: boolean;
   canViewTechnical: boolean;
   observationId: string;
 };
 
+const remainingLabel = (dateValue: string) => {
+  const days = Math.ceil(
+    (new Date(dateValue).getTime() - Date.now()) / 86_400_000,
+  );
+  if (days < 0) return `${Math.abs(days)} días vencida`;
+  if (days === 0) return "Vence hoy";
+  return `${days} días restantes`;
+};
+
 export function ObservationDetail({
   canAccessExtensions,
+  canClose,
   canDelete,
   canEdit,
   canViewTechnical,
   observationId,
-}: ObservationDetailProps) {
+}: Props) {
   const queryClient = useQueryClient();
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-
-  const observationQuery = useQuery({
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
     queryFn: () => observationService.getObservationById(observationId),
     queryKey: QUERY_KEYS.observationDetails(observationId),
   });
-
-  const deleteMutation = useMutation({
-    mutationFn: async () => observationService.deleteObservation(observationId),
+  const remove = useMutation({
+    mutationFn: () => observationService.deleteObservation(observationId),
+    onError: (cause) => setError(getApiErrorMessage(cause)),
     onSuccess: async () => {
-      setActionError(null);
-      setPendingDelete(false);
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.observations,
       });
       window.location.assign("/observaciones");
     },
-    onError: (error) => {
-      setActionError(getApiErrorMessage(error));
+  });
+  const close = useMutation({
+    mutationFn: () => observationService.closeObservation(observationId),
+    onError: (cause) => setError(getApiErrorMessage(cause)),
+    onSuccess: async () => {
+      setConfirmClose(false);
+      setError(null);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.observationDetails(observationId),
+        }),
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.observations }),
+      ]);
     },
   });
-
-  if (observationQuery.isError) {
+  if (query.isError)
     return (
       <ErrorState
-        action={
-          <button
-            className="nibol-btn-secondary px-4 py-2 text-sm"
-            onClick={() => {
-              void observationQuery.refetch();
-            }}
-            type="button"
-          >
-            Reintentar
-          </button>
-        }
-        description={observationQuery.error.message}
-        title="No fue posible cargar esta observacion"
+        description={getApiErrorMessage(query.error)}
+        title="No fue posible cargar la observación"
       />
     );
-  }
-
-  const observation = observationQuery.data;
-
-  if (!observation) {
+  const observation = query.data;
+  if (!observation)
     return (
-      <section className="nibol-panel p-6 text-sm text-stone-600">
-        Cargando detalle de la observacion...
+      <section className="nibol-panel p-6 text-sm text-stone-500">
+        Cargando detalle…
       </section>
     );
-  }
 
   return (
     <div className="space-y-6">
-      <section className="nibol-panel p-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-                {observation.code}
+      <section className="nibol-panel overflow-hidden">
+        <div className="border-b border-stone-200 bg-stone-950 px-6 py-6 text-white">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.22em] text-amber-400 uppercase">
+                {observation.displayCode}
               </p>
-              <h2 className="max-w-4xl text-3xl font-semibold tracking-tight text-stone-950">
+              <h2 className="mt-2 max-w-4xl text-3xl font-semibold tracking-tight">
                 {observation.title}
               </h2>
+              <p className="mt-2 text-sm text-stone-300">
+                {observation.auditReport.title}
+              </p>
             </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <span
-                className={cn(
-                  "inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]",
-                  getRiskLevelClasses(observation.riskLevel.colorToken),
-                )}
-              >
-                {observation.riskLevel.name}
-              </span>
-              <span
-                className={cn(
-                  "inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]",
-                  getStatusClasses(observation.effectiveStatus.key),
-                )}
-              >
-                {observation.effectiveStatus.name}
-              </span>
-              <span className="inline-flex items-center border border-stone-200 bg-stone-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-stone-700">
-                Area principal: {observation.area.name}
-              </span>
-            </div>
-
-            <p className="max-w-4xl text-sm leading-7 text-stone-700">
-              {observation.description}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Link className="nibol-btn-secondary px-4 py-2.5 text-sm" href="/observaciones">
-              <ArrowLeft className="h-4 w-4" />
-              Volver
-            </Link>
-            {canEdit ? (
+            <div className="flex flex-wrap gap-2">
               <Link
-                className="nibol-btn-primary px-4 py-2.5 text-sm"
-                href={`/observaciones/${observation.id}/editar`}
+                className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
+                href="/observaciones"
               >
-                <Pencil className="h-4 w-4" />
-                Editar
+                <ArrowLeft className="h-4 w-4" />
+                Volver
               </Link>
-            ) : null}
-            <button className="nibol-btn-secondary px-4 py-2.5 text-sm" onClick={() => setShowHistory((value) => !value)} type="button">
-              <History className="h-4 w-4" />
-              {showHistory ? "Ocultar historial" : "Ver historial"}
-            </button>
+              {canClose && !observation.status.isFinal ? (
+                <button
+                  className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
+                  id="cierre-observacion"
+                  onClick={() => setConfirmClose(true)}
+                  type="button"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Concluir
+                </button>
+              ) : null}
+              {canEdit ? (
+                <Link
+                  className="nibol-btn-primary px-4 py-2.5 text-sm"
+                  href={`/observaciones/${observation.id}/editar`}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Editar
+                </Link>
+              ) : null}
+            </div>
           </div>
+        </div>
+        <div className="grid gap-px bg-stone-200 sm:grid-cols-2 xl:grid-cols-6">
+          {[
+            ["Nivel", observation.riskLevel.name, "risk"],
+            ["Estado", observation.status.name, "status"],
+            ["Progreso", `${observation.progressPercent}%`, ""],
+            [
+              "Fecha original",
+              formatObservationDate(observation.originalDueDate),
+              "",
+            ],
+            [
+              "Fecha actual",
+              formatObservationDate(observation.currentDueDate),
+              "",
+            ],
+            ["Plazo", remainingLabel(observation.currentDueDate), ""],
+          ].map(([label, value, kind]) => (
+            <div className="bg-white p-5" key={label}>
+              <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
+                {label}
+              </p>
+              <p
+                className={cn(
+                  "mt-2 text-base font-semibold text-stone-950",
+                  kind === "risk" &&
+                    getRiskLevelClasses(observation.riskLevel.colorToken),
+                  kind === "status" && getStatusClasses(observation.status.key),
+                )}
+              >
+                {value}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {showHistory ? (
-        <section className="nibol-panel border-t-4 border-t-[var(--primary)] p-6">
-          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">Trazabilidad del hallazgo</p>
-              <h3 className="mt-2 text-2xl font-semibold text-stone-950">Historial completo</h3>
-            </div>
-            <p className="text-sm text-stone-500">Eventos ordenados del más reciente al más antiguo</p>
+      <ObservationActionPanel observationId={observationId} />
+
+      <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
+        <section className="nibol-panel p-6">
+          <div className="flex items-center gap-3">
+            <FileText className="h-5 w-5 text-amber-700" />
+            <h3 className="text-xl font-semibold">Observación</h3>
           </div>
-          <EntityActivityTimeline canViewTechnical={canViewTechnical} observationId={observationId} />
-        </section>
-      ) : null}
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <article className="nibol-panel p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-            Fecha limite
+          <p className="mt-5 text-sm leading-7 whitespace-pre-wrap text-stone-700">
+            {observation.description}
           </p>
-          <p className="mt-3 text-xl font-semibold text-stone-950">
-            {formatObservationDate(observation.dueDate)}
-          </p>
-          <p className="mt-2 text-sm text-stone-600">
-            {observation.isOverdue
-              ? "Requiere atencion prioritaria por vencimiento."
-              : "Dentro del plazo comprometido."}
-          </p>
-        </article>
-
-        <article className="nibol-panel p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Última actividad</p>
-          <p className="mt-3 text-sm font-semibold text-stone-950"><EntityActivityLatest observationId={observationId} /></p>
-          <button className="mt-3 text-xs font-semibold text-[var(--primary)] hover:underline" onClick={() => setShowHistory(true)} type="button">Ver historial completo →</button>
-        </article>
-
-        <article className="nibol-panel p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-            Avance actual
-          </p>
-          <p className="mt-3 text-xl font-semibold text-stone-950">
-            {observation.progressPercent}%
-          </p>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-stone-200">
-            <div
-              className="h-full bg-[var(--primary)]"
-              style={{
-                width: `${observation.progressPercent}%`,
-              }}
-            />
-          </div>
-        </article>
-
-        <article className="nibol-panel p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-            Responsable
-          </p>
-          <p className="mt-3 text-xl font-semibold text-stone-950">
-            {observation.responsibleUser?.name ?? "Sin asignar"}
-          </p>
-          <p className="mt-2 text-sm text-stone-600">
-            {observation.currentStage || "Sin etapa declarada"}
-          </p>
-        </article>
-
-        <article className="nibol-panel p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-            Ultima actualizacion
-          </p>
-          <p className="mt-3 text-xl font-semibold text-stone-950">
-            {formatObservationDate(observation.updatedAt, {
-              timeStyle: "short",
-            })}
-          </p>
-          <p className="mt-2 text-sm text-stone-600">
-            Deteccion inicial: {formatObservationDate(observation.detectedAt)}
-          </p>
-        </article>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <section className="space-y-6">
-          <section className="nibol-panel p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-              Recomendacion de auditoria
+          <div className="mt-6 rounded-xl border border-stone-200 bg-stone-50 p-5">
+            <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
+              Recomendación de Auditoría
             </p>
-            <p className="mt-4 text-sm leading-7 text-stone-700">
+            <p className="mt-2 text-sm leading-7 whitespace-pre-wrap text-stone-700">
               {observation.auditRecommendation}
             </p>
-          </section>
-
+          </div>
+          <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-stone-500">Observación principal</dt>
+              <dd className="mt-1 font-semibold">
+                {observation.mainObservation.name}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-stone-500">Proceso</dt>
+              <dd className="mt-1 font-semibold">
+                {observation.process ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-stone-500">Auditor</dt>
+              <dd className="mt-1 font-semibold">
+                {observation.auditorUser.name}
+              </dd>
+            </div>
+          </dl>
+        </section>
+        <div className="space-y-6">
           <section className="nibol-panel p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-              Contexto del hallazgo
-            </p>
-            <dl className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-[1.2rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-                <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  Tipo
-                </dt>
-                <dd className="mt-2 text-sm font-medium text-stone-900">
-                  {observation.observationType || "No registrado"}
+            <div className="flex items-center gap-3">
+              <CalendarClock className="h-5 w-5 text-amber-700" />
+              <h3 className="text-xl font-semibold">Informe</h3>
+            </div>
+            <dl className="mt-5 space-y-4 text-sm">
+              <div>
+                <dt className="text-stone-500">Número</dt>
+                <dd className="mt-1 font-semibold">
+                  {observation.auditReport.reportNumber}
                 </dd>
               </div>
-              <div className="rounded-[1.2rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-                <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  Fuente
-                </dt>
-                <dd className="mt-2 text-sm font-medium text-stone-900">
-                  {observation.source || "No registrada"}
+              <div>
+                <dt className="text-stone-500">Título</dt>
+                <dd className="mt-1 font-semibold">
+                  {observation.auditReport.title}
                 </dd>
               </div>
-              <div className="rounded-[1.2rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-                <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  Proceso
-                </dt>
-                <dd className="mt-2 text-sm font-medium text-stone-900">
-                  {observation.process || "No registrado"}
-                </dd>
-              </div>
-              <div className="rounded-[1.2rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-                <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  Categoria
-                </dt>
-                <dd className="mt-2 text-sm font-medium text-stone-900">
-                  {observation.category || "No registrada"}
+              <div>
+                <dt className="text-stone-500">Fecha</dt>
+                <dd className="mt-1 font-semibold">
+                  {formatObservationDate(observation.auditReport.reportDate)}
                 </dd>
               </div>
             </dl>
           </section>
-
           <section className="nibol-panel p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-              Areas involucradas
-            </p>
-            <div className="mt-5 grid gap-4">
-              <div className="rounded-[1.2rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  Area principal
-                </p>
-                <p className="mt-2 text-sm font-semibold text-stone-950">
-                  {observation.area.name}
-                </p>
-              </div>
-
-              {observation.additionalAreas.length > 0 ? (
-                observation.additionalAreas.map((assignment) => (
-                  <div
-                    key={assignment.id}
-                    className="rounded-[1.2rem] border border-stone-200/90 bg-white/80 px-4 py-4"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-stone-950">
-                          {assignment.area.name}
-                        </p>
-                        <p className="mt-1 text-xs text-stone-500">
-                          {assignment.roleInFinding || "Area relacionada"}
-                        </p>
-                      </div>
-                      <p className="text-xs font-medium text-stone-600">
-                        {assignment.responsibleUser?.name || "Sin responsable complementario"}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-[1.2rem] border border-dashed border-stone-300 bg-[var(--surface-soft)] px-4 py-4 text-sm text-stone-600">
-                  No se registraron areas secundarias para este hallazgo.
-                </div>
-              )}
+            <div className="flex items-center gap-3">
+              <ShieldAlert className="h-5 w-5 text-amber-700" />
+              <h3 className="text-xl font-semibold">Riesgos asociados</h3>
             </div>
-          </section>
-        </section>
-
-        <section className="space-y-6">
-          <section className="nibol-panel p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-              Responsables y control
-            </p>
-            <div className="mt-5 space-y-4">
-              <div className="rounded-[1.2rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-[0.9rem] bg-[var(--primary-soft)] p-2 text-[var(--primary)]">
-                    <ShieldAlert className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                      Auditor
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-stone-950">
-                      {observation.auditorUser.name}
-                    </p>
-                    <p className="text-sm text-stone-600">{observation.auditorUser.email}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-[1.2rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-[0.9rem] bg-[var(--primary-soft)] p-2 text-[var(--primary)]">
-                    <UserRound className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                      Responsable
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-stone-950">
-                      {observation.responsibleUser?.name ?? "Sin asignacion directa"}
-                    </p>
-                    <p className="text-sm text-stone-600">
-                      {observation.responsibleUser?.email ??
-                        "La ejecucion puede asignarse mas adelante."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-[1.2rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-[0.9rem] bg-[var(--primary-soft)] p-2 text-[var(--primary)]">
-                    <CalendarClock className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                      Cronograma
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-stone-950">
-                      Deteccion: {formatObservationDate(observation.detectedAt)}
-                    </p>
-                    <p className="text-sm text-stone-600">
-                      Limite: {formatObservationDate(observation.dueDate)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {canDelete ? (
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  className="nibol-btn-primary px-4 py-2.5 text-sm"
-                  onClick={() => {
-                    setPendingDelete(true);
-                  }}
-                  type="button"
+            <div className="mt-4 flex flex-wrap gap-2">
+              {observation.risks.map((risk) => (
+                <span
+                  className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-900"
+                  key={risk.id}
                 >
-                  <Trash2 className="h-4 w-4" />
-                  Eliminar observacion
-                </button>
-              </div>
-            ) : null}
-
-            {actionError ? (
-              <div className="mt-4 rounded-[1.2rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {actionError}
-              </div>
-            ) : null}
-          </section>
-
-          <section className="nibol-panel p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-              Plan de remediacion
-            </p>
-            <div className="mt-5 rounded-[1.2rem] border border-dashed border-stone-300 bg-[var(--surface-soft)] px-4 py-4 text-sm leading-7 text-stone-600">
-              El detalle operativo del plan se administra mas abajo, con estrategia del area, cronograma y flujo de auditoria integrados sobre la misma observacion.
+                  {risk.name}
+                </span>
+              ))}
             </div>
           </section>
+        </div>
+      </div>
 
-          {canAccessExtensions ? (
-            <ObservationExtensionPanel observationId={observationId} />
-          ) : null}
-
-        </section>
+      <section className="nibol-panel p-6">
+        <div className="flex items-center gap-3">
+          <Users className="h-5 w-5 text-amber-700" />
+          <div>
+            <h3 className="text-xl font-semibold">Áreas involucradas</h3>
+            <p className="text-sm text-stone-500">
+              Matriz de responsabilidad y avance agregado por área.
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          {observation.areas.map((assignment) => (
+            <article
+              className="rounded-2xl border border-stone-200 bg-stone-50 p-5"
+              key={assignment.id}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <h4 className="font-semibold text-stone-950">
+                  {assignment.area.name}
+                </h4>
+                <span className="nibol-badge">
+                  {assignment.progressPercent}% avance
+                </span>
+              </div>
+              <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-stone-500">Dueño del proceso</dt>
+                  <dd className="mt-1 font-semibold">
+                    {assignment.processOwner.name}
+                  </dd>
+                  <dd className="text-xs text-stone-500">
+                    {assignment.processOwner.jobTitle ??
+                      assignment.processOwner.email}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">Responsable del área</dt>
+                  <dd className="mt-1 font-semibold">
+                    {assignment.areaResponsible.name}
+                  </dd>
+                  <dd className="text-xs text-stone-500">
+                    {assignment.areaResponsible.jobTitle ??
+                      assignment.areaResponsible.email}
+                  </dd>
+                </div>
+              </dl>
+            </article>
+          ))}
+        </div>
       </section>
 
-      <ObservationCollaborationWorkspace observationId={observationId} />
+      <div id="planes-accion">
+        <RemediationWorkspace observationId={observationId} />
+      </div>
+      <div id="colaboracion">
+        <ObservationCollaborationWorkspace observationId={observationId} />
+      </div>
+      {canAccessExtensions ? (
+        <div id="ampliaciones">
+          <ObservationExtensionPanel observationId={observationId} />
+        </div>
+      ) : null}
 
-      <RemediationWorkspace observationId={observationId} />
+      <section className="nibol-panel p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.2em] text-amber-700 uppercase">
+              Trazabilidad
+            </p>
+            <h3 className="mt-2 text-xl font-semibold">
+              Actividad y aprobaciones
+            </h3>
+          </div>
+          <button
+            className="nibol-btn-secondary px-4 py-2 text-sm"
+            onClick={() => setShowHistory((value) => !value)}
+            type="button"
+          >
+            <History className="h-4 w-4" />
+            {showHistory ? "Ocultar actividad" : "Ver actividad"}
+          </button>
+        </div>
+        {showHistory ? (
+          <div className="mt-6">
+            <EntityActivityTimeline
+              canViewTechnical={canViewTechnical}
+              observationId={observationId}
+            />
+          </div>
+        ) : null}
+      </section>
 
+      {canDelete ? (
+        <div className="flex justify-end">
+          <button
+            className="nibol-btn-secondary px-4 py-2.5 text-sm text-rose-700"
+            onClick={() => setConfirmDelete(true)}
+            type="button"
+          >
+            <Trash2 className="h-4 w-4" />
+            Eliminar observación
+          </button>
+        </div>
+      ) : null}
+      {error ? (
+        <p className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
+          {error}
+        </p>
+      ) : null}
       <ConfirmDialog
-        confirmLabel="Eliminar observacion"
-        description={`Eliminar ${observation.code} mediante borrado logico?`}
-        isLoading={deleteMutation.isPending}
-        open={pendingDelete}
-        onConfirm={async () => {
-          await deleteMutation.mutateAsync();
-        }}
-        onOpenChange={setPendingDelete}
-        title="Eliminar observacion?"
+        confirmLabel="Eliminar observación"
+        description={`Se archivará ${observation.displayCode}.`}
+        isLoading={remove.isPending}
+        onConfirm={async () => remove.mutateAsync()}
+        onOpenChange={setConfirmDelete}
+        open={confirmDelete}
+        title="¿Eliminar observación?"
         tone="danger"
+      />
+      <ConfirmDialog
+        confirmLabel="Concluir observación"
+        description="El sistema validará que todos los planes estén concluidos y que no existan evaluaciones pendientes."
+        isLoading={close.isPending}
+        onConfirm={async () => close.mutateAsync()}
+        onOpenChange={setConfirmClose}
+        open={confirmClose}
+        title="¿Aprobar el cierre?"
       />
     </div>
   );

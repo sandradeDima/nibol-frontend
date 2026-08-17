@@ -15,14 +15,12 @@ export default async function ObservacionesPage() {
       <PageHeader
         actions={
           <>
-            <button
-              className="nibol-btn-secondary cursor-not-allowed px-4 py-2.5 text-sm opacity-60"
-              disabled
-              title="Disponible en la siguiente fase"
-              type="button"
+            <Link
+              className="nibol-btn-secondary px-4 py-2.5 text-sm"
+              href="/reportes/generador"
             >
-              Exportar Excel
-            </button>
+              Generar reporte
+            </Link>
             {canCreate ? (
               <Link className="nibol-btn-primary" href="/observaciones/nueva">
                 Nueva observacion
@@ -30,7 +28,7 @@ export default async function ObservacionesPage() {
             ) : null}
           </>
         }
-        description="Registre, clasifique y haga seguimiento corporativo a observaciones y hallazgos de auditoria con filtros, responsables y fechas compromiso."
+        description="Registre, clasifique y haga seguimiento corporativo a observaciones y hallazgos de auditoría con filtros, responsables y fechas límite."
         eyebrow="Auditoria"
         title="Observaciones"
       />

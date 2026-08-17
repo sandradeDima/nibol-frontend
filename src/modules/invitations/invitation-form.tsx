@@ -17,8 +17,7 @@ import { invitationService } from "@/services/invitation-service";
 import { userService } from "@/services/user-service";
 import { getApiErrorMessage } from "@/utils";
 
-const sectionClassName =
-  "nibol-panel p-6";
+const sectionClassName = "nibol-panel p-6";
 
 const inputClassName = "nibol-field h-auto py-3";
 
@@ -89,14 +88,15 @@ export function InvitationForm() {
       <section className={sectionClassName}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+            <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
               Nueva invitacion
             </p>
             <h2 className="text-2xl font-semibold tracking-tight text-stone-950">
               Invitar colaborador
             </h2>
             <p className="max-w-3xl text-sm leading-7 text-stone-700">
-              Las invitaciones vencen automaticamente en siete dias, generan un token nuevo y envian el correo de acceso de inmediato.
+              Las invitaciones vencen automaticamente en siete dias, generan un
+              token nuevo y envian el correo de acceso de inmediato.
             </p>
           </div>
 
@@ -118,7 +118,9 @@ export function InvitationForm() {
               ) : (
                 <MailPlus className="h-4 w-4" />
               )}
-              {createMutation.isPending ? "Enviando invitacion..." : "Enviar invitacion"}
+              {createMutation.isPending
+                ? "Enviando invitacion..."
+                : "Enviar invitacion"}
             </button>
           </div>
         </div>
@@ -128,7 +130,10 @@ export function InvitationForm() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="space-y-5">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-stone-700" htmlFor="email">
+              <label
+                className="block text-sm font-medium text-stone-700"
+                htmlFor="email"
+              >
                 Correo del invitado
               </label>
               <input
@@ -146,7 +151,10 @@ export function InvitationForm() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-stone-700" htmlFor="roleId">
+              <label
+                className="block text-sm font-medium text-stone-700"
+                htmlFor="roleId"
+              >
                 Rol asignado
               </label>
               <select
@@ -176,13 +184,19 @@ export function InvitationForm() {
           </div>
 
           <aside className="rounded-[1.6rem] border border-stone-200/90 bg-white/75 p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+            <p className="text-xs font-semibold tracking-[0.24em] text-stone-500 uppercase">
               Flujo
             </p>
             <div className="mt-4 space-y-3 text-sm leading-6 text-stone-700">
               <p>1. Seleccione el correo y el rol inicial.</p>
-              <p>2. El sistema genera un token seguro con vencimiento de siete dias.</p>
-              <p>3. El invitado recibe el correo y completa su activacion desde el enlace.</p>
+              <p>
+                2. El sistema genera un token seguro con vencimiento de siete
+                dias.
+              </p>
+              <p>
+                3. El invitado recibe el correo y completa su activacion desde
+                el enlace.
+              </p>
             </div>
           </aside>
         </div>

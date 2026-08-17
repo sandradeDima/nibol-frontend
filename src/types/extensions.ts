@@ -1,8 +1,4 @@
-import type {
-  ObservationAreaSummary,
-  ObservationRiskLevel,
-  ObservationUserSummary,
-} from "./observations";
+import type { ObservationUserSummary } from "./observations";
 
 export type ExtensionRequestStatus =
   | "DRAFT"
@@ -14,98 +10,57 @@ export type ExtensionRequestStatus =
   | "AUDIT_REJECTED"
   | "CANCELLED";
 
-export interface ExtensionRequestAreaSummary extends ObservationAreaSummary {
-  managerUser: ObservationUserSummary | null;
-}
-
 export interface ExtensionRequestEvidenceItem {
+  context: "FINDING" | "ACTION_PLAN" | "PROGRESS_EVALUATION" | "CLOSURE";
   createdAt: string;
-  description: string | null;
   downloadPath: string;
   id: string;
   mimeType: string;
   originalName: string;
-  sizeBytes: string;
-  uploadedByUser: ObservationUserSummary;
 }
 
-export interface ExtensionRequestEffectiveStatus {
-  key: string;
-  name: string;
-}
-
-export interface ExtensionRequestObservationSummary {
-  area: ExtensionRequestAreaSummary;
-  auditorUser: ObservationUserSummary;
-  code: string;
-  dueDate: string;
-  effectiveStatus: ExtensionRequestEffectiveStatus;
-  id: string;
-  responsibleUser: ObservationUserSummary | null;
-  riskLevel: ObservationRiskLevel;
-  title: string;
-}
-
-export interface ExtensionRequestCommitmentSummary {
-  dueDate: string;
-  effectiveStatus: ExtensionRequestEffectiveStatus;
-  id: string;
-  progressPercent: number;
-  responsibleUser: ObservationUserSummary | null;
-  status: string;
-  title: string;
-}
-
-export interface ExtensionRequestTableRow {
-  area: ExtensionRequestAreaSummary;
-  canCancel: boolean;
-  canEdit: boolean;
-  canReview: boolean;
-  commitment: Pick<ExtensionRequestCommitmentSummary, "id" | "title"> | null;
-  currentDueDate: string;
-  id: string;
-  impactDays: number;
-  isOverdue: boolean;
-  observation: Pick<
-    ExtensionRequestObservationSummary,
-    "code" | "id" | "riskLevel" | "title"
-  >;
-  pendingForCurrentUser: boolean;
-  requestedByUser: ObservationUserSummary;
-  requestedDueDate: string;
-  status: ExtensionRequestStatus;
-  updatedAt: string;
-}
-
-export interface ExtensionRequestDetail extends ExtensionRequestTableRow {
+export interface ExtensionRequestDetail {
+  actionPlan: {
+    currentDueDate: string;
+    id: string;
+    originalDueDate: string;
+    responsibleUser: ObservationUserSummary;
+    title: string;
+  } | null;
   attachments: ExtensionRequestEvidenceItem[];
   auditComment: string | null;
   auditReviewedAt: string | null;
   auditReviewer: ObservationUserSummary | null;
-  canAuditApprove: boolean;
-  canAuditReject: boolean;
-  canManagerApprove: boolean;
-  canManagerReject: boolean;
-  canSend: boolean;
-  commitment: ExtensionRequestCommitmentSummary | null;
   createdAt: string;
   finalApprovedAt: string | null;
+  id: string;
+  impactDays: number;
   managerComment: string | null;
   managerReviewedAt: string | null;
   managerReviewer: ObservationUserSummary | null;
-  nextSubmissionTarget: "audit" | "auto" | "manager";
-  observation: ExtensionRequestObservationSummary;
+  observation: { displayCode: string; id: string; title: string } | null;
+  observationArea: {
+    area: { id: string; managerUserId: string | null; name: string };
+    areaResponsible: ObservationUserSummary;
+    processOwner: ObservationUserSummary;
+  } | null;
+  previousDueDate: string;
+  proposedDueDate: string;
   reason: string;
+  requestedByUser: ObservationUserSummary;
+  status: ExtensionRequestStatus;
+  targetType: "OBSERVATION" | "ACTION_PLAN";
+  updatedAt: string;
+  workflowInstanceId: string | null;
 }
 
+export type ExtensionRequestTableRow = ExtensionRequestDetail;
 export interface CreateExtensionRequestInput {
   evidenceFileIds?: string[];
+  proposedDueDate: string;
   reason: string;
-  requestedDueDate: string;
 }
-
 export type UpdateExtensionRequestInput = Partial<CreateExtensionRequestInput>;
-
 export interface ReviewExtensionRequestInput {
   comment?: string | null;
 }

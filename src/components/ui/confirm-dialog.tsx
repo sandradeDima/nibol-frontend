@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useEffectEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 import { AlertTriangle, X } from "lucide-react";
 
 import { cn } from "@/utils";
+
+import { useDialogFocus } from "./use-dialog-focus";
 
 type ConfirmDialogProps = {
   cancelLabel?: string;
@@ -31,8 +33,17 @@ export function ConfirmDialog({
   title,
   tone = "danger",
 }: ConfirmDialogProps) {
-  const closeDialog = useEffectEvent(() => {
-    onOpenChange(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+
+  useDialogFocus({
+    containerRef: dialogRef,
+    initialFocusRef: closeButtonRef,
+    isCloseDisabled: isLoading,
+    onClose: () => onOpenChange(false),
+    open,
   });
 
   useEffect(() => {
@@ -43,17 +54,8 @@ export function ConfirmDialog({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isLoading) {
-        closeDialog();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
     return () => {
       document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isLoading, open]);
 
@@ -64,6 +66,8 @@ export function ConfirmDialog({
   return (
     <div
       aria-modal="true"
+      aria-describedby={descriptionId}
+      aria-labelledby={titleId}
       className="fixed inset-0 z-50 flex items-end bg-[rgba(7,20,45,0.4)] p-3 sm:items-center sm:justify-center sm:p-6"
       role="dialog"
     >
@@ -76,10 +80,15 @@ export function ConfirmDialog({
             onOpenChange(false);
           }
         }}
+        tabIndex={-1}
         type="button"
       />
 
-      <div className="relative z-10 w-full max-w-lg overflow-hidden border border-[var(--border)] bg-white p-6 shadow-[var(--shadow-panel-strong)] sm:p-7">
+      <div
+        className="relative z-10 w-full max-w-lg overflow-hidden border border-[var(--border)] bg-white p-6 shadow-[var(--shadow-panel-strong)] sm:p-7"
+        ref={dialogRef}
+        tabIndex={-1}
+      >
         <div className="flex items-start justify-between gap-4">
           <div
             className={cn(
@@ -94,11 +103,12 @@ export function ConfirmDialog({
 
           <button
             aria-label="Close dialog"
-            className="p-2 text-[var(--muted)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--foreground)]"
+            className="flex h-10 w-10 shrink-0 items-center justify-center text-[var(--muted)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--foreground)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
             disabled={isLoading}
             onClick={() => {
               onOpenChange(false);
             }}
+            ref={closeButtonRef}
             type="button"
           >
             <X className="h-4 w-4" />
@@ -106,10 +116,16 @@ export function ConfirmDialog({
         </div>
 
         <div className="mt-5 space-y-3">
-          <h2 className="font-display text-3xl leading-none font-bold tracking-[-0.03em] text-[var(--foreground)] uppercase">
+          <h2
+            className="font-display text-3xl leading-none font-bold tracking-[-0.03em] text-[var(--foreground)] uppercase"
+            id={titleId}
+          >
             {title}
           </h2>
-          <p className="text-sm leading-7 text-[var(--foreground-soft)] sm:text-base">
+          <p
+            className="text-sm leading-7 text-[var(--foreground-soft)] sm:text-base"
+            id={descriptionId}
+          >
             {description}
           </p>
           {children ? <div className="pt-2">{children}</div> : null}

@@ -37,7 +37,7 @@ const invitationColumns: ColumnDef<InvitationTableRow>[] = [
     cell: ({ row }) => (
       <div className="min-w-[14rem] space-y-1">
         <p className="font-semibold text-stone-950">{row.original.email}</p>
-        <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
+        <p className="text-xs tracking-[0.18em] text-stone-500 uppercase">
           Creada {formatDate(row.original.createdAt)}
         </p>
       </div>
@@ -188,7 +188,8 @@ export function InvitationTable() {
             `Enviar un nuevo enlace a ${rows[0]?.email ?? "este invitado"} y rotar el token actual de inmediato.`,
           title: "Reenviar invitacion?",
         },
-        disabled: (row) => row.status === "Accepted" || row.status === "Revoked",
+        disabled: (row) =>
+          row.status === "Accepted" || row.status === "Revoked",
         hidden: !canResend,
         icon: MailCheck,
         id: "resend",
@@ -207,7 +208,8 @@ export function InvitationTable() {
           title: "Revocar invitacion?",
           tone: "danger",
         },
-        disabled: (row) => row.status === "Accepted" || row.status === "Revoked",
+        disabled: (row) =>
+          row.status === "Accepted" || row.status === "Revoked",
         hidden: !canRevoke,
         icon: ShieldX,
         id: "revoke",

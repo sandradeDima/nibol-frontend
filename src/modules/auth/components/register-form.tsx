@@ -46,12 +46,19 @@ export function RegisterForm() {
   return (
     <AuthShell
       description="Cree una cuenta de acceso con correo y contrasena. Se enviara una verificacion antes de habilitar el ingreso."
-      footer={<AuthLinkRow href="/login" label="Ya tiene una cuenta?" linkLabel="Iniciar sesion" />}
+      footer={
+        <AuthLinkRow
+          href="/login"
+          label="Ya tiene una cuenta?"
+          linkLabel="Iniciar sesion"
+        />
+      }
       title="Registrar acceso"
     >
       {submittedEmail ? (
         <AuthBanner tone="success">
-          Verificacion enviada a {submittedEmail}. Abra el correo para activar su cuenta.
+          Verificacion enviada a {submittedEmail}. Abra el correo para activar
+          su cuenta.
         </AuthBanner>
       ) : null}
       {registerMutation.error ? (
@@ -84,7 +91,11 @@ export function RegisterForm() {
           {...form.register("password")}
         />
 
-        <button className={authPrimaryButtonClass} disabled={registerMutation.isPending} type="submit">
+        <button
+          className={authPrimaryButtonClass}
+          disabled={registerMutation.isPending}
+          type="submit"
+        >
           {registerMutation.isPending ? "Creando cuenta..." : "Registrar"}
         </button>
       </form>

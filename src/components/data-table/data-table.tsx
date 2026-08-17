@@ -86,7 +86,10 @@ const getActionButtonClassName = (tone: "danger" | "default" = "default") => {
   );
 };
 
-const resolveUpdater = <TValue,>(updater: Updater<TValue>, currentValue: TValue): TValue => {
+const resolveUpdater = <TValue,>(
+  updater: Updater<TValue>,
+  currentValue: TValue,
+): TValue => {
   if (typeof updater === "function") {
     return (updater as (previousValue: TValue) => TValue)(currentValue);
   }
@@ -201,7 +204,6 @@ const useFloatingMenuPosition = <TAnchor extends HTMLElement>(
 
   useEffect(() => {
     if (!isOpen) {
-      setPosition(null);
       return;
     }
 
@@ -249,7 +251,9 @@ function RowActionsMenu<TRow>({
   row: TRow;
   rowActions: DataTableRowAction<TRow>[];
 }) {
-  const actions = rowActions.filter((action) => !isRowActionHidden(action, row));
+  const actions = rowActions.filter(
+    (action) => !isRowActionHidden(action, row),
+  );
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuPosition = useFloatingMenuPosition(isOpen, buttonRef, menuRef);
@@ -507,7 +511,8 @@ export function DataTable<TRow>({
       (config.filters ?? []).map((filter) => [filter.id, filter.defaultValue]),
     ),
   );
-  const [pendingAction, setPendingAction] = useState<PendingAction<TRow> | null>(null);
+  const [pendingAction, setPendingAction] =
+    useState<PendingAction<TRow> | null>(null);
   const [isExecutingAction, setIsExecutingAction] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
@@ -516,7 +521,9 @@ export function DataTable<TRow>({
   const filters = config.filters ?? [];
   const tableQueryKey = config.queryKey ?? ["data-table", endpoint];
   const shouldEnableSelection = config.enableSelection ?? true;
-  const pageSizeOptions = config.pageSizeOptions ?? [...DEFAULT_PAGE_SIZE_OPTIONS];
+  const pageSizeOptions = config.pageSizeOptions ?? [
+    ...DEFAULT_PAGE_SIZE_OPTIONS,
+  ];
 
   const searchParams = buildDataTableSearchParams({
     filters: filterValues,
@@ -544,9 +551,8 @@ export function DataTable<TRow>({
       const requestUrl = requestSignature
         ? `${endpoint}?${requestSignature}`
         : endpoint;
-      const response = await apiClient.get<PaginatedApiSuccessResponse<TRow[]>>(
-        requestUrl,
-      );
+      const response =
+        await apiClient.get<PaginatedApiSuccessResponse<TRow[]>>(requestUrl);
 
       return {
         data: response.data.data,
@@ -562,20 +568,23 @@ export function DataTable<TRow>({
     perPage: pagination.pageSize,
     total: 0,
   };
-  const pageCount = Math.max(1, Math.ceil(paginationMeta.total / paginationMeta.perPage));
+  const pageCount = Math.max(
+    1,
+    Math.ceil(paginationMeta.total / paginationMeta.perPage),
+  );
 
   const runtimeColumns = [
     ...(shouldEnableSelection
       ? [
           {
-                cell: ({ row }: { row: Row<TRow> }) => (
-                  <input
-                    aria-label="Select row"
-                    checked={row.getIsSelected()}
-                    className="h-4 w-4 border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--primary)]"
-                    onChange={row.getToggleSelectedHandler()}
-                    type="checkbox"
-                  />
+            cell: ({ row }: { row: Row<TRow> }) => (
+              <input
+                aria-label="Select row"
+                checked={row.getIsSelected()}
+                className="h-4 w-4 border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--primary)]"
+                onChange={row.getToggleSelectedHandler()}
+                type="checkbox"
+              />
             ),
             enableHiding: false,
             enableSorting: false,
@@ -647,7 +656,9 @@ export function DataTable<TRow>({
     },
   });
 
-  const selectedRows = table.getSelectedRowModel().rows.map((row) => row.original);
+  const selectedRows = table
+    .getSelectedRowModel()
+    .rows.map((row) => row.original);
   const activeFilterCount = filters.filter((filter) => {
     return hasActiveFilterValue(filterValues[filter.id]);
   }).length;
@@ -777,7 +788,9 @@ export function DataTable<TRow>({
 
   const handleResetFilters = () => {
     setFilterValues(
-      Object.fromEntries(filters.map((filter) => [filter.id, filter.defaultValue])),
+      Object.fromEntries(
+        filters.map((filter) => [filter.id, filter.defaultValue]),
+      ),
     );
     setPagination((current) => ({
       ...current,
@@ -857,17 +870,24 @@ export function DataTable<TRow>({
           </div>
 
           <div className="text-sm text-[var(--foreground-soft)]">
-            <span className="font-semibold text-[var(--foreground)]">{paginationMeta.total}</span>{" "}
+            <span className="font-semibold text-[var(--foreground)]">
+              {paginationMeta.total}
+            </span>{" "}
             registros
-            {activeFilterCount > 0 ? ` • ${activeFilterCount} filtros activos` : ""}
+            {activeFilterCount > 0
+              ? ` • ${activeFilterCount} filtros activos`
+              : ""}
           </div>
         </div>
 
         {selectedRows.length > 0 ? (
           <div className="mt-4 flex flex-col gap-3 border border-[var(--primary)] bg-[var(--primary)] px-4 py-4 text-white lg:flex-row lg:items-center lg:justify-between">
             <p className="text-sm">
-              <span className="font-semibold text-slate-200">{selectedRows.length}</span>{" "}
-              fila{selectedRows.length === 1 ? "" : "s"} seleccionada{selectedRows.length === 1 ? "" : "s"} en esta pagina
+              <span className="font-semibold text-slate-200">
+                {selectedRows.length}
+              </span>{" "}
+              fila{selectedRows.length === 1 ? "" : "s"} seleccionada
+              {selectedRows.length === 1 ? "" : "s"} en esta pagina
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -877,13 +897,12 @@ export function DataTable<TRow>({
                   onClick={() => {
                     exportRowsToCsv(selectedRows, {
                       ...config.csv,
-                      fileName:
-                        config.csv
-                          ? `${
-                              config.csv.fileName?.replace(".csv", "") ??
-                              "selected-records"
-                            }-selected.csv`
-                          : "selected-records.csv",
+                      fileName: config.csv
+                        ? `${
+                            config.csv.fileName?.replace(".csv", "") ??
+                            "selected-records"
+                          }-selected.csv`
+                        : "selected-records.csv",
                     });
                   }}
                   type="button"
@@ -1009,7 +1028,10 @@ export function DataTable<TRow>({
                         key={cell.id}
                         className="border-b border-[var(--border)] px-4 py-4 align-top first:pl-5 last:pr-5"
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
                       </td>
                     ))}
                   </tr>
@@ -1045,7 +1067,7 @@ export function DataTable<TRow>({
         description={
           typeof pendingAction?.action.confirmation?.description === "function"
             ? pendingAction.action.confirmation.description(pendingAction.rows)
-            : pendingAction?.action.confirmation?.description ?? ""
+            : (pendingAction?.action.confirmation?.description ?? "")
         }
         isLoading={isExecutingAction}
         onConfirm={() => {
@@ -1058,7 +1080,9 @@ export function DataTable<TRow>({
         }}
         open={Boolean(pendingAction)}
         title={pendingAction?.action.confirmation?.title ?? "Confirm action"}
-        tone={pendingAction?.action.confirmation?.tone ?? pendingAction?.action.tone}
+        tone={
+          pendingAction?.action.confirmation?.tone ?? pendingAction?.action.tone
+        }
       />
     </section>
   );

@@ -13,7 +13,10 @@ import {
   AuthShell,
   authPrimaryButtonClass,
 } from "@/modules/auth/components/auth-shell";
-import { type ResetPasswordValues, resetPasswordSchema } from "@/modules/auth/forms";
+import {
+  type ResetPasswordValues,
+  resetPasswordSchema,
+} from "@/modules/auth/forms";
 import { authService } from "@/services/auth-service";
 
 export function ResetPasswordForm() {
@@ -57,10 +60,18 @@ export function ResetPasswordForm() {
   return (
     <AuthShell
       description="Defina una nueva contrasena una vez que el token de recuperacion sea validado."
-      footer={<AuthLinkRow href="/login" label="Volver a su cuenta?" linkLabel="Iniciar sesion" />}
+      footer={
+        <AuthLinkRow
+          href="/login"
+          label="Volver a su cuenta?"
+          linkLabel="Iniciar sesion"
+        />
+      }
       title="Nueva contrasena"
     >
-      {invalidMessage ? <AuthBanner tone="info">{invalidMessage}</AuthBanner> : null}
+      {invalidMessage ? (
+        <AuthBanner tone="info">{invalidMessage}</AuthBanner>
+      ) : null}
       {resetMutation.error ? (
         <AuthBanner tone="error">{resetMutation.error.message}</AuthBanner>
       ) : null}
@@ -83,7 +94,11 @@ export function ResetPasswordForm() {
           {...form.register("confirmPassword")}
         />
 
-        <button className={authPrimaryButtonClass} disabled={!token || resetMutation.isPending} type="submit">
+        <button
+          className={authPrimaryButtonClass}
+          disabled={!token || resetMutation.isPending}
+          type="submit"
+        >
           {resetMutation.isPending ? "Actualizando..." : "Guardar contrasena"}
         </button>
       </form>
@@ -91,7 +106,10 @@ export function ResetPasswordForm() {
       {invalidMessage ? (
         <div className="border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-sm text-[var(--foreground-soft)]">
           Necesita un nuevo enlace?{" "}
-          <Link className="font-semibold text-[var(--foreground)] hover:text-[var(--accent)]" href="/forgot-password">
+          <Link
+            className="font-semibold text-[var(--foreground)] hover:text-[var(--accent)]"
+            href="/forgot-password"
+          >
             Solicitar otro correo
           </Link>
           .

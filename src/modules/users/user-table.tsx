@@ -3,14 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import {
-  Copy,
-  Eye,
-  Mail,
-  Pencil,
-  Power,
-  Trash2,
-} from "lucide-react";
+import { Copy, Eye, Mail, Pencil, Power, Trash2 } from "lucide-react";
 
 import { DataTable, type DataTableConfig } from "@/components/data-table";
 import { QUERY_KEYS } from "@/lib/constants";
@@ -31,7 +24,7 @@ const userColumns: ColumnDef<UserTableRow>[] = [
     cell: ({ row }) => (
       <div className="min-w-[14rem] space-y-1">
         <p className="font-semibold text-stone-950">{row.original.name}</p>
-        <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
+        <p className="text-xs tracking-[0.18em] text-stone-500 uppercase">
           {row.original.roles.join(" • ") || "Sin roles asignados"}
         </p>
       </div>
@@ -59,7 +52,9 @@ const userColumns: ColumnDef<UserTableRow>[] = [
   {
     accessorKey: "roles",
     cell: ({ row }) => (
-      <span className="text-stone-700">{row.original.roles.join(", ") || "None"}</span>
+      <span className="text-stone-700">
+        {row.original.roles.join(", ") || "None"}
+      </span>
     ),
     enableSorting: false,
     header: "Rol",
@@ -68,7 +63,7 @@ const userColumns: ColumnDef<UserTableRow>[] = [
     accessorKey: "isActive",
     cell: ({ row }) => (
       <span
-        className={`inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${
+        className={`inline-flex items-center border px-3 py-1 text-xs font-semibold tracking-[0.14em] uppercase ${
           row.original.isActive
             ? "border-[color:color-mix(in_srgb,var(--success)_18%,white)] bg-[var(--success-soft)] text-[var(--success)]"
             : "border-[var(--border)] bg-[var(--surface-soft)] text-[var(--foreground-soft)]"
@@ -302,7 +297,9 @@ export function UserTable() {
   };
 
   if (rolesQuery.isError) {
-    userTableConfig.filters = userTableConfig.filters?.filter((filter) => filter.id !== "roles");
+    userTableConfig.filters = userTableConfig.filters?.filter(
+      (filter) => filter.id !== "roles",
+    );
   }
 
   return <DataTable config={userTableConfig} endpoint="/users" />;

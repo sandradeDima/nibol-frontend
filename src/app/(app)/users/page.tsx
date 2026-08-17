@@ -12,10 +12,7 @@ export default async function UsersPage() {
       <PageHeader
         actions={
           authorization.permissions.includes("users.create") ? (
-            <Link
-              className="nibol-btn-primary"
-              href="/users/new"
-            >
+            <Link className="nibol-btn-primary" href="/users/new">
               Nuevo usuario
             </Link>
           ) : null

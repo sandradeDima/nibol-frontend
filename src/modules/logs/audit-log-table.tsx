@@ -53,7 +53,9 @@ const auditLogColumns: ColumnDef<AuditLogTableRow>[] = [
     accessorKey: "changedBy.name",
     cell: ({ row }) => (
       <div className="space-y-1">
-        <p className="text-stone-900">{row.original.changedBy?.name ?? "Sistema"}</p>
+        <p className="text-stone-900">
+          {row.original.changedBy?.name ?? "Sistema"}
+        </p>
         <p className="text-sm text-stone-500">
           {row.original.changedBy?.email ?? "Cambio automatico"}
         </p>

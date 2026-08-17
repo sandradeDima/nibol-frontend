@@ -39,9 +39,11 @@ const renderFilterControl = ({
           const nextValue = event.target.value.trim();
           onChange(nextValue.length > 0 ? event.target.value : undefined);
         }}
-        placeholder={filter.placeholder ?? `Filter by ${filter.label.toLowerCase()}`}
+        placeholder={
+          filter.placeholder ?? `Filter by ${filter.label.toLowerCase()}`
+        }
         type="text"
-        value={Array.isArray(value) ? value.join(", ") : value ?? ""}
+        value={Array.isArray(value) ? value.join(", ") : (value ?? "")}
       />
     );
   }
@@ -55,7 +57,7 @@ const renderFilterControl = ({
           onChange(nextValue.length > 0 ? nextValue : undefined);
         }}
         type="date"
-        value={Array.isArray(value) ? value[0] ?? "" : value ?? ""}
+        value={Array.isArray(value) ? (value[0] ?? "") : (value ?? "")}
       />
     );
   }
@@ -73,7 +75,7 @@ const renderFilterControl = ({
           </span>
           <ListFilter className="h-4 w-4 text-[var(--muted)]" />
         </summary>
-        <div className="absolute left-0 top-[calc(100%+0.5rem)] z-20 w-full min-w-[15rem] border border-[var(--border)] bg-white p-3 shadow-[var(--shadow-panel)]">
+        <div className="absolute top-[calc(100%+0.5rem)] left-0 z-20 w-full min-w-[15rem] border border-[var(--border)] bg-white p-3 shadow-[var(--shadow-panel)]">
           <div className="grid gap-2">
             {filter.options?.map((option) => {
               const checked = selectedValues.includes(option.value);
@@ -89,7 +91,9 @@ const renderFilterControl = ({
                     onChange={(event) => {
                       const nextValues = event.target.checked
                         ? [...selectedValues, option.value]
-                        : selectedValues.filter((item) => item !== option.value);
+                        : selectedValues.filter(
+                            (item) => item !== option.value,
+                          );
 
                       onChange(nextValues.length > 0 ? nextValues : undefined);
                     }}
@@ -109,11 +113,15 @@ const renderFilterControl = ({
     <select
       className="nibol-field h-11 text-sm"
       onChange={(event) => {
-        onChange(event.target.value.length > 0 ? event.target.value : undefined);
+        onChange(
+          event.target.value.length > 0 ? event.target.value : undefined,
+        );
       }}
       value={getSelectValue(value)}
     >
-      <option value="">{filter.placeholder ?? `All ${filter.label.toLowerCase()}`}</option>
+      <option value="">
+        {filter.placeholder ?? `All ${filter.label.toLowerCase()}`}
+      </option>
       {filter.options?.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}
@@ -148,7 +156,7 @@ export function DataTableFilters({
             <ListFilter className="h-4 w-4" />
           </div>
           <div>
-            <p className="font-display text-base font-bold uppercase text-[var(--foreground)]">
+            <p className="font-display text-base font-bold text-[var(--foreground)] uppercase">
               Filtros de tabla
             </p>
             <p className="text-xs text-[var(--muted)]">
@@ -178,7 +186,7 @@ export function DataTableFilters({
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {filters.map((filter) => (
           <div key={filter.id} className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+            <label className="text-xs font-semibold tracking-[0.2em] text-[var(--muted)] uppercase">
               {filter.label}
             </label>
             {renderFilterControl({

@@ -1,7 +1,12 @@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-import type { CommentVisibility, ProgressReviewAction, ProgressUpdateStatus, ProgressUpdateType } from "@/types";
+import type {
+  CommentVisibility,
+  ProgressReviewAction,
+  ProgressEvaluationReviewStatus,
+  ProgressEvaluationType,
+} from "@/types";
 
 const progressDateFormatter = (value: string, withTime = true) => {
   const date = new Date(value);
@@ -15,7 +20,10 @@ const progressDateFormatter = (value: string, withTime = true) => {
   });
 };
 
-export const formatProgressDate = (value: string | null | undefined, withTime = true) => {
+export const formatProgressDate = (
+  value: string | null | undefined,
+  withTime = true,
+) => {
   if (!value) {
     return "Sin registro";
   }
@@ -37,7 +45,7 @@ export const formatFileSize = (value: string | number) => {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-export const getProgressTypeLabel = (type: ProgressUpdateType) => {
+export const getProgressTypeLabel = (type: ProgressEvaluationType) => {
   switch (type) {
     case "ADVANCE":
       return "Avance";
@@ -48,7 +56,9 @@ export const getProgressTypeLabel = (type: ProgressUpdateType) => {
   }
 };
 
-export const getProgressStatusLabel = (status: ProgressUpdateStatus) => {
+export const getProgressStatusLabel = (
+  status: ProgressEvaluationReviewStatus,
+) => {
   switch (status) {
     case "DRAFT":
       return "Borrador";
@@ -63,7 +73,9 @@ export const getProgressStatusLabel = (status: ProgressUpdateStatus) => {
   }
 };
 
-export const getProgressStatusClasses = (status: ProgressUpdateStatus) => {
+export const getProgressStatusClasses = (
+  status: ProgressEvaluationReviewStatus,
+) => {
   switch (status) {
     case "APPROVED":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
@@ -79,7 +91,7 @@ export const getProgressStatusClasses = (status: ProgressUpdateStatus) => {
   }
 };
 
-export const getProgressTypeClasses = (type: ProgressUpdateType) => {
+export const getProgressTypeClasses = (type: ProgressEvaluationType) => {
   switch (type) {
     case "FINALIZATION":
       return "border-[color:var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)]";

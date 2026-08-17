@@ -35,10 +35,24 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
   },
   {
     group: "Control",
+    icon: "ChartNoAxesCombined",
+    label: "Reportes",
+    permission: "reports.view",
+    route: "/reportes",
+  },
+  {
+    group: "Control",
+    icon: "FileSearch",
+    label: "Reportes de auditoría",
+    permission: "audit_reports.view",
+    route: "/reportes/auditoria",
+  },
+  {
+    group: "Control",
     icon: "ClipboardPenLine",
-    label: "Planes de remediacion",
-    permission: "observations.view",
-    route: "/planes-remediacion",
+    label: "Planes de acción",
+    permission: "action_plans.view",
+    route: "/planes-accion",
   },
   {
     group: "Control",
@@ -53,6 +67,13 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     label: "Aprobaciones pendientes",
     permission: "observations.view",
     route: "/aprobaciones/pendientes",
+  },
+  {
+    group: "Control",
+    icon: "GitBranchCheck",
+    label: "Tareas de flujos",
+    permission: "workflow_tasks.view",
+    route: "/aprobaciones/flujos",
   },
   {
     group: "Control",
@@ -95,6 +116,27 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     label: "Usuarios",
     permission: "users.view",
     route: "/users",
+  },
+  {
+    group: "Administracion",
+    icon: "FileText",
+    label: "Informes de Auditoría",
+    permission: "audit_reports.view",
+    route: "/administracion/informes-auditoria",
+  },
+  {
+    group: "Administracion",
+    icon: "ListTree",
+    label: "Diccionario de observaciones",
+    permission: "observation_dictionary.view",
+    route: "/administracion/diccionario-observaciones",
+  },
+  {
+    group: "Administracion",
+    icon: "ShieldAlert",
+    label: "Riesgos asociados",
+    permission: "risks.view",
+    route: "/administracion/riesgos",
   },
   {
     group: "Administracion",
@@ -170,10 +212,16 @@ const routeLabelMap = new Map(
 
 routeLabelMap.set("/dashboard/auditoria", "Dashboard Auditoría");
 routeLabelMap.set("/dashboard/area", "Dashboard Área");
+routeLabelMap.set("/reportes", "Reportes");
+routeLabelMap.set("/reportes/generador", "Generador de reportes");
+routeLabelMap.set("/reportes/vigentes-vencidas", "Vigentes y vencidas");
+routeLabelMap.set("/reportes/auditoria", "Reportes de auditoría");
 routeLabelMap.set("/forbidden", "Acceso denegado");
 routeLabelMap.set("/configuracion", "Configuración");
 routeLabelMap.set("/configuracion/flujos", "Flujos");
 routeLabelMap.set("/configuracion/flujos/nuevo", "Nuevo flujo");
+routeLabelMap.set("/aprobaciones/flujos", "Tareas de flujos");
+routeLabelMap.set("/configuracion/flujos/instancias", "Instancias de flujos");
 
 const titleCaseSegment = (segment: string): string => {
   return segment

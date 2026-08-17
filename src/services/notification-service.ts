@@ -50,7 +50,9 @@ const buildNotificationSearchParams = (
 };
 
 export const notificationService = {
-  async createNotification(input: CreateNotificationInput): Promise<AppNotification> {
+  async createNotification(
+    input: CreateNotificationInput,
+  ): Promise<AppNotification> {
     const response = await apiClient.post<ApiSuccessResponse<AppNotification>>(
       "/notifications",
       input,
@@ -72,7 +74,9 @@ export const notificationService = {
       : "/notifications";
 
     const response =
-      await apiClient.get<PaginatedApiSuccessResponse<AppNotification[]>>(requestUrl);
+      await apiClient.get<PaginatedApiSuccessResponse<AppNotification[]>>(
+        requestUrl,
+      );
 
     return {
       data: response.data.data,
@@ -81,9 +85,9 @@ export const notificationService = {
   },
 
   async markAllRead(): Promise<{ updatedCount: number }> {
-    const response = await apiClient.post<ApiSuccessResponse<{ updatedCount: number }>>(
-      "/notifications/read-all",
-    );
+    const response = await apiClient.post<
+      ApiSuccessResponse<{ updatedCount: number }>
+    >("/notifications/read-all");
 
     return response.data.data;
   },
@@ -97,25 +101,26 @@ export const notificationService = {
   },
 
   async listAutomaticRules(): Promise<AutomaticNotificationRule[]> {
-    const response = await apiClient.get<ApiSuccessResponse<AutomaticNotificationRule[]>>(
-      "/automatic-jobs/rules",
-    );
+    const response = await apiClient.get<
+      ApiSuccessResponse<AutomaticNotificationRule[]>
+    >("/automatic-jobs/rules");
     return response.data.data;
   },
 
-  async updateAutomaticRule(key: string, value: string): Promise<AutomaticNotificationRule> {
-    const response = await apiClient.patch<ApiSuccessResponse<AutomaticNotificationRule>>(
-      `/automatic-jobs/rules/${key}`,
-      { value },
-    );
+  async updateAutomaticRule(
+    key: string,
+    value: string,
+  ): Promise<AutomaticNotificationRule> {
+    const response = await apiClient.patch<
+      ApiSuccessResponse<AutomaticNotificationRule>
+    >(`/automatic-jobs/rules/${key}`, { value });
     return response.data.data;
   },
 
   async listJobExecutions(params: { page?: number; perPage?: number } = {}) {
-    const response = await apiClient.get<PaginatedApiSuccessResponse<ScheduledJobExecution[]>>(
-      "/automatic-jobs/executions",
-      { params },
-    );
+    const response = await apiClient.get<
+      PaginatedApiSuccessResponse<ScheduledJobExecution[]>
+    >("/automatic-jobs/executions", { params });
     return { data: response.data.data, pagination: response.data.pagination };
   },
 

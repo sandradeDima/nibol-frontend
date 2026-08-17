@@ -69,7 +69,7 @@ export function NotificationTypeBadge({ type }: { type: NotificationType }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
+        "inline-flex items-center border px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] uppercase",
         config.badgeClassName,
       )}
     >
@@ -111,9 +111,7 @@ export function NotificationItem({
           <div className="flex flex-wrap items-center gap-2">
             <NotificationTypeBadge type={notification.type} />
             {!notification.isRead ? (
-              <span className="nibol-badge nibol-badge-accent">
-                Sin leer
-              </span>
+              <span className="nibol-badge nibol-badge-accent">Sin leer</span>
             ) : null}
             <time
               className="text-xs font-medium text-[var(--muted)]"
@@ -127,8 +125,12 @@ export function NotificationItem({
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-base font-semibold text-[var(--foreground)]">{notification.title}</h3>
-            <p className="text-sm leading-7 text-[var(--foreground-soft)]">{notification.message}</p>
+            <h3 className="text-base font-semibold text-[var(--foreground)]">
+              {notification.title}
+            </h3>
+            <p className="text-sm leading-7 text-[var(--foreground-soft)]">
+              {notification.message}
+            </p>
           </div>
 
           {actions ? (

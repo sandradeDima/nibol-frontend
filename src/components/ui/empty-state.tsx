@@ -24,14 +24,16 @@ export function EmptyState({
           <Icon className="h-6 w-6" />
         </div>
         <div className="space-y-3">
-          <h2 className="font-display text-3xl font-bold uppercase leading-none tracking-[-0.03em] text-[var(--foreground)]">
+          <h2 className="font-display text-3xl leading-none font-bold tracking-[-0.03em] text-[var(--foreground)] uppercase">
             {title}
           </h2>
           <p className="text-sm leading-7 text-[var(--foreground-soft)] sm:text-base">
             {description}
           </p>
         </div>
-        {action ? <div className="flex flex-wrap justify-center gap-3">{action}</div> : null}
+        {action ? (
+          <div className="flex flex-wrap justify-center gap-3">{action}</div>
+        ) : null}
       </div>
     </section>
   );

@@ -42,7 +42,7 @@ const riskLevelColumns: ColumnDef<RiskLevelRecord>[] = [
       <div className="min-w-[18rem] space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-semibold text-stone-950">{row.original.name}</p>
-          <span className="inline-flex items-center border border-stone-300 bg-stone-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-700">
+          <span className="inline-flex items-center border border-stone-300 bg-stone-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.16em] text-stone-700 uppercase">
             {row.original.key}
           </span>
         </div>
@@ -56,7 +56,9 @@ const riskLevelColumns: ColumnDef<RiskLevelRecord>[] = [
   {
     accessorKey: "severityOrder",
     cell: ({ row }) => (
-      <span className="font-semibold text-stone-900">{row.original.severityOrder}</span>
+      <span className="font-semibold text-stone-900">
+        {row.original.severityOrder}
+      </span>
     ),
     header: "Prioridad",
   },
@@ -109,7 +111,9 @@ const emptyFormValues: RiskLevelFormValues = {
   severityOrder: 1,
 };
 
-const mapRecordToFormValues = (record: RiskLevelRecord | null): RiskLevelFormValues => {
+const mapRecordToFormValues = (
+  record: RiskLevelRecord | null,
+): RiskLevelFormValues => {
   if (!record) {
     return emptyFormValues;
   }
@@ -118,7 +122,9 @@ const mapRecordToFormValues = (record: RiskLevelRecord | null): RiskLevelFormVal
     active: record.active,
     colorToken: record.colorToken ?? "",
     defaultDeadlineDays:
-      record.defaultDeadlineDays === null ? "" : String(record.defaultDeadlineDays),
+      record.defaultDeadlineDays === null
+        ? ""
+        : String(record.defaultDeadlineDays),
     description: record.description ?? "",
     key: record.key,
     name: record.name,
@@ -128,12 +134,14 @@ const mapRecordToFormValues = (record: RiskLevelRecord | null): RiskLevelFormVal
 
 const buildPayload = (values: RiskLevelFormValues): RiskLevelMutationInput => ({
   active: values.active,
-  colorToken: values.colorToken.trim().length > 0 ? values.colorToken.trim() : null,
+  colorToken:
+    values.colorToken.trim().length > 0 ? values.colorToken.trim() : null,
   defaultDeadlineDays:
     values.defaultDeadlineDays.trim().length > 0
       ? Number(values.defaultDeadlineDays)
       : null,
-  description: values.description.trim().length > 0 ? values.description.trim() : null,
+  description:
+    values.description.trim().length > 0 ? values.description.trim() : null,
   key: values.key.trim().toUpperCase(),
   name: values.name.trim(),
   severityOrder: values.severityOrder,
@@ -146,7 +154,9 @@ export function RiskLevelsPage({
 }: RiskLevelsPageProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<RiskLevelRecord | null>(null);
+  const [editingRecord, setEditingRecord] = useState<RiskLevelRecord | null>(
+    null,
+  );
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const currentValues = useMemo(
@@ -258,7 +268,10 @@ export function RiskLevelsPage({
             const payload = buildPayload(values);
 
             if (editingRecord) {
-              await configurationService.updateRiskLevel(editingRecord.id, payload);
+              await configurationService.updateRiskLevel(
+                editingRecord.id,
+                payload,
+              );
             } else {
               await configurationService.createRiskLevel(payload);
             }
@@ -284,29 +297,35 @@ export function RiskLevelsPage({
           <>
             <div className="grid gap-5 md:grid-cols-2">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Nombre</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Nombre
+                </span>
                 <input
                   className={inputClassName}
                   disabled={isBusy}
-                  placeholder="Ej. Critico"
+                  placeholder="Ej. Alto"
                   {...form.register("name")}
                 />
                 <FieldError error={form.formState.errors.name?.message} />
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Clave</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Clave
+                </span>
                 <input
                   className={`${inputClassName} uppercase`}
                   disabled={isBusy}
-                  placeholder="CRITICO"
+                  placeholder="ALTO"
                   {...form.register("key")}
                 />
                 <FieldError error={form.formState.errors.key?.message} />
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Orden de severidad</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Orden de severidad
+                </span>
                 <input
                   className={inputClassName}
                   disabled={isBusy}
@@ -314,11 +333,15 @@ export function RiskLevelsPage({
                   type="number"
                   {...form.register("severityOrder")}
                 />
-                <FieldError error={form.formState.errors.severityOrder?.message} />
+                <FieldError
+                  error={form.formState.errors.severityOrder?.message}
+                />
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Dias de plazo por defecto</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Dias de plazo por defecto
+                </span>
                 <input
                   className={inputClassName}
                   disabled={isBusy}
@@ -327,11 +350,15 @@ export function RiskLevelsPage({
                   type="number"
                   {...form.register("defaultDeadlineDays")}
                 />
-                <FieldError error={form.formState.errors.defaultDeadlineDays?.message} />
+                <FieldError
+                  error={form.formState.errors.defaultDeadlineDays?.message}
+                />
               </label>
 
               <label className="block space-y-2 md:col-span-2">
-                <span className="text-sm font-medium text-stone-700">Token de color</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Token de color
+                </span>
                 <input
                   className={inputClassName}
                   disabled={isBusy}
@@ -343,7 +370,9 @@ export function RiskLevelsPage({
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Descripcion</span>
+              <span className="text-sm font-medium text-stone-700">
+                Descripcion
+              </span>
               <textarea
                 className="nibol-field min-h-28 resize-y py-3"
                 disabled={isBusy}
@@ -366,7 +395,9 @@ export function RiskLevelsPage({
         savingLabel={editingRecord ? "Guardando..." : "Creando..."}
         schema={riskLevelFormSchema}
         submitError={submitError}
-        title={editingRecord ? "Editar nivel de riesgo" : "Nuevo nivel de riesgo"}
+        title={
+          editingRecord ? "Editar nivel de riesgo" : "Nuevo nivel de riesgo"
+        }
       />
     </>
   );

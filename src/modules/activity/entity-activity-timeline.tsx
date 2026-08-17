@@ -31,9 +31,9 @@ const ACTIVITY_LABELS: Record<string, string> = {
   COMMENT_EDITED: "Comentario editado",
   APPROVAL_GRANTED: "Aprobacion registrada",
   AUTOMATIC_STATUS_CHANGE: "Cambio automatico de estado",
-  COMMITMENT_COMPLETED: "Compromiso completado",
-  COMMITMENT_CREATED: "Compromiso creado",
-  COMMITMENT_PROGRESS_CHANGED: "Avance de compromiso actualizado",
+  ACTION_PLAN_COMPLETED: "Plan de acción completado",
+  ACTION_PLAN_CREATED: "Plan de acción creado",
+  ACTION_PLAN_PROGRESS_CHANGED: "Avance del plan de acción actualizado",
   EVIDENCE_UPLOADED: "Evidencia cargada",
   EXTENSION_APPROVED: "Ampliacion aprobada",
   EXTENSION_CREATED: "Solicitud de ampliacion creada",
@@ -57,7 +57,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
   PLAN_UPDATED: "Plan actualizado",
   PROGRESS_CREATED: "Avance registrado",
   PROGRESS_SENT: "Avance enviado a auditoria",
-  PROGRESS_UPDATED: "Avance actualizado",
+  PROGRESS_EVALUATIOND: "Avance actualizado",
   PROGRESS_APPROVED: "Avance aprobado",
   PROGRESS_RETURNED: "Avance devuelto",
   PROGRESS_REJECTED: "Avance rechazado",
@@ -86,26 +86,45 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const getIcon = (activity: EntityActivity) => {
-  if (activity.actorType !== "USER") return Bot;
-  if (activity.activityType.includes("EVIDENCE")) return Paperclip;
-  if (activity.activityType.includes("COMMENT")) return MessageSquare;
-  if (activity.activityType.includes("APPROVAL") || activity.activityType.includes("PLAN")) return ShieldCheck;
-  if (activity.activityType.includes("PROGRESS")) return CheckCircle2;
-  if (activity.activityType.includes("EXTENSION")) return TimerReset;
-  if (activity.activityType.includes("NOTIFICATION")) return Activity;
-  if (activity.activityType.includes("OBSERVATION")) return FileText;
-  return CircleDot;
+  if (activity.actorType !== "USER") return <Bot className="h-4 w-4" />;
+  if (activity.activityType.includes("EVIDENCE"))
+    return <Paperclip className="h-4 w-4" />;
+  if (activity.activityType.includes("COMMENT"))
+    return <MessageSquare className="h-4 w-4" />;
+  if (
+    activity.activityType.includes("APPROVAL") ||
+    activity.activityType.includes("PLAN")
+  )
+    return <ShieldCheck className="h-4 w-4" />;
+  if (activity.activityType.includes("PROGRESS"))
+    return <CheckCircle2 className="h-4 w-4" />;
+  if (activity.activityType.includes("EXTENSION"))
+    return <TimerReset className="h-4 w-4" />;
+  if (activity.activityType.includes("NOTIFICATION"))
+    return <Activity className="h-4 w-4" />;
+  if (activity.activityType.includes("OBSERVATION"))
+    return <FileText className="h-4 w-4" />;
+  return <CircleDot className="h-4 w-4" />;
 };
 
-const asRecord = (value: LogJsonValue | null): Record<string, LogJsonValue> | null =>
+const asRecord = (
+  value: LogJsonValue | null,
+): Record<string, LogJsonValue> | null =>
   value && typeof value === "object" && !Array.isArray(value) ? value : null;
 
 const displayValue = (value: LogJsonValue | undefined): string => {
   if (value === undefined || value === null) return "—";
   if (typeof value === "boolean") return value ? "Si" : "No";
   if (typeof value === "object") {
-    if (!Array.isArray(value) && "name" in value && typeof value.name === "string") return value.name;
-    return Array.isArray(value) ? `${value.length} elementos` : "Detalle actualizado";
+    if (
+      !Array.isArray(value) &&
+      "name" in value &&
+      typeof value.name === "string"
+    )
+      return value.name;
+    return Array.isArray(value)
+      ? `${value.length} elementos`
+      : "Detalle actualizado";
   }
   return String(value);
 };
@@ -116,46 +135,90 @@ const formatDate = (value: string) =>
     timeStyle: "short",
   }).format(new Date(value));
 
-function ActivityItem({ activity, canViewTechnical }: { activity: EntityActivity; canViewTechnical: boolean }) {
+function ActivityItem({
+  activity,
+  canViewTechnical,
+}: {
+  activity: EntityActivity;
+  canViewTechnical: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
-  const Icon = getIcon(activity);
   const previous = asRecord(activity.previousData);
   const next = asRecord(activity.newData);
-  const fields = Array.from(new Set([...Object.keys(previous ?? {}), ...Object.keys(next ?? {})])).filter(
-    (field) => !field.endsWith("Id") && field !== "id",
-  );
-  const actorName = activity.actor?.name ?? (activity.actorType === "CRON" ? "Proceso programado" : "Sistema");
+  const fields = Array.from(
+    new Set([...Object.keys(previous ?? {}), ...Object.keys(next ?? {})]),
+  ).filter((field) => !field.endsWith("Id") && field !== "id");
+  const actorName =
+    activity.actor?.name ??
+    (activity.actorType === "CRON" ? "Proceso programado" : "Sistema");
 
   return (
     <li className="relative pl-12">
-      <span className="absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)]">
-        <Icon className="h-4 w-4" />
+      <span className="absolute top-0 left-0 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)]">
+        {getIcon(activity)}
       </span>
       <div className="border-b border-stone-200 pb-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="font-semibold text-stone-950">{ACTIVITY_LABELS[activity.activityType] ?? activity.title}</p>
-            <p className="mt-1 text-sm leading-6 text-stone-600">{activity.description ?? activity.title}</p>
+            <p className="font-semibold text-stone-950">
+              {ACTIVITY_LABELS[activity.activityType] ?? activity.title}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-stone-600">
+              {activity.description ?? activity.title}
+            </p>
           </div>
-          <time className="shrink-0 text-xs font-medium text-stone-500">{formatDate(activity.createdAt)}</time>
+          <time className="shrink-0 text-xs font-medium text-stone-500">
+            {formatDate(activity.createdAt)}
+          </time>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-stone-500">
-          <span className="inline-flex items-center gap-1.5"><UserRound className="h-3.5 w-3.5" />{actorName}</span>
-          <span className="inline-flex items-center gap-1.5"><FileCheck2 className="h-3.5 w-3.5" />{activity.observation?.code ?? activity.entityType}</span>
-          {activity.actor?.roles.length ? <span>{activity.actor.roles.join(" · ")}</span> : null}
-          {activity.targetUrl ? <Link className="inline-flex items-center gap-1 font-semibold text-[var(--primary)] hover:underline" href={activity.targetUrl}>Abrir referencia <ArrowRight className="h-3 w-3" /></Link> : null}
+          <span className="inline-flex items-center gap-1.5">
+            <UserRound className="h-3.5 w-3.5" />
+            {actorName}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <FileCheck2 className="h-3.5 w-3.5" />
+            {activity.observation?.code ?? activity.entityType}
+          </span>
+          {activity.actor?.roles.length ? (
+            <span>{activity.actor.roles.join(" · ")}</span>
+          ) : null}
+          {activity.targetUrl ? (
+            <Link
+              className="inline-flex items-center gap-1 font-semibold text-[var(--primary)] hover:underline"
+              href={activity.targetUrl}
+            >
+              Abrir referencia <ArrowRight className="h-3 w-3" />
+            </Link>
+          ) : null}
         </div>
         {fields.length > 0 ? (
           <div className="mt-3">
-            <button className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--primary)]" onClick={() => setExpanded((value) => !value)} type="button">
-              {expanded ? "Ocultar cambios" : "Ver cambios"}<ChevronDown className={cn("h-3.5 w-3.5 transition", expanded && "rotate-180")} />
+            <button
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--primary)]"
+              onClick={() => setExpanded((value) => !value)}
+              type="button"
+            >
+              {expanded ? "Ocultar cambios" : "Ver cambios"}
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 transition",
+                  expanded && "rotate-180",
+                )}
+              />
             </button>
             {expanded ? (
               <dl className="mt-3 grid gap-2 border-l-2 border-amber-200 pl-3 text-xs sm:grid-cols-2">
                 {fields.map((field) => (
                   <div key={field}>
-                    <dt className="font-semibold uppercase tracking-[0.12em] text-stone-500">{FIELD_LABELS[field] ?? field}</dt>
-                    <dd className="mt-1 text-stone-700">{displayValue(previous?.[field])} <span className="px-1 text-stone-400">→</span> {displayValue(next?.[field])}</dd>
+                    <dt className="font-semibold tracking-[0.12em] text-stone-500 uppercase">
+                      {FIELD_LABELS[field] ?? field}
+                    </dt>
+                    <dd className="mt-1 text-stone-700">
+                      {displayValue(previous?.[field])}{" "}
+                      <span className="px-1 text-stone-400">→</span>{" "}
+                      {displayValue(next?.[field])}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -164,12 +227,22 @@ function ActivityItem({ activity, canViewTechnical }: { activity: EntityActivity
         ) : null}
         {canViewTechnical && activity.id ? (
           <details className="mt-3 text-xs text-stone-500">
-            <summary className="cursor-pointer font-semibold text-[var(--primary)]">Ver detalle técnico seguro</summary>
+            <summary className="cursor-pointer font-semibold text-[var(--primary)]">
+              Ver detalle técnico seguro
+            </summary>
             <div className="mt-2 space-y-1 border-l-2 border-stone-200 pl-3 font-mono text-[11px]">
               <p>ID: {activity.id}</p>
-              <p>Entidad: {activity.entityType} / {activity.entityId ?? "—"}</p>
-              {activity.relatedAuditLogId ? <p>Auditoría relacionada: {activity.relatedAuditLogId}</p> : null}
-              {activity.metadata ? <pre className="max-w-full overflow-x-auto whitespace-pre-wrap">{JSON.stringify(activity.metadata, null, 2)}</pre> : null}
+              <p>
+                Entidad: {activity.entityType} / {activity.entityId ?? "—"}
+              </p>
+              {activity.relatedAuditLogId ? (
+                <p>Auditoría relacionada: {activity.relatedAuditLogId}</p>
+              ) : null}
+              {activity.metadata ? (
+                <pre className="max-w-full overflow-x-auto whitespace-pre-wrap">
+                  {JSON.stringify(activity.metadata, null, 2)}
+                </pre>
+              ) : null}
             </div>
           </details>
         ) : null}
@@ -178,14 +251,35 @@ function ActivityItem({ activity, canViewTechnical }: { activity: EntityActivity
   );
 }
 
-export function EntityActivityLatest({ observationId }: { observationId: string }) {
+export function EntityActivityLatest({
+  observationId,
+}: {
+  observationId: string;
+}) {
   const query = useQuery({
-    queryFn: () => entityActivityService.listObservationHistory(observationId, { page: 1, pageSize: 1 }),
-    queryKey: [...QUERY_KEYS.entityActivityObservation(observationId), "latest"],
+    queryFn: () =>
+      entityActivityService.listObservationHistory(observationId, {
+        page: 1,
+        pageSize: 1,
+      }),
+    queryKey: [
+      ...QUERY_KEYS.entityActivityObservation(observationId),
+      "latest",
+    ],
   });
   const latest = query.data?.data[0];
-  if (!latest) return <span className="text-stone-500">Sin actividad registrada</span>;
-  return <span>{ACTIVITY_LABELS[latest.activityType] ?? latest.title}<span className="mt-1 block text-sm font-normal text-stone-600">{latest.actor?.name ?? (latest.actorType === "CRON" ? "Proceso programado" : "Sistema")} · {formatDate(latest.createdAt)}</span></span>;
+  if (!latest)
+    return <span className="text-stone-500">Sin actividad registrada</span>;
+  return (
+    <span>
+      {ACTIVITY_LABELS[latest.activityType] ?? latest.title}
+      <span className="mt-1 block text-sm font-normal text-stone-600">
+        {latest.actor?.name ??
+          (latest.actorType === "CRON" ? "Proceso programado" : "Sistema")}{" "}
+        · {formatDate(latest.createdAt)}
+      </span>
+    </span>
+  );
 }
 
 export function EntityActivityTimeline({
@@ -198,17 +292,45 @@ export function EntityActivityTimeline({
   observationId: string;
 }) {
   const query = useQuery({
-    queryFn: () => entityActivityService.listObservationHistory(observationId, { includeTechnicalDetails: canViewTechnical, page: 1, pageSize: limit }),
-    queryKey: [...QUERY_KEYS.entityActivityObservation(observationId), canViewTechnical, limit],
+    queryFn: () =>
+      entityActivityService.listObservationHistory(observationId, {
+        includeTechnicalDetails: canViewTechnical,
+        page: 1,
+        pageSize: limit,
+      }),
+    queryKey: [
+      ...QUERY_KEYS.entityActivityObservation(observationId),
+      canViewTechnical,
+      limit,
+    ],
   });
 
-  if (query.isPending) return <div className="py-8 text-sm text-stone-500">Cargando historial…</div>;
-  if (query.isError) return <div className="border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">No fue posible cargar el historial.</div>;
-  if (query.data.data.length === 0) return <div className="border border-dashed border-stone-300 bg-[var(--surface-soft)] px-4 py-6 text-sm text-stone-600">Aun no hay actividad registrada para esta observacion.</div>;
+  if (query.isPending)
+    return (
+      <div className="py-8 text-sm text-stone-500">Cargando historial…</div>
+    );
+  if (query.isError)
+    return (
+      <div className="border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        No fue posible cargar el historial.
+      </div>
+    );
+  if (query.data.data.length === 0)
+    return (
+      <div className="border border-dashed border-stone-300 bg-[var(--surface-soft)] px-4 py-6 text-sm text-stone-600">
+        Aun no hay actividad registrada para esta observacion.
+      </div>
+    );
 
   return (
     <ol className="space-y-5">
-      {query.data.data.map((activity) => <ActivityItem canViewTechnical={canViewTechnical} activity={activity} key={activity.id ?? `${activity.createdAt}-${activity.title}`} />)}
+      {query.data.data.map((activity) => (
+        <ActivityItem
+          canViewTechnical={canViewTechnical}
+          activity={activity}
+          key={activity.id ?? `${activity.createdAt}-${activity.title}`}
+        />
+      ))}
     </ol>
   );
 }

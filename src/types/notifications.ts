@@ -62,7 +62,7 @@ export interface ScheduledJobExecution {
   id: string;
   jobName: string;
   notificationsCreated: number;
-  processedCommitments: number;
+  processedActionPlans: number;
   processedCount: number;
   processedObservations: number;
   startedAt: string;

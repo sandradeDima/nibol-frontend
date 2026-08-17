@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -24,39 +20,17 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@/app/*": [
-        "./src/app/*"
-      ],
-      "@/components/*": [
-        "./src/components/*"
-      ],
-      "@/hooks/*": [
-        "./src/hooks/*"
-      ],
-      "@/lib/*": [
-        "./src/lib/*"
-      ],
-      "@/layouts/*": [
-        "./src/layouts/*"
-      ],
-      "@/modules/*": [
-        "./src/modules/*"
-      ],
-      "@/providers/*": [
-        "./src/providers/*"
-      ],
-      "@/services/*": [
-        "./src/services/*"
-      ],
-      "@/types/*": [
-        "./src/types/*"
-      ],
-      "@/utils/*": [
-        "./src/utils/*"
-      ]
+      "@/*": ["./src/*"],
+      "@/app/*": ["./src/app/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/layouts/*": ["./src/layouts/*"],
+      "@/modules/*": ["./src/modules/*"],
+      "@/providers/*": ["./src/providers/*"],
+      "@/services/*": ["./src/services/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/utils/*": ["./src/utils/*"]
     }
   },
   "include": [
@@ -67,9 +41,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
-  ]
+  "exclude": ["node_modules", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"]
 }

@@ -8,8 +8,13 @@ export const invitationCreateSchema = z.object({
 export const invitationAcceptSchema = z
   .object({
     confirmPassword: z.string().min(8, "Confirme su contrasena."),
-    name: z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres."),
-    password: z.string().min(8, "La contrasena debe tener al menos 8 caracteres."),
+    name: z
+      .string()
+      .trim()
+      .min(2, "El nombre debe tener al menos 2 caracteres."),
+    password: z
+      .string()
+      .min(8, "La contrasena debe tener al menos 8 caracteres."),
   })
   .refine((values) => values.password === values.confirmPassword, {
     message: "Las contrasenas no coinciden.",

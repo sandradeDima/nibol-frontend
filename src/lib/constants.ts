@@ -83,6 +83,8 @@ export const QUERY_KEYS = {
   observationOptions: ["observations", "options"] as const,
   observationDetails: (observationId: string) =>
     ["observations", "detail", observationId] as const,
+  observationActionItems: (observationId: string) =>
+    ["observations", "action-items", observationId] as const,
   observations: ["observations"] as const,
   observationComments: (observationId: string) =>
     ["observations", "comments", observationId] as const,
@@ -95,11 +97,11 @@ export const QUERY_KEYS = {
   extensionRequests: ["extension-requests"] as const,
   remediationWorkspace: (observationId: string, areaId?: string) =>
     ["remediation", "workspace", observationId, areaId ?? "default"] as const,
-  remediationPlanCommitments: (planId: string) =>
-    ["remediation", "plan-commitments", planId] as const,
+  remediationPlanActionPlans: (planId: string) =>
+    ["remediation", "plan-actionPlans", planId] as const,
   remediationPlans: ["remediation-plans"] as const,
-  progressUpdates: ["progress-updates"] as const,
-  commitmentSchedule: ["commitment-schedule"] as const,
+  progressEvaluations: ["progress-evaluations"] as const,
+  actionPlanSchedule: ["action-plan-schedule"] as const,
   roleDetails: (roleId: string) => ["roles", "detail", roleId] as const,
   roleOptions: ["roles", "options"] as const,
   userOptions: ["users", "options"] as const,
@@ -121,4 +123,11 @@ export const QUERY_KEYS = {
   workflowDesigner: (versionId: string) =>
     ["workflows", "designer", versionId] as const,
   workflowDesignerOptions: ["workflows", "designer-options"] as const,
+  workflowTasks: ["workflow-tasks"] as const,
+  workflowTask: (taskId: string) => ["workflow-tasks", taskId] as const,
+  workflowInstance: (instanceId: string) =>
+    ["workflow-instances", instanceId] as const,
+  reportDashboard: ["reports", "dashboard"] as const,
+  reportPreview: ["reports", "preview"] as const,
+  reportAudit: ["reports", "audit"] as const,
 } as const;

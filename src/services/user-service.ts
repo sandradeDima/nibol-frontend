@@ -52,25 +52,22 @@ export const userService = {
   },
 
   async getProfile(): Promise<UserProfile> {
-    const response = await apiClient.get<ApiSuccessResponse<UserProfile>>(
-      "/users/profile",
-    );
+    const response =
+      await apiClient.get<ApiSuccessResponse<UserProfile>>("/users/profile");
 
     return response.data.data;
   },
 
   async getRoleOptions(): Promise<RoleOption[]> {
-    const response = await apiClient.get<ApiSuccessResponse<RoleOption[]>>(
-      "/roles/options",
-    );
+    const response =
+      await apiClient.get<ApiSuccessResponse<RoleOption[]>>("/roles/options");
 
     return response.data.data;
   },
 
   async getUserOptions(): Promise<UserOption[]> {
-    const response = await apiClient.get<ApiSuccessResponse<UserOption[]>>(
-      "/users/options",
-    );
+    const response =
+      await apiClient.get<ApiSuccessResponse<UserOption[]>>("/users/options");
 
     return response.data.data;
   },
@@ -96,7 +93,10 @@ export const userService = {
     return response.data.data;
   },
 
-  async updateUser(userId: string, input: UpdateUserInput): Promise<UserDetails> {
+  async updateUser(
+    userId: string,
+    input: UpdateUserInput,
+  ): Promise<UserDetails> {
     const response = await apiClient.put<ApiSuccessResponse<UserDetails>>(
       `/users/${userId}`,
       input,
@@ -110,15 +110,13 @@ export const userService = {
 
     formData.append("avatar", file);
 
-    const response = await apiClient.post<ApiSuccessResponse<{ avatar: string }>>(
-      "/users/profile/avatar",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+    const response = await apiClient.post<
+      ApiSuccessResponse<{ avatar: string }>
+    >("/users/profile/avatar", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
       },
-    );
+    });
 
     return response.data.data;
   },

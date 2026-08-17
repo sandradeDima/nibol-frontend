@@ -1,50 +1,50 @@
 import { z } from "zod";
 
-const nullableTextSchema = z
+const optionalText = z
   .string()
   .trim()
-  .transform((value) => (value.length > 0 ? value : null))
-  .nullable()
-  .optional();
+  .transform((value) => value || null);
+
+export const observationAreaFormSchema = z.object({
+  areaId: z.string().min(1, "Seleccione un área."),
+  areaResponsibleUserId: z
+    .string()
+    .min(1, "Seleccione al responsable del área."),
+  processOwnerUserId: z.string().min(1, "Seleccione al dueño del proceso."),
+});
 
 export const observationFormSchema = z.object({
-  additionalAreaIds: z.array(z.string()).default([]),
-  areaId: z.string().min(1, "Seleccione un area."),
+  areaAssignments: z
+    .array(observationAreaFormSchema)
+    .min(1, "Agregue al menos un área involucrada.")
+    .refine(
+      (rows) => new Set(rows.map((row) => row.areaId)).size === rows.length,
+      {
+        message: "Cada área puede agregarse una sola vez.",
+      },
+    ),
   auditRecommendation: z
     .string()
     .trim()
-    .min(1, "La recomendacion es obligatoria.")
-    .max(5000, "La recomendacion es demasiado extensa."),
-  category: nullableTextSchema,
-  code: z
-    .string()
-    .trim()
-    .min(3, "Ingrese un codigo valido.")
-    .max(64, "El codigo es demasiado largo."),
-  currentStage: nullableTextSchema,
-  description: z
-    .string()
-    .trim()
-    .min(1, "La descripcion es obligatoria.")
-    .max(10_000, "La descripcion es demasiado extensa."),
-  detectedAt: z.string().min(1, "Seleccione la fecha de deteccion."),
-  dueDate: z.string().min(1, "Seleccione la fecha limite."),
-  observationType: nullableTextSchema,
-  process: nullableTextSchema,
-  progressPercent: z.coerce
+    .min(1, "Ingrese la recomendación de Auditoría.")
+    .max(5_000),
+  auditReportId: z.string().min(1, "Seleccione un informe."),
+  auditorUserId: z.string().min(1, "Seleccione al auditor responsable."),
+  category: optionalText,
+  currentStage: optionalText,
+  description: z.string().trim().min(1, "Describa la observación.").max(10_000),
+  mainObservationId: z.string().min(1, "Seleccione la observación principal."),
+  observationNumber: z.coerce
     .number()
     .int()
-    .min(0, "El avance no puede ser menor a 0.")
-    .max(100, "El avance no puede superar 100."),
-  responsibleUserId: z.string().nullable().optional(),
+    .positive("Ingrese un número válido."),
+  process: optionalText,
+  riskIds: z
+    .array(z.string())
+    .min(1, "Seleccione al menos un riesgo asociado."),
   riskLevelId: z.string().min(1, "Seleccione un nivel de riesgo."),
-  source: nullableTextSchema,
-  statusId: z.string().min(1, "Seleccione un estado."),
-  title: z
-    .string()
-    .trim()
-    .min(3, "Ingrese un titulo valido.")
-    .max(191, "El titulo es demasiado largo."),
+  source: optionalText,
+  title: z.string().trim().min(3, "Ingrese un título válido.").max(191),
 });
 
 export type ObservationFormValues = z.infer<typeof observationFormSchema>;

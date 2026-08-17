@@ -625,7 +625,7 @@ function CanvasToolbar({
     <div className="absolute top-4 right-4 z-10 flex gap-1 border border-[var(--border)] bg-white p-1 shadow-[var(--shadow-panel)]">
       <button
         aria-label="Alejar"
-        className="p-2 text-[var(--foreground-soft)] hover:bg-[var(--surface-soft)]"
+        className="flex h-10 w-10 items-center justify-center text-[var(--foreground-soft)] hover:bg-[var(--surface-soft)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
         disabled={disabled}
         onClick={() => {
           zoomOut();
@@ -636,7 +636,7 @@ function CanvasToolbar({
       </button>
       <button
         aria-label="Acercar"
-        className="p-2 text-[var(--foreground-soft)] hover:bg-[var(--surface-soft)]"
+        className="flex h-10 w-10 items-center justify-center text-[var(--foreground-soft)] hover:bg-[var(--surface-soft)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
         disabled={disabled}
         onClick={() => {
           zoomIn();
@@ -647,7 +647,7 @@ function CanvasToolbar({
       </button>
       <button
         aria-label="Centrar lienzo"
-        className="p-2 text-[var(--foreground-soft)] hover:bg-[var(--surface-soft)]"
+        className="flex h-10 w-10 items-center justify-center text-[var(--foreground-soft)] hover:bg-[var(--surface-soft)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
         onClick={onFit}
         type="button"
       >

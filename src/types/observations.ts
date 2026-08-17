@@ -1,8 +1,7 @@
-import type { ConfigurationBootstrap } from "./configuration";
-
 export interface ObservationUserSummary {
   email: string;
   id: string;
+  jobTitle: string | null;
   name: string;
 }
 
@@ -11,53 +10,77 @@ export interface ObservationAreaSummary {
   name: string;
 }
 
-export interface ObservationAreaOption extends ObservationAreaSummary {
-  managerUser: ObservationUserSummary | null;
-}
-
 export interface ObservationRiskLevel {
   colorToken: string | null;
   defaultDeadlineDays: number | null;
   id: string;
   key: string;
   name: string;
-  severityOrder: number;
 }
 
 export interface ObservationStatus {
-  countsAsOverdue: boolean;
   id: string;
   isFinal: boolean;
-  isInitial: boolean;
-  key: string;
-  name: string;
-  sortOrder: number;
-}
-
-export interface ObservationEffectiveStatus {
   key: string;
   name: string;
 }
 
-export interface ObservationAreaAssignment {
+export type ObservationActionSeverity = "INFO" | "WARNING" | "CRITICAL";
+
+export interface ObservationActionItem {
+  actionLabel?: string;
+  actionType?: string;
+  actionUrl?: string;
+  code: string;
+  description?: string;
+  label: string;
+  permission?: string;
+  severity: ObservationActionSeverity;
+}
+
+export interface ObservationActionSummary {
+  count: number;
+  items: Array<
+    Pick<
+      ObservationActionItem,
+      "actionLabel" | "actionType" | "actionUrl" | "code" | "label"
+    >
+  >;
+  primaryAction: Pick<
+    ObservationActionItem,
+    "actionLabel" | "actionType" | "actionUrl" | "code" | "label"
+  > | null;
+  severity: ObservationActionSeverity | "NONE";
+  status: "ATTENTION" | "COMPLETE" | "OVERDUE";
+}
+
+export interface ObservationArea {
   area: ObservationAreaSummary;
+  areaResponsible: ObservationUserSummary;
   id: string;
-  responsibleUser: ObservationUserSummary | null;
-  roleInFinding: string | null;
+  processOwner: ObservationUserSummary;
+  progressPercent: number;
 }
 
 export interface ObservationTableRow {
-  area: ObservationAreaSummary;
-  code: string;
-  createdAt: string;
-  currentStage: string | null;
-  detectedAt: string;
-  dueDate: string;
-  effectiveStatus: ObservationEffectiveStatus;
+  actionPlanCount: number;
+  actionSummary?: ObservationActionSummary;
+  areas: ObservationArea[];
+  auditReport: {
+    id: string;
+    reportDate: string;
+    reportNumber: string;
+    title: string;
+  };
+  currentDueDate: string;
+  displayCode: string;
   id: string;
   isOverdue: boolean;
+  mainObservation: { id: string; name: string };
+  observationNumber: number;
+  originalDueDate: string;
   progressPercent: number;
-  responsibleUser: ObservationUserSummary | null;
+  risks: Array<{ id: string; name: string }>;
   riskLevel: ObservationRiskLevel;
   status: ObservationStatus;
   title: string;
@@ -65,35 +88,58 @@ export interface ObservationTableRow {
 }
 
 export interface ObservationDetail extends ObservationTableRow {
-  additionalAreas: ObservationAreaAssignment[];
   auditRecommendation: string;
   auditorUser: ObservationUserSummary;
   category: string | null;
+  currentStage: string | null;
   description: string;
-  observationType: string | null;
   process: string | null;
   source: string | null;
 }
 
-export type ObservationFormOptions = ConfigurationBootstrap;
+export interface ObservationFormOptions {
+  areas: Array<{
+    code: string | null;
+    id: string;
+    managerUser: ObservationUserSummary | null;
+    name: string;
+  }>;
+  auditReports: Array<{
+    id: string;
+    reportDate: string;
+    reportNumber: string;
+    title: string;
+  }>;
+  mainObservations: Array<{
+    description: string | null;
+    id: string;
+    name: string;
+  }>;
+  risks: Array<{ description: string | null; id: string; name: string }>;
+  riskLevels: ObservationRiskLevel[];
+  users: ObservationUserSummary[];
+}
+
+export interface ObservationAreaInput {
+  areaId: string;
+  areaResponsibleUserId: string;
+  processOwnerUserId: string;
+}
 
 export interface CreateObservationInput {
-  additionalAreaIds?: string[];
-  areaId: string;
+  areaAssignments: ObservationAreaInput[];
   auditRecommendation: string;
+  auditReportId: string;
+  auditorUserId: string;
   category?: string | null;
-  code: string;
   currentStage?: string | null;
   description: string;
-  detectedAt: string;
-  dueDate: string;
-  observationType?: string | null;
+  mainObservationId: string;
+  observationNumber: number;
   process?: string | null;
-  progressPercent?: number;
-  responsibleUserId?: string | null;
+  riskIds: string[];
   riskLevelId: string;
   source?: string | null;
-  statusId: string;
   title: string;
 }
 

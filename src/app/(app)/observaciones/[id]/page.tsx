@@ -17,16 +17,22 @@ export default async function ObservationDetailPage({
   return (
     <main className="space-y-6">
       <PageHeader
-        description="Revise el resumen ejecutivo del hallazgo, sus responsables, fechas y placeholders de remediacion preparados para las siguientes fases."
+        description="Revise el resumen ejecutivo del hallazgo, sus responsables, fechas y próximas acciones de seguimiento."
         eyebrow="Ficha de observacion"
         title="Detalle de observacion"
       />
 
       <ObservationDetail
-        canAccessExtensions={authorization.permissions.includes("extension_requests.view")}
+        canAccessExtensions={authorization.permissions.includes(
+          "extension_requests.view",
+        )}
         canDelete={authorization.permissions.includes("observations.delete")}
+        canClose={authorization.permissions.includes("observations.close")}
         canEdit={authorization.permissions.includes("observations.edit")}
-        canViewTechnical={authorization.permissions.includes("activity.technical") || authorization.isAdmin}
+        canViewTechnical={
+          authorization.permissions.includes("activity.technical") ||
+          authorization.isAdmin
+        }
         observationId={id}
       />
     </main>

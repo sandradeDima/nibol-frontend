@@ -10,11 +10,7 @@ type ErrorStateProps = {
   title: string;
 };
 
-export function ErrorState({
-  action,
-  description,
-  title,
-}: ErrorStateProps) {
+export function ErrorState({ action, description, title }: ErrorStateProps) {
   return (
     <section className="border border-[color:color-mix(in_srgb,var(--accent)_18%,white)] bg-[var(--surface)] px-6 py-10 text-center shadow-[var(--shadow-panel)] sm:px-10">
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-5">
@@ -22,14 +18,16 @@ export function ErrorState({
           <AlertTriangle className="h-6 w-6" />
         </div>
         <div className="space-y-3">
-          <h2 className="font-display text-3xl font-bold uppercase leading-none tracking-[-0.03em] text-[var(--foreground)]">
+          <h2 className="font-display text-3xl leading-none font-bold tracking-[-0.03em] text-[var(--foreground)] uppercase">
             {title}
           </h2>
           <p className="text-sm leading-7 text-[var(--foreground-soft)] sm:text-base">
             {description}
           </p>
         </div>
-        {action ? <div className="flex flex-wrap justify-center gap-3">{action}</div> : null}
+        {action ? (
+          <div className="flex flex-wrap justify-center gap-3">{action}</div>
+        ) : null}
       </div>
     </section>
   );

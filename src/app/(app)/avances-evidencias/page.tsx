@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { requirePermission } from "@/lib/server-auth";
-import { ProgressUpdatesTable } from "@/modules/progress/progress-updates-table";
+import { ProgressEvaluationsTable } from "@/modules/progress/progress-evaluations-table";
 
 export default async function AvancesEvidenciasPage() {
   await requirePermission("observations.view");
@@ -13,7 +13,7 @@ export default async function AvancesEvidenciasPage() {
         title="Avances y evidencias"
       />
 
-      <ProgressUpdatesTable />
+      <ProgressEvaluationsTable />
     </main>
   );
 }

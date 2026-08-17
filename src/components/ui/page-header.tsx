@@ -26,13 +26,9 @@ export function PageHeader({
     >
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-3">
-          {eyebrow ? (
-            <p className="nibol-eyebrow">
-              {eyebrow}
-            </p>
-          ) : null}
+          {eyebrow ? <p className="nibol-eyebrow">{eyebrow}</p> : null}
           <div className="space-y-2">
-            <h1 className="font-display text-4xl font-bold uppercase leading-none tracking-[-0.03em] text-[var(--foreground)] sm:text-5xl">
+            <h1 className="font-display text-4xl leading-none font-bold tracking-[-0.03em] text-[var(--foreground)] uppercase sm:text-5xl">
               {title}
             </h1>
             {description ? (

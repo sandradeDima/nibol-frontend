@@ -85,7 +85,8 @@ export function NotificationComposer() {
             Enviar notificacion
           </h2>
           <p className="text-sm leading-7 text-stone-700">
-            Envie una alerta interna reutilizable desde el mismo flujo que luego podra extenderse a correo, SMS o WhatsApp.
+            Envie una alerta interna reutilizable desde el mismo flujo que luego
+            podra extenderse a correo, SMS o WhatsApp.
           </p>
         </div>
       </div>
@@ -98,7 +99,9 @@ export function NotificationComposer() {
       >
         <div className="grid gap-5">
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-stone-800">Destinatario</span>
+            <span className="text-sm font-semibold text-stone-800">
+              Destinatario
+            </span>
             <select
               className="nibol-field"
               {...form.register("userId")}
@@ -112,13 +115,17 @@ export function NotificationComposer() {
               ))}
             </select>
             {form.formState.errors.userId ? (
-              <p className="text-sm text-rose-600">{form.formState.errors.userId.message}</p>
+              <p className="text-sm text-rose-600">
+                {form.formState.errors.userId.message}
+              </p>
             ) : null}
           </label>
 
           <div className="grid gap-5 md:grid-cols-[1fr_12rem]">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-stone-800">Titulo</span>
+              <span className="text-sm font-semibold text-stone-800">
+                Titulo
+              </span>
               <input
                 className="nibol-field"
                 placeholder="Cambio de rol"
@@ -127,7 +134,9 @@ export function NotificationComposer() {
                 type="text"
               />
               {form.formState.errors.title ? (
-                <p className="text-sm text-rose-600">{form.formState.errors.title.message}</p>
+                <p className="text-sm text-rose-600">
+                  {form.formState.errors.title.message}
+                </p>
               ) : null}
             </label>
 
@@ -145,15 +154,19 @@ export function NotificationComposer() {
                 ))}
               </select>
               {form.formState.errors.type ? (
-                <p className="text-sm text-rose-600">{form.formState.errors.type.message}</p>
+                <p className="text-sm text-rose-600">
+                  {form.formState.errors.type.message}
+                </p>
               ) : null}
             </label>
           </div>
 
           <label className="space-y-2">
-            <span className="text-sm font-semibold text-stone-800">Mensaje</span>
+            <span className="text-sm font-semibold text-stone-800">
+              Mensaje
+            </span>
             <textarea
-              className="nibol-field min-h-36 h-auto py-3"
+              className="nibol-field h-auto min-h-36 py-3"
               placeholder="Describa lo ocurrido y el siguiente paso esperado para el usuario."
               {...form.register("message")}
               disabled={createMutation.isPending}

@@ -51,9 +51,7 @@ export function LogoutButton({
     <>
       <button
         className={cn(
-          variant === "menu"
-            ? "text-left"
-            : "nibol-btn-secondary",
+          variant === "menu" ? "text-left" : "nibol-btn-secondary",
           "disabled:cursor-not-allowed disabled:opacity-60",
           className,
         )}

@@ -5,9 +5,11 @@ import { DATE_FORMAT_VALUES } from "@/types";
 const supportedTimezones = Array.from(
   new Set([
     "UTC",
-    ...(((Intl as typeof Intl & {
-      supportedValuesOf?: (key: string) => string[];
-    }).supportedValuesOf?.("timeZone")) ?? []),
+    ...((
+      Intl as typeof Intl & {
+        supportedValuesOf?: (key: string) => string[];
+      }
+    ).supportedValuesOf?.("timeZone") ?? []),
   ]),
 );
 

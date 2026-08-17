@@ -21,9 +21,7 @@ const roleColumns: ColumnDef<RoleTableRow>[] = [
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-semibold text-stone-950">{row.original.name}</p>
           {row.original.isAdmin ? (
-            <span className="nibol-badge nibol-badge-primary">
-              Protegido
-            </span>
+            <span className="nibol-badge nibol-badge-primary">Protegido</span>
           ) : null}
         </div>
         <p className="text-sm leading-6 text-stone-600">
@@ -46,7 +44,9 @@ const roleColumns: ColumnDef<RoleTableRow>[] = [
   {
     accessorKey: "usersCount",
     cell: ({ row }) => (
-      <span className="font-semibold text-stone-900">{row.original.usersCount}</span>
+      <span className="font-semibold text-stone-900">
+        {row.original.usersCount}
+      </span>
     ),
     header: "Usuarios",
   },

@@ -260,6 +260,16 @@ input[type="search"]::-webkit-search-results-decoration {
   color: var(--info);
 }
 
+.report-field-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
 .nibol-badge-warning {
   border-color: color-mix(in srgb, var(--warning) 18%, white);
   background: var(--warning-soft);

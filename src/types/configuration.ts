@@ -5,11 +5,7 @@ export type ConfigurationCatalogType =
   | "categoria_hallazgo";
 
 export type SystemParameterValueType =
-  | "string"
-  | "number"
-  | "boolean"
-  | "json"
-  | "date";
+  "string" | "number" | "boolean" | "json" | "date";
 
 export interface ConfigurationUserSummary {
   email: string;

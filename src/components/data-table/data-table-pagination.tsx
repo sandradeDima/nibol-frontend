@@ -56,9 +56,17 @@ export function DataTablePagination({
     <div className="nibol-panel flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <p className="text-sm text-[var(--foreground-soft)]">
-          Mostrando <span className="font-semibold text-[var(--foreground)]">{start}</span> a{" "}
-          <span className="font-semibold text-[var(--foreground)]">{end}</span> de{" "}
-          <span className="font-semibold text-[var(--foreground)]">{total}</span> registros
+          Mostrando{" "}
+          <span className="font-semibold text-[var(--foreground)]">
+            {start}
+          </span>{" "}
+          a{" "}
+          <span className="font-semibold text-[var(--foreground)]">{end}</span>{" "}
+          de{" "}
+          <span className="font-semibold text-[var(--foreground)]">
+            {total}
+          </span>{" "}
+          registros
         </p>
 
         <label className="inline-flex items-center gap-3 text-sm text-[var(--foreground-soft)]">

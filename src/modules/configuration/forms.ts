@@ -45,7 +45,11 @@ export const riskLevelFormSchema = z.object({
   description: optionalTextSchema,
   key: uppercaseKeySchema,
   name: z.string().trim().min(2, "Ingrese un nombre válido.").max(100),
-  severityOrder: z.coerce.number().int().min(1, "Ingrese una prioridad válida.").max(999),
+  severityOrder: z.coerce
+    .number()
+    .int()
+    .min(1, "Ingrese una prioridad válida.")
+    .max(999),
 });
 
 export const observationStatusFormSchema = z
@@ -101,6 +105,10 @@ export const catalogFormSchema = z.object({
 
 export type AreaFormValues = z.infer<typeof areaFormSchema>;
 export type RiskLevelFormValues = z.infer<typeof riskLevelFormSchema>;
-export type ObservationStatusFormValues = z.infer<typeof observationStatusFormSchema>;
-export type SystemParameterFormValues = z.infer<typeof systemParameterFormSchema>;
+export type ObservationStatusFormValues = z.infer<
+  typeof observationStatusFormSchema
+>;
+export type SystemParameterFormValues = z.infer<
+  typeof systemParameterFormSchema
+>;
 export type CatalogFormValues = z.infer<typeof catalogFormSchema>;

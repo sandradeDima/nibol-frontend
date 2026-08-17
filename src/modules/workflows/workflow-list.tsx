@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -86,6 +93,26 @@ function WorkflowActionMenu({
   row: WorkflowDefinitionListItem;
 }) {
   const [open, setOpen] = useState(false);
+  const menuId = useId();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const focusMenuItem = (direction: "first" | "last" | "next" | "previous") => {
+    const items = Array.from(
+      menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [],
+    );
+    if (items.length === 0) return;
+    const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+    const nextIndex =
+      direction === "first"
+        ? 0
+        : direction === "last"
+          ? items.length - 1
+          : direction === "next"
+            ? (currentIndex + 1) % items.length
+            : (currentIndex - 1 + items.length) % items.length;
+    items[nextIndex]?.focus();
+  };
 
   useEffect(() => {
     if (!open) {
@@ -108,39 +135,91 @@ function WorkflowActionMenu({
     };
   }, [open, row.id]);
 
+  useEffect(() => {
+    if (!open) return;
+    const frame = window.requestAnimationFrame(() => focusMenuItem("first"));
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
+
+  const closeMenu = () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const handleMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      focusMenuItem("next");
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      focusMenuItem("previous");
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      focusMenuItem("first");
+    } else if (event.key === "End") {
+      event.preventDefault();
+      focusMenuItem("last");
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      closeMenu();
+    } else if (event.key === "Tab") {
+      setOpen(false);
+    }
+  };
+
   return (
     <div className="relative" data-workflow-menu={row.id}>
       <button
+        aria-controls={menuId}
         aria-expanded={open}
         aria-haspopup="menu"
+        aria-label={`Acciones del flujo ${row.name}`}
         className="flex h-10 w-10 items-center justify-center border border-[var(--border)] bg-white text-[var(--foreground-soft)] transition hover:border-[var(--primary)] hover:text-[var(--foreground)]"
         onClick={() => {
           setOpen((current) => !current);
         }}
+        onKeyDown={(event) => {
+          if (
+            event.key === "ArrowDown" ||
+            event.key === "Enter" ||
+            event.key === " "
+          ) {
+            event.preventDefault();
+            setOpen(true);
+          }
+        }}
+        ref={triggerRef}
         type="button"
       >
         <Ellipsis className="h-4 w-4" />
       </button>
 
       {open ? (
-        <div className="absolute top-[calc(100%+0.5rem)] right-0 z-30 min-w-[14rem] border border-[var(--border)] bg-white p-2 shadow-[var(--shadow-panel-strong)]">
+        <div
+          aria-label={`Acciones del flujo ${row.name}`}
+          className="absolute top-[calc(100%+0.5rem)] right-0 z-30 min-w-[14rem] border border-[var(--border)] bg-white p-2 shadow-[var(--shadow-panel-strong)]"
+          id={menuId}
+          onKeyDown={handleMenuKeyDown}
+          ref={menuRef}
+          role="menu"
+        >
           <Link
-            className="flex items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-[var(--foreground-soft)] transition hover:bg-[var(--surface-soft)]"
+            className="flex min-h-10 items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-[var(--foreground-soft)] transition hover:bg-[var(--surface-soft)] focus-visible:bg-[var(--surface-soft)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
             href={`/configuracion/flujos/${row.id}`}
-            onClick={() => {
-              setOpen(false);
-            }}
+            onClick={closeMenu}
+            role="menuitem"
+            tabIndex={-1}
           >
             <ArrowUpRight className="h-4 w-4" />
             Ver detalle
           </Link>
           {canEdit && row.status !== "ARCHIVED" ? (
             <Link
-              className="flex items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-[var(--foreground-soft)] transition hover:bg-[var(--surface-soft)]"
+              className="flex min-h-10 items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-[var(--foreground-soft)] transition hover:bg-[var(--surface-soft)] focus-visible:bg-[var(--surface-soft)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
               href={`/configuracion/flujos/${row.id}?edit=1`}
-              onClick={() => {
-                setOpen(false);
-              }}
+              onClick={closeMenu}
+              role="menuitem"
+              tabIndex={-1}
             >
               <FilePenLine className="h-4 w-4" />
               Editar metadatos
@@ -148,11 +227,11 @@ function WorkflowActionMenu({
           ) : null}
           {canViewVersions ? (
             <Link
-              className="flex items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-[var(--foreground-soft)] transition hover:bg-[var(--surface-soft)]"
+              className="flex min-h-10 items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-[var(--foreground-soft)] transition hover:bg-[var(--surface-soft)] focus-visible:bg-[var(--surface-soft)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
               href={`/configuracion/flujos/${row.id}/versiones`}
-              onClick={() => {
-                setOpen(false);
-              }}
+              onClick={closeMenu}
+              role="menuitem"
+              tabIndex={-1}
             >
               <History className="h-4 w-4" />
               Ver versiones
@@ -160,11 +239,13 @@ function WorkflowActionMenu({
           ) : null}
           {canCreate ? (
             <button
-              className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-[var(--foreground-soft)] transition hover:bg-[var(--surface-soft)]"
+              className="flex min-h-10 w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-[var(--foreground-soft)] transition hover:bg-[var(--surface-soft)] focus-visible:bg-[var(--surface-soft)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
               onClick={() => {
-                setOpen(false);
+                closeMenu();
                 onDuplicate(row);
               }}
+              role="menuitem"
+              tabIndex={-1}
               type="button"
             >
               <ArchiveRestore className="h-4 w-4" />
@@ -173,11 +254,13 @@ function WorkflowActionMenu({
           ) : null}
           {canArchive && row.status !== "ARCHIVED" ? (
             <button
-              className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-[var(--accent)] transition hover:bg-[var(--accent-soft)]"
+              className="flex min-h-10 w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium text-[var(--accent)] transition hover:bg-[var(--accent-soft)] focus-visible:bg-[var(--accent-soft)] focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
               onClick={() => {
-                setOpen(false);
+                closeMenu();
                 onArchive(row);
               }}
+              role="menuitem"
+              tabIndex={-1}
               type="button"
             >
               <Archive className="h-4 w-4" />
@@ -186,11 +269,11 @@ function WorkflowActionMenu({
           ) : null}
           {canViewVersions && row.latestVersion && row.status !== "ARCHIVED" ? (
             <Link
-              className="mt-1 flex items-center gap-3 border-t border-[var(--border)] px-3 py-2.5 text-sm font-semibold text-[var(--primary)] transition hover:bg-[var(--surface-soft)]"
+              className="mt-1 flex min-h-10 items-center gap-3 border-t border-[var(--border)] px-3 py-2.5 text-sm font-semibold text-[var(--primary)] transition hover:bg-[var(--surface-soft)] focus-visible:bg-[var(--surface-soft)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
               href={`/configuracion/flujos/${row.id}/versiones/${row.latestVersion.id}/disenador`}
-              onClick={() => {
-                setOpen(false);
-              }}
+              onClick={closeMenu}
+              role="menuitem"
+              tabIndex={-1}
             >
               <GitBranch className="h-4 w-4" />
               Abrir diseñador

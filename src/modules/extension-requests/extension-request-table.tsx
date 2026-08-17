@@ -1,267 +1,69 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
-import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Eye } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 
-import { DataTable, type DataTableConfig } from "@/components/data-table";
-import { QUERY_KEYS } from "@/lib/constants";
-import { observationService } from "@/services/observation-service";
-import type { ExtensionRequestTableRow } from "@/types";
-import { cn } from "@/utils";
-
-import { formatObservationDate, getRiskLevelClasses } from "../observations/presentation";
-import {
-  formatExtensionRequestDate,
-  getExtensionRequestStatusClasses,
-  getExtensionRequestStatusLabel,
-} from "./presentation";
-
-const extensionRequestColumns: ColumnDef<ExtensionRequestTableRow>[] = [
-  {
-    accessorKey: "observation.code",
-    cell: ({ row }) => (
-      <div className="min-w-[16rem] space-y-1">
-        <p className="text-sm font-semibold tracking-[0.08em] text-stone-900">
-          {row.original.observation.code}
-        </p>
-        <p className="text-sm text-stone-700">{row.original.observation.title}</p>
-        {row.original.commitment ? (
-          <p className="text-xs uppercase tracking-[0.16em] text-stone-500">
-            Compromiso: {row.original.commitment.title}
-          </p>
-        ) : null}
-      </div>
-    ),
-    header: "Código observación",
-  },
-  {
-    accessorKey: "area",
-    cell: ({ row }) => <span className="text-stone-700">{row.original.area.name}</span>,
-    enableSorting: false,
-    header: "Área",
-  },
-  {
-    accessorKey: "requestedByUser",
-    cell: ({ row }) => (
-      <span className="text-stone-700">{row.original.requestedByUser.name}</span>
-    ),
-    enableSorting: false,
-    header: "Solicitante",
-  },
-  {
-    accessorKey: "observation.riskLevel",
-    cell: ({ row }) => (
-      <span
-        className={cn(
-          "inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]",
-          getRiskLevelClasses(row.original.observation.riskLevel.colorToken),
-        )}
-      >
-        {row.original.observation.riskLevel.name}
-      </span>
-    ),
-    enableSorting: false,
-    header: "Riesgo",
-  },
-  {
-    accessorKey: "currentDueDate",
-    cell: ({ row }) => (
-      <span
-        className={cn(
-          "whitespace-nowrap",
-          row.original.isOverdue ? "text-rose-700" : "text-stone-700",
-        )}
-      >
-        {formatExtensionRequestDate(row.original.currentDueDate)}
-      </span>
-    ),
-    header: "Fecha actual",
-  },
-  {
-    accessorKey: "requestedDueDate",
-    cell: ({ row }) => (
-      <span className="whitespace-nowrap text-stone-700">
-        {formatExtensionRequestDate(row.original.requestedDueDate)}
-      </span>
-    ),
-    header: "Nueva fecha",
-  },
-  {
-    accessorKey: "impactDays",
-    cell: ({ row }) => (
-      <span className="font-semibold text-stone-800">+{row.original.impactDays} días</span>
-    ),
-    header: "Impacto",
-  },
-  {
-    accessorKey: "status",
-    cell: ({ row }) => (
-      <span
-        className={cn(
-          "inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]",
-          getExtensionRequestStatusClasses(row.original.status),
-        )}
-      >
-        {getExtensionRequestStatusLabel(row.original.status)}
-      </span>
-    ),
-    header: "Estado",
-  },
-  {
-    accessorKey: "updatedAt",
-    cell: ({ row }) => (
-      <span className="whitespace-nowrap text-stone-700">
-        {formatObservationDate(row.original.updatedAt, {
-          timeStyle: "short",
-        })}
-      </span>
-    ),
-    header: "Última actualización",
-  },
-];
-
-const statusOptions = [
-  { label: "Borrador", value: "DRAFT" },
-  { label: "En revisión de Gerencia", value: "SENT_TO_MANAGER" },
-  { label: "Aprobada por Gerencia", value: "MANAGER_APPROVED" },
-  { label: "Rechazada por Gerencia", value: "MANAGER_REJECTED" },
-  { label: "En revisión de Auditoría", value: "SENT_TO_AUDIT" },
-  { label: "Aprobada", value: "AUDIT_APPROVED" },
-  { label: "Rechazada por Auditoría", value: "AUDIT_REJECTED" },
-  { label: "Cancelada", value: "CANCELLED" },
-] as const;
+import { extensionRequestService } from "@/services/extension-request-service";
 
 export function ExtensionRequestTable() {
-  const searchParams = useSearchParams();
-  const optionsQuery = useQuery({
-    queryFn: observationService.getObservationOptions,
-    queryKey: QUERY_KEYS.configurationBootstrap,
-    staleTime: 60_000,
+  const query = useQuery({
+    queryFn: () => extensionRequestService.list("?perPage=100"),
+    queryKey: ["extension-requests", "all"],
   });
-
-  const defaultAreaId = searchParams.get("filter.areaId") ?? undefined;
-  const defaultOverdue = searchParams.get("filter.overdue") ?? undefined;
-  const defaultPendingMine = searchParams.get("filter.pendingMine") ?? undefined;
-  const defaultRequestedByUserId =
-    searchParams.get("filter.requestedByUserId") ?? undefined;
-  const defaultRequestedDateFrom =
-    searchParams.get("filter.requestedDateFrom") ?? undefined;
-  const defaultRequestedDateTo =
-    searchParams.get("filter.requestedDateTo") ?? undefined;
-  const defaultRiskLevelId = searchParams.get("filter.riskLevelId") ?? undefined;
-  const defaultStatus = searchParams.get("filter.status") ?? undefined;
-
-  const tableConfig: DataTableConfig<ExtensionRequestTableRow> = {
-    columns: extensionRequestColumns,
-    defaultSort: {
-      desc: true,
-      id: "updatedAt",
-    },
-    emptyState: {
-      description:
-        "Cuando las áreas registren solicitudes de ampliación, aparecerán aquí con su trazabilidad y estado de aprobación.",
-      title: "No hay ampliaciones para esta vista",
-    },
-    filters: [
-      {
-        defaultValue: defaultStatus,
-        id: "status",
-        label: "Estado",
-        options: [...statusOptions],
-        placeholder: "Todos los estados",
-        type: "select",
-      },
-      {
-        id: "areaId",
-        label: "Área",
-        defaultValue: defaultAreaId,
-        options: (optionsQuery.data?.areas ?? []).map((area) => ({
-          label: area.name,
-          value: area.id,
-        })),
-        placeholder: "Todas las áreas",
-        type: "select",
-      },
-      {
-        id: "requestedByUserId",
-        label: "Solicitante",
-        defaultValue: defaultRequestedByUserId,
-        options: (optionsQuery.data?.users ?? []).map((user) => ({
-          label: user.name,
-          value: user.id,
-        })),
-        placeholder: "Todos los usuarios",
-        type: "select",
-      },
-      {
-        id: "riskLevelId",
-        label: "Riesgo",
-        defaultValue: defaultRiskLevelId,
-        options: (optionsQuery.data?.riskLevels ?? []).map((riskLevel) => ({
-          label: riskLevel.name,
-          value: riskLevel.id,
-        })),
-        placeholder: "Todos los niveles",
-        type: "select",
-      },
-      {
-        defaultValue: defaultRequestedDateFrom,
-        id: "requestedDateFrom",
-        label: "Solicitada desde",
-        type: "date",
-      },
-      {
-        defaultValue: defaultRequestedDateTo,
-        id: "requestedDateTo",
-        label: "Solicitada hasta",
-        type: "date",
-      },
-      {
-        defaultValue: defaultPendingMine,
-        id: "pendingMine",
-        label: "Pendientes de mi revisión",
-        options: [
-          { label: "Sí", value: "true" },
-          { label: "No", value: "false" },
-        ],
-        placeholder: "Todas",
-        type: "select",
-      },
-      {
-        defaultValue: defaultOverdue,
-        id: "overdue",
-        label: "Vencidas",
-        options: [
-          { label: "Sí", value: "true" },
-          { label: "No", value: "false" },
-        ],
-        placeholder: "Todas",
-        type: "select",
-      },
-    ],
-    getRowId: (row) => row.id,
-    queryKey: [...QUERY_KEYS.extensionRequests, "table"],
-    rowActions: [
-      {
-        href: (row) => `/ampliaciones-plazo/${row.id}`,
-        icon: Eye,
-        id: "view",
-        label: "Ver detalle",
-        variant: "view",
-      },
-    ],
-    searchPlaceholder: "Buscar por código, área, solicitante o compromiso",
-  };
-
-  if (optionsQuery.isError) {
-    tableConfig.filters = tableConfig.filters?.filter((filter) =>
-      ["pendingMine", "requestedDateFrom", "requestedDateTo", "status", "overdue"].includes(
-        filter.id,
-      ),
-    );
-  }
-
-  return <DataTable config={tableConfig} endpoint="/extension-requests" />;
+  return (
+    <section className="nibol-panel overflow-hidden">
+      <div className="divide-y divide-stone-200">
+        {query.data?.data.map((request) => (
+          <Link
+            className="grid gap-4 p-5 transition hover:bg-amber-50/40 md:grid-cols-[1.5fr_1fr_1fr_auto] md:items-center"
+            href={`/ampliaciones-plazo/${request.id}`}
+            key={request.id}
+          >
+            <div>
+              <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">
+                {request.targetType === "ACTION_PLAN"
+                  ? "Plan de acción"
+                  : "Observación"}
+              </p>
+              <h3 className="mt-1 font-semibold">
+                {request.actionPlan?.title ??
+                  request.observation?.displayCode ??
+                  "Solicitud"}
+              </h3>
+              <p className="mt-1 line-clamp-1 text-sm text-stone-500">
+                {request.reason}
+              </p>
+            </div>
+            <div className="text-sm">
+              <p className="text-xs text-stone-500">Cambio de fecha</p>
+              <p className="mt-1">
+                {request.previousDueDate.slice(0, 10)} →{" "}
+                <strong>{request.proposedDueDate.slice(0, 10)}</strong>
+              </p>
+            </div>
+            <div>
+              <span className="nibol-badge">
+                {request.status.replaceAll("_", " ")}
+              </span>
+              <p className="mt-2 text-xs text-stone-500">
+                {request.requestedByUser.name}
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-stone-400" />
+          </Link>
+        ))}
+      </div>
+      {query.isLoading ? (
+        <p className="p-8 text-center text-sm text-stone-500">
+          Cargando solicitudes…
+        </p>
+      ) : null}
+      {!query.isLoading && !query.data?.data.length ? (
+        <p className="p-10 text-center text-sm text-stone-500">
+          No hay solicitudes de ampliación.
+        </p>
+      ) : null}
+    </section>
+  );
 }

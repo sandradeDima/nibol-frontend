@@ -42,16 +42,25 @@ export function ForgotPasswordForm() {
   return (
     <AuthShell
       description="Enviaremos un enlace seguro si la direccion existe dentro del sistema."
-      footer={<AuthLinkRow href="/login" label="Recordo su contrasena?" linkLabel="Volver al acceso" />}
+      footer={
+        <AuthLinkRow
+          href="/login"
+          label="Recordo su contrasena?"
+          linkLabel="Volver al acceso"
+        />
+      }
       title="Recuperar acceso"
     >
       {submittedEmail ? (
         <AuthBanner tone="success">
-          Si {submittedEmail} existe en el sistema, enviamos un enlace de recuperacion.
+          Si {submittedEmail} existe en el sistema, enviamos un enlace de
+          recuperacion.
         </AuthBanner>
       ) : null}
       {forgotPasswordMutation.error ? (
-        <AuthBanner tone="error">{forgotPasswordMutation.error.message}</AuthBanner>
+        <AuthBanner tone="error">
+          {forgotPasswordMutation.error.message}
+        </AuthBanner>
       ) : null}
 
       <form className="space-y-4" onSubmit={handleSubmit}>

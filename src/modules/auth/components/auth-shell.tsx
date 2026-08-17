@@ -44,38 +44,48 @@ export function AuthShell({
   return (
     <div className="w-full max-w-[27rem] border border-[var(--border)] bg-white p-6 shadow-[var(--shadow-panel)] sm:p-8">
       <div className="space-y-3">
-        <p className="nibol-eyebrow">
-          Acceso corporativo
-        </p>
-        <h2 className="font-display text-4xl font-bold uppercase leading-none tracking-[-0.03em] text-[var(--foreground)]">
+        <p className="nibol-eyebrow">Acceso corporativo</p>
+        <h2 className="font-display text-4xl leading-none font-bold tracking-[-0.03em] text-[var(--foreground)] uppercase">
           {title}
         </h2>
-        <p className="text-sm leading-7 text-[var(--foreground-soft)]">{description}</p>
+        <p className="text-sm leading-7 text-[var(--foreground-soft)]">
+          {description}
+        </p>
       </div>
 
       <div className="mt-8 space-y-5">{children}</div>
 
-      {footer ? <div className="mt-6 text-sm text-[var(--muted)]">{footer}</div> : null}
+      {footer ? (
+        <div className="mt-6 text-sm text-[var(--muted)]">{footer}</div>
+      ) : null}
     </div>
   );
 }
 
 export function AuthBanner({ children, tone = "info" }: AuthBannerProps) {
   return (
-    <div className={cn("px-4 py-3 text-sm", toneClasses[tone])}>
-      {children}
-    </div>
+    <div className={cn("px-4 py-3 text-sm", toneClasses[tone])}>{children}</div>
   );
 }
 
-export function AuthInput({ className, error, label, revealable, type, ...props }: AuthInputProps) {
+export function AuthInput({
+  className,
+  error,
+  label,
+  revealable,
+  type,
+  ...props
+}: AuthInputProps) {
   const [revealed, setRevealed] = useState(false);
 
-  const inputType = type === "password" && revealable ? (revealed ? "text" : "password") : type;
+  const inputType =
+    type === "password" && revealable ? (revealed ? "text" : "password") : type;
 
   return (
     <label className="block">
-      <span className="text-sm font-medium text-[var(--foreground-soft)]">{label}</span>
+      <span className="text-sm font-medium text-[var(--foreground-soft)]">
+        {label}
+      </span>
       <div className="relative mt-2">
         <input
           className={cn(
@@ -93,7 +103,7 @@ export function AuthInput({ className, error, label, revealable, type, ...props 
           <button
             type="button"
             onClick={() => setRevealed((s) => !s)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[var(--muted)] hover:text-[var(--foreground)]"
+            className="absolute top-1/2 right-3 -translate-y-1/2 text-sm font-semibold text-[var(--muted)] hover:text-[var(--foreground)]"
             aria-label={revealed ? "Hide password" : "Show password"}
           >
             {revealed ? "Ocultar" : "Mostrar"}
@@ -101,7 +111,9 @@ export function AuthInput({ className, error, label, revealable, type, ...props 
         ) : null}
       </div>
 
-      {error ? <span className="mt-2 block text-sm text-[var(--accent)]">{error}</span> : null}
+      {error ? (
+        <span className="mt-2 block text-sm text-[var(--accent)]">{error}</span>
+      ) : null}
     </label>
   );
 }
@@ -118,7 +130,10 @@ export function AuthLinkRow({
   return (
     <p className="text-sm text-[var(--muted)]">
       {label}{" "}
-      <Link className="font-semibold text-[var(--foreground)] hover:text-[var(--accent)]" href={href}>
+      <Link
+        className="font-semibold text-[var(--foreground)] hover:text-[var(--accent)]"
+        href={href}
+      >
         {linkLabel}
       </Link>
     </p>

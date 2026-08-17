@@ -42,7 +42,7 @@ const areaColumns: ColumnDef<AreaRecord>[] = [
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-semibold text-stone-950">{row.original.name}</p>
           {row.original.code ? (
-            <span className="inline-flex items-center border border-stone-300 bg-stone-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-700">
+            <span className="inline-flex items-center border border-stone-300 bg-stone-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.16em] text-stone-700 uppercase">
               {row.original.code}
             </span>
           ) : null}
@@ -59,8 +59,12 @@ const areaColumns: ColumnDef<AreaRecord>[] = [
     cell: ({ row }) =>
       row.original.managerUser ? (
         <div className="space-y-1">
-          <p className="font-medium text-stone-900">{row.original.managerUser.name}</p>
-          <p className="text-xs text-stone-500">{row.original.managerUser.email}</p>
+          <p className="font-medium text-stone-900">
+            {row.original.managerUser.name}
+          </p>
+          <p className="text-xs text-stone-500">
+            {row.original.managerUser.email}
+          </p>
         </div>
       ) : (
         <span className="text-stone-500">Sin responsable asignado</span>
@@ -110,8 +114,10 @@ const mapRecordToFormValues = (record: AreaRecord | null): AreaFormValues => {
 const buildPayload = (values: AreaFormValues): AreaMutationInput => ({
   active: values.active,
   code: values.code.trim().length > 0 ? values.code.trim().toUpperCase() : null,
-  description: values.description.trim().length > 0 ? values.description.trim() : null,
-  managerUserId: values.managerUserId.trim().length > 0 ? values.managerUserId : null,
+  description:
+    values.description.trim().length > 0 ? values.description.trim() : null,
+  managerUserId:
+    values.managerUserId.trim().length > 0 ? values.managerUserId : null,
   name: values.name.trim(),
 });
 
@@ -262,7 +268,9 @@ export function AreasPage({ canCreate, canDelete, canEdit }: AreasPageProps) {
           <>
             <div className="grid gap-5 md:grid-cols-2">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Nombre</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Nombre
+                </span>
                 <input
                   className={inputClassName}
                   disabled={isBusy}
@@ -273,7 +281,9 @@ export function AreasPage({ canCreate, canDelete, canEdit }: AreasPageProps) {
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Codigo</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Codigo
+                </span>
                 <input
                   className={`${inputClassName} uppercase`}
                   disabled={isBusy}
@@ -284,7 +294,9 @@ export function AreasPage({ canCreate, canDelete, canEdit }: AreasPageProps) {
               </label>
 
               <label className="block space-y-2 md:col-span-2">
-                <span className="text-sm font-medium text-stone-700">Responsable principal</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Responsable principal
+                </span>
                 <select
                   className={inputClassName}
                   disabled={isBusy || bootstrapQuery.isLoading}
@@ -299,14 +311,17 @@ export function AreasPage({ canCreate, canDelete, canEdit }: AreasPageProps) {
                 </select>
                 {bootstrapQuery.isError ? (
                   <p className="text-xs text-amber-700">
-                    No fue posible cargar usuarios ahora mismo. Puede guardar el area sin responsable y asignarlo luego.
+                    No fue posible cargar usuarios ahora mismo. Puede guardar el
+                    area sin responsable y asignarlo luego.
                   </p>
                 ) : null}
               </label>
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Descripcion</span>
+              <span className="text-sm font-medium text-stone-700">
+                Descripcion
+              </span>
               <textarea
                 className="nibol-field min-h-28 resize-y py-3"
                 disabled={isBusy}

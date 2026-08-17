@@ -45,7 +45,7 @@ const catalogColumns: ColumnDef<CatalogRecord>[] = [
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-semibold text-stone-950">{row.original.name}</p>
           {row.original.key ? (
-            <span className="inline-flex items-center border border-stone-300 bg-stone-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-700">
+            <span className="inline-flex items-center border border-stone-300 bg-stone-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.16em] text-stone-700 uppercase">
               {row.original.key}
             </span>
           ) : null}
@@ -70,7 +70,9 @@ const catalogColumns: ColumnDef<CatalogRecord>[] = [
   {
     accessorKey: "sortOrder",
     cell: ({ row }) => (
-      <span className="font-semibold text-stone-900">{row.original.sortOrder}</span>
+      <span className="font-semibold text-stone-900">
+        {row.original.sortOrder}
+      </span>
     ),
     header: "Orden",
   },
@@ -100,7 +102,9 @@ const emptyFormValues: CatalogFormValues = {
   type: "proceso_auditado",
 };
 
-const mapRecordToFormValues = (record: CatalogRecord | null): CatalogFormValues => {
+const mapRecordToFormValues = (
+  record: CatalogRecord | null,
+): CatalogFormValues => {
   if (!record) {
     return emptyFormValues;
   }
@@ -117,17 +121,24 @@ const mapRecordToFormValues = (record: CatalogRecord | null): CatalogFormValues 
 
 const buildPayload = (values: CatalogFormValues): CatalogMutationInput => ({
   active: values.active,
-  description: values.description.trim().length > 0 ? values.description.trim() : null,
+  description:
+    values.description.trim().length > 0 ? values.description.trim() : null,
   key: values.key.trim().length > 0 ? values.key.trim().toUpperCase() : null,
   name: values.name.trim(),
   sortOrder: values.sortOrder,
   type: values.type,
 });
 
-export function CatalogsPage({ canCreate, canDelete, canEdit }: CatalogsPageProps) {
+export function CatalogsPage({
+  canCreate,
+  canDelete,
+  canEdit,
+}: CatalogsPageProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<CatalogRecord | null>(null);
+  const [editingRecord, setEditingRecord] = useState<CatalogRecord | null>(
+    null,
+  );
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const currentValues = useMemo(
@@ -246,7 +257,10 @@ export function CatalogsPage({ canCreate, canDelete, canEdit }: CatalogsPageProp
             const payload = buildPayload(values);
 
             if (editingRecord) {
-              await configurationService.updateCatalog(editingRecord.id, payload);
+              await configurationService.updateCatalog(
+                editingRecord.id,
+                payload,
+              );
             } else {
               await configurationService.createCatalog(payload);
             }
@@ -272,7 +286,9 @@ export function CatalogsPage({ canCreate, canDelete, canEdit }: CatalogsPageProp
           <>
             <div className="grid gap-5 md:grid-cols-2">
               <label className="block space-y-2 md:col-span-2">
-                <span className="text-sm font-medium text-stone-700">Tipo de catalogo</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Tipo de catalogo
+                </span>
                 <select
                   className={inputClassName}
                   disabled={isBusy}
@@ -288,7 +304,9 @@ export function CatalogsPage({ canCreate, canDelete, canEdit }: CatalogsPageProp
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Nombre</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Nombre
+                </span>
                 <input
                   className={inputClassName}
                   disabled={isBusy}
@@ -299,7 +317,9 @@ export function CatalogsPage({ canCreate, canDelete, canEdit }: CatalogsPageProp
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Clave</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Clave
+                </span>
                 <input
                   className={`${inputClassName} uppercase`}
                   disabled={isBusy}
@@ -310,7 +330,9 @@ export function CatalogsPage({ canCreate, canDelete, canEdit }: CatalogsPageProp
               </label>
 
               <label className="block space-y-2 md:col-span-2">
-                <span className="text-sm font-medium text-stone-700">Orden</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Orden
+                </span>
                 <input
                   className={inputClassName}
                   disabled={isBusy}
@@ -323,7 +345,9 @@ export function CatalogsPage({ canCreate, canDelete, canEdit }: CatalogsPageProp
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Descripcion</span>
+              <span className="text-sm font-medium text-stone-700">
+                Descripcion
+              </span>
               <textarea
                 className="nibol-field min-h-28 resize-y py-3"
                 disabled={isBusy}

@@ -45,7 +45,7 @@ const observationStatusColumns: ColumnDef<ObservationStatusRecord>[] = [
       <div className="min-w-[18rem] space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-semibold text-stone-950">{row.original.name}</p>
-          <span className="inline-flex items-center border border-stone-300 bg-stone-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-700">
+          <span className="inline-flex items-center border border-stone-300 bg-stone-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.16em] text-stone-700 uppercase">
             {row.original.key}
           </span>
         </div>
@@ -59,7 +59,9 @@ const observationStatusColumns: ColumnDef<ObservationStatusRecord>[] = [
   {
     accessorKey: "sortOrder",
     cell: ({ row }) => (
-      <span className="font-semibold text-stone-900">{row.original.sortOrder}</span>
+      <span className="font-semibold text-stone-900">
+        {row.original.sortOrder}
+      </span>
     ),
     header: "Orden",
   },
@@ -67,12 +69,18 @@ const observationStatusColumns: ColumnDef<ObservationStatusRecord>[] = [
     accessorKey: "isInitial",
     cell: ({ row }) => (
       <div className="flex flex-wrap gap-2">
-        {row.original.isInitial ? <ToneBadge label="Inicial" tone="info" /> : null}
-        {row.original.isFinal ? <ToneBadge label="Final" tone="success" /> : null}
+        {row.original.isInitial ? (
+          <ToneBadge label="Inicial" tone="info" />
+        ) : null}
+        {row.original.isFinal ? (
+          <ToneBadge label="Final" tone="success" />
+        ) : null}
         {row.original.countsAsOverdue ? (
           <ToneBadge label="Vence" tone="danger" />
         ) : null}
-        {!row.original.isInitial && !row.original.isFinal && !row.original.countsAsOverdue ? (
+        {!row.original.isInitial &&
+        !row.original.isFinal &&
+        !row.original.countsAsOverdue ? (
           <span className="text-stone-500">Sin marcadores</span>
         ) : null}
       </div>
@@ -132,7 +140,8 @@ const buildPayload = (
 ): ObservationStatusMutationInput => ({
   active: values.active,
   countsAsOverdue: values.countsAsOverdue,
-  description: values.description.trim().length > 0 ? values.description.trim() : null,
+  description:
+    values.description.trim().length > 0 ? values.description.trim() : null,
   isFinal: values.isFinal,
   isInitial: values.isInitial,
   key: values.key.trim().toUpperCase(),
@@ -147,7 +156,8 @@ export function ObservationStatusesPage({
 }: ObservationStatusesPageProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<ObservationStatusRecord | null>(null);
+  const [editingRecord, setEditingRecord] =
+    useState<ObservationStatusRecord | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const currentValues = useMemo(
@@ -259,7 +269,10 @@ export function ObservationStatusesPage({
             const payload = buildPayload(values);
 
             if (editingRecord) {
-              await configurationService.updateObservationStatus(editingRecord.id, payload);
+              await configurationService.updateObservationStatus(
+                editingRecord.id,
+                payload,
+              );
             } else {
               await configurationService.createObservationStatus(payload);
             }
@@ -285,7 +298,9 @@ export function ObservationStatusesPage({
           <>
             <div className="grid gap-5 md:grid-cols-2">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Nombre</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Nombre
+                </span>
                 <input
                   className={inputClassName}
                   disabled={isBusy}
@@ -296,18 +311,22 @@ export function ObservationStatusesPage({
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Clave</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Clave
+                </span>
                 <input
                   className={`${inputClassName} uppercase`}
                   disabled={isBusy}
-                  placeholder="EN_REVISION"
+                  placeholder="CON_AVANCE"
                   {...form.register("key")}
                 />
                 <FieldError error={form.formState.errors.key?.message} />
               </label>
 
               <label className="block space-y-2 md:col-span-2">
-                <span className="text-sm font-medium text-stone-700">Orden</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Orden
+                </span>
                 <input
                   className={inputClassName}
                   disabled={isBusy}
@@ -320,7 +339,9 @@ export function ObservationStatusesPage({
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Descripcion</span>
+              <span className="text-sm font-medium text-stone-700">
+                Descripcion
+              </span>
               <textarea
                 className="nibol-field min-h-28 resize-y py-3"
                 disabled={isBusy}

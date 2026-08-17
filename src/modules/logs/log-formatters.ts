@@ -35,7 +35,10 @@ export const summarizeLogValue = (value: LogJsonValue | null): string => {
 
   if (Array.isArray(value)) {
     return value.length > 0
-      ? value.slice(0, 4).map((item) => formatPrimitive(item)).join(", ")
+      ? value
+          .slice(0, 4)
+          .map((item) => formatPrimitive(item))
+          .join(", ")
       : "None";
   }
 

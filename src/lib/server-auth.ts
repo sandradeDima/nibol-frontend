@@ -4,7 +4,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { APP_CONFIG } from "@/lib/constants";
-import { hasAllPermissions, hasAnyPermission, hasPermission } from "@/lib/permissions";
+import {
+  hasAllPermissions,
+  hasAnyPermission,
+  hasPermission,
+} from "@/lib/permissions";
 import type {
   ApiErrorResponse,
   ApiSuccessResponse,
@@ -21,9 +25,7 @@ const buildCookieHeader = async (): Promise<string> => {
     .join("; ");
 };
 
-const fetchJson = async <T>(
-  input: string,
-): Promise<T> => {
+const fetchJson = async <T>(input: string): Promise<T> => {
   const cookieHeader = await buildCookieHeader();
   const headers = new Headers({
     Accept: "application/json",
@@ -75,10 +77,9 @@ export const getServerSession = cache(async (): Promise<AuthSession | null> => {
 export const getServerAuthorization = cache(
   async (): Promise<AuthorizationSummary | null> => {
     try {
-      const response =
-        await fetchJson<ApiSuccessResponse<AuthorizationSummary>>(
-          `${APP_CONFIG.serverApiBaseUrl}/permissions/me`,
-        );
+      const response = await fetchJson<
+        ApiSuccessResponse<AuthorizationSummary>
+      >(`${APP_CONFIG.serverApiBaseUrl}/permissions/me`);
 
       return response.data;
     } catch (error) {
@@ -127,7 +128,9 @@ export const requireAnyPermission = async (
   }
 
   if (!hasAnyPermission(authorization.permissions, permissions)) {
-    redirect(`/forbidden?missing=${encodeURIComponent(permissions.join(", "))}`);
+    redirect(
+      `/forbidden?missing=${encodeURIComponent(permissions.join(", "))}`,
+    );
   }
 
   return authorization;
@@ -143,7 +146,9 @@ export const requireAllPermissions = async (
   }
 
   if (!hasAllPermissions(authorization.permissions, permissions)) {
-    redirect(`/forbidden?missing=${encodeURIComponent(permissions.join(", "))}`);
+    redirect(
+      `/forbidden?missing=${encodeURIComponent(permissions.join(", "))}`,
+    );
   }
 
   return authorization;

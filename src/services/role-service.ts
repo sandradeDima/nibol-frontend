@@ -28,7 +28,10 @@ export const roleService = {
     return response.data.data;
   },
 
-  async updateRole(roleId: string, input: UpdateRoleInput): Promise<RoleDetails> {
+  async updateRole(
+    roleId: string,
+    input: UpdateRoleInput,
+  ): Promise<RoleDetails> {
     const response = await apiClient.put<ApiSuccessResponse<RoleDetails>>(
       `/roles/${roleId}`,
       input,

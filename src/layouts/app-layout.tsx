@@ -17,7 +17,10 @@ export function AppLayout({
   session,
 }: AppLayoutProps) {
   const navigationItems = SIDEBAR_ITEMS.filter((item) => {
-    return !item.permission || hasPermission(authorization.permissions, item.permission);
+    return (
+      !item.permission ||
+      hasPermission(authorization.permissions, item.permission)
+    );
   });
 
   return (

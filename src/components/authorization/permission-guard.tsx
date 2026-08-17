@@ -4,7 +4,11 @@ import { useEffect, type ReactNode } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { hasAllPermissions, hasAnyPermission, hasPermission } from "@/lib/permissions";
+import {
+  hasAllPermissions,
+  hasAnyPermission,
+  hasPermission,
+} from "@/lib/permissions";
 
 import { usePermissions } from "@/hooks/use-permissions";
 

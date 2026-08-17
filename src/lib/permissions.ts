@@ -24,5 +24,7 @@ export const hasAllPermissions = (
     return true;
   }
 
-  return permissions.every((permission) => userPermissions.includes(permission));
+  return permissions.every((permission) =>
+    userPermissions.includes(permission),
+  );
 };

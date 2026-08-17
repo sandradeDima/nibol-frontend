@@ -5,21 +5,16 @@ import Link from "next/link";
 import { ErrorState } from "@/components/ui/error-state";
 import { PageHeader } from "@/components/ui/page-header";
 
-import {
-  PRODUCTS_ROUTES,
-} from "../constants";
+import { PRODUCTS_ROUTES } from "../constants";
 import { useProducts } from "../hooks/useProducts";
 
 type ProductViewPageProps = {
   productId: string;
 };
 
-const sectionClassName =
-  "nibol-panel p-6";
+const sectionClassName = "nibol-panel p-6";
 
-export default function ProductViewPage({
-  productId,
-}: ProductViewPageProps) {
+export default function ProductViewPage({ productId }: ProductViewPageProps) {
   const { useProduct } = useProducts();
   const productQuery = useProduct(productId);
 
@@ -46,7 +41,9 @@ export default function ProductViewPage({
   if (productQuery.isLoading || !productQuery.data) {
     return (
       <section className={sectionClassName}>
-        <p className="text-sm text-stone-500">Cargando detalle del producto...</p>
+        <p className="text-sm text-stone-500">
+          Cargando detalle del producto...
+        </p>
       </section>
     );
   }
@@ -72,13 +69,15 @@ export default function ProductViewPage({
       <section className={sectionClassName}>
         <dl className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-2">
-            <dt className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+            <dt className="text-xs font-semibold tracking-[0.24em] text-stone-500 uppercase">
               Nombre
             </dt>
-            <dd className="text-lg font-semibold text-stone-950">{record.name}</dd>
+            <dd className="text-lg font-semibold text-stone-950">
+              {record.name}
+            </dd>
           </div>
           <div className="space-y-2">
-            <dt className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+            <dt className="text-xs font-semibold tracking-[0.24em] text-stone-500 uppercase">
               Estado
             </dt>
             <dd className="text-sm text-stone-700">
@@ -86,7 +85,7 @@ export default function ProductViewPage({
             </dd>
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <dt className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+            <dt className="text-xs font-semibold tracking-[0.24em] text-stone-500 uppercase">
               Descripcion
             </dt>
             <dd className="text-sm leading-7 text-stone-700">
@@ -94,13 +93,13 @@ export default function ProductViewPage({
             </dd>
           </div>
           <div className="space-y-2">
-            <dt className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+            <dt className="text-xs font-semibold tracking-[0.24em] text-stone-500 uppercase">
               Creado
             </dt>
             <dd className="text-sm text-stone-700">{record.createdAt}</dd>
           </div>
           <div className="space-y-2">
-            <dt className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
+            <dt className="text-xs font-semibold tracking-[0.24em] text-stone-500 uppercase">
               Actualizado
             </dt>
             <dd className="text-sm text-stone-700">{record.updatedAt}</dd>

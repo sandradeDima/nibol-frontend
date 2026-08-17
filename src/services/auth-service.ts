@@ -40,7 +40,9 @@ const request = async <T>(promise: Promise<{ data: T }>): Promise<T> => {
 };
 
 export const authService = {
-  async forgotPassword(input: ForgotPasswordInput): Promise<AuthMessageResponse> {
+  async forgotPassword(
+    input: ForgotPasswordInput,
+  ): Promise<AuthMessageResponse> {
     return request(
       authApi.post("/request-password-reset", {
         email: input.email,

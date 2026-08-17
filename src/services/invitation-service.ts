@@ -22,11 +22,12 @@ export const invitationService = {
     return response.data.data;
   },
 
-  async createInvitation(input: CreateInvitationInput): Promise<InvitationDetails> {
-    const response = await apiClient.post<ApiSuccessResponse<InvitationDetails>>(
-      "/invitations",
-      input,
-    );
+  async createInvitation(
+    input: CreateInvitationInput,
+  ): Promise<InvitationDetails> {
+    const response = await apiClient.post<
+      ApiSuccessResponse<InvitationDetails>
+    >("/invitations", input);
 
     return response.data.data;
   },
@@ -39,9 +40,7 @@ export const invitationService = {
     return response.data.data;
   },
 
-  async previewInvitation(
-    token: string,
-  ): Promise<InvitationAcceptancePreview> {
+  async previewInvitation(token: string): Promise<InvitationAcceptancePreview> {
     const response = await apiClient.post<
       ApiSuccessResponse<InvitationAcceptancePreview>
     >("/invitations/accept", {
@@ -53,17 +52,17 @@ export const invitationService = {
   },
 
   async resendInvitation(invitationId: string): Promise<InvitationDetails> {
-    const response = await apiClient.post<ApiSuccessResponse<InvitationDetails>>(
-      `/invitations/${invitationId}/resend`,
-    );
+    const response = await apiClient.post<
+      ApiSuccessResponse<InvitationDetails>
+    >(`/invitations/${invitationId}/resend`);
 
     return response.data.data;
   },
 
   async revokeInvitation(invitationId: string): Promise<InvitationDetails> {
-    const response = await apiClient.post<ApiSuccessResponse<InvitationDetails>>(
-      `/invitations/${invitationId}/revoke`,
-    );
+    const response = await apiClient.post<
+      ApiSuccessResponse<InvitationDetails>
+    >(`/invitations/${invitationId}/revoke`);
 
     return response.data.data;
   },

@@ -161,7 +161,9 @@ export function ProfileSettings() {
 
   return (
     <div className="space-y-6">
-      <section className={`${panelClassName} grid gap-6 xl:grid-cols-[0.75fr_1.25fr]`}>
+      <section
+        className={`${panelClassName} grid gap-6 xl:grid-cols-[0.75fr_1.25fr]`}
+      >
         <div className="space-y-4">
           <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[2rem] bg-stone-950 text-2xl font-semibold text-white">
             {profile.avatar ? (
@@ -208,26 +210,29 @@ export function ProfileSettings() {
 
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+            <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
               Perfil
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-stone-950">
               {profile.name}
             </h2>
             <p className="mt-2 text-sm leading-7 text-stone-700">
-              Administre la informacion visible en el shell compartido, la sesion activa y futuros modulos.
+              Administre la informacion visible en el shell compartido, la
+              sesion activa y futuros modulos.
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-[1.4rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+              <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
                 Email
               </p>
-              <p className="mt-2 text-sm font-medium text-stone-900">{profile.email}</p>
+              <p className="mt-2 text-sm font-medium text-stone-900">
+                {profile.email}
+              </p>
             </div>
             <div className="rounded-[1.4rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+              <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
                 Ultimo acceso
               </p>
               <p className="mt-2 text-sm font-medium text-stone-900">
@@ -237,7 +242,7 @@ export function ProfileSettings() {
           </div>
 
           <div className="rounded-[1.4rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+            <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
               Roles
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -262,7 +267,7 @@ export function ProfileSettings() {
           })}
         >
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+            <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
               Actualizar perfil
             </p>
             <h3 className="mt-2 text-xl font-semibold tracking-tight text-stone-950">
@@ -302,7 +307,9 @@ export function ProfileSettings() {
             type="submit"
           >
             <Save className="h-4 w-4" />
-            {updateProfileMutation.isPending ? "Guardando perfil..." : "Guardar perfil"}
+            {updateProfileMutation.isPending
+              ? "Guardando perfil..."
+              : "Guardar perfil"}
           </button>
         </form>
 
@@ -316,7 +323,7 @@ export function ProfileSettings() {
           })}
         >
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+            <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
               Cambiar contrasena
             </p>
             <h3 className="mt-2 text-xl font-semibold tracking-tight text-stone-950">
@@ -339,22 +346,27 @@ export function ProfileSettings() {
             },
           ].map((field) => (
             <label key={field.field} className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">{field.label}</span>
+              <span className="text-sm font-medium text-stone-700">
+                {field.label}
+              </span>
               <input
                 className="nibol-field h-auto py-3"
                 disabled={changePasswordMutation.isPending}
                 type="password"
                 {...passwordForm.register(
-                  field.field as "currentPassword" | "newPassword" | "confirmPassword",
+                  field.field as
+                    "currentPassword" | "newPassword" | "confirmPassword",
                 )}
               />
               {passwordForm.formState.errors[
-                field.field as "currentPassword" | "newPassword" | "confirmPassword"
+                field.field as
+                  "currentPassword" | "newPassword" | "confirmPassword"
               ] ? (
                 <span className="text-sm text-rose-700">
                   {
                     passwordForm.formState.errors[
-                      field.field as "currentPassword" | "newPassword" | "confirmPassword"
+                      field.field as
+                        "currentPassword" | "newPassword" | "confirmPassword"
                     ]?.message
                   }
                 </span>
@@ -380,7 +392,9 @@ export function ProfileSettings() {
             type="submit"
           >
             <KeyRound className="h-4 w-4" />
-            {changePasswordMutation.isPending ? "Actualizando contrasena..." : "Cambiar contrasena"}
+            {changePasswordMutation.isPending
+              ? "Actualizando contrasena..."
+              : "Cambiar contrasena"}
           </button>
         </form>
       </section>

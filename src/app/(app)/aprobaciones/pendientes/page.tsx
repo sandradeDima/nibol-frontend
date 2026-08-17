@@ -17,8 +17,12 @@ export default async function PendingApprovalsPage() {
       />
 
       <PendingApprovalsWorkspace
-        canViewExtensions={authorization.permissions.includes("extension_requests.view")}
-        canViewProgress={authorization.permissions.includes("observations.view")}
+        canViewExtensions={authorization.permissions.includes(
+          "extension_requests.view",
+        )}
+        canViewProgress={authorization.permissions.includes(
+          "observations.view",
+        )}
       />
     </main>
   );

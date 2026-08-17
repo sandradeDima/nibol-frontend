@@ -4,6 +4,7 @@ export interface UserTableRow {
   emailVerified: boolean;
   id: string;
   isActive: boolean;
+  jobTitle: string | null;
   lastLoginAt: string | null;
   name: string;
   roles: string[];
@@ -18,6 +19,7 @@ export interface RoleOption {
 export interface UserOption {
   email: string;
   id: string;
+  jobTitle: string | null;
   name: string;
 }
 
@@ -28,6 +30,7 @@ export interface UserDetails {
   emailVerified: boolean;
   id: string;
   isActive: boolean;
+  jobTitle: string | null;
   lastLoginAt: string | null;
   name: string;
   roleIds: string[];
@@ -38,6 +41,7 @@ export interface UserDetails {
 export interface CreateUserInput {
   email: string;
   isActive: boolean;
+  jobTitle?: string | null;
   name: string;
   password: string;
   roleIds: string[];
@@ -46,6 +50,7 @@ export interface CreateUserInput {
 export interface UpdateUserInput {
   email: string;
   isActive: boolean;
+  jobTitle?: string | null;
   name: string;
   roleIds: string[];
 }

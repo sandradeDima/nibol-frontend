@@ -23,20 +23,18 @@ import { getApiErrorMessage } from "@/utils";
 
 const panelClassName = "nibol-panel p-6";
 
-export function NotificationCenter({
-  canCreate,
-}: {
-  canCreate: boolean;
-}) {
+export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"all" | "error" | "info" | "success" | "warning">(
-    "all",
-  );
+  const [typeFilter, setTypeFilter] = useState<
+    "all" | "error" | "info" | "success" | "warning"
+  >("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState<"all" | "unread" | "deadlines" | "approvals" | "system">("all");
+  const [activeTab, setActiveTab] = useState<
+    "all" | "unread" | "deadlines" | "approvals" | "system"
+  >("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const deferredSearch = useDeferredValue(search);
@@ -49,7 +47,10 @@ export function NotificationCenter({
         search: deferredSearch,
         dateFrom: dateFrom ? `${dateFrom}T00:00:00.000Z` : undefined,
         dateTo: dateTo ? `${dateTo}T23:59:59.999Z` : undefined,
-        priority: priorityFilter === "all" ? undefined : (priorityFilter as "LOW" | "NORMAL" | "HIGH" | "CRITICAL"),
+        priority:
+          priorityFilter === "all"
+            ? undefined
+            : (priorityFilter as "LOW" | "NORMAL" | "HIGH" | "CRITICAL"),
         type: typeFilter === "all" ? undefined : typeFilter,
         unreadOnly: activeTab === "unread",
       }),
@@ -117,6 +118,33 @@ export function NotificationCenter({
     },
   });
 
+  const visibleNotifications = useMemo(() => {
+    const notifications = notificationListQuery.data?.data ?? [];
+    if (activeTab === "all" || activeTab === "unread") return notifications;
+    return notifications.filter((notification) => {
+      const eventType = notification.eventType ?? "";
+      if (activeTab === "deadlines")
+        return eventType.includes("DUE") || eventType.includes("OVERDUE");
+      if (activeTab === "approvals")
+        return (
+          eventType.includes("REVIEW") ||
+          eventType.includes("APPROVED") ||
+          eventType.includes("RETURNED")
+        );
+      return eventType.length === 0;
+    });
+  }, [activeTab, notificationListQuery.data?.data]);
+  const pagination = notificationListQuery.data?.pagination;
+  const totalNotifications = totalQuery.data?.pagination.total ?? 0;
+  const unreadNotifications = unreadQuery.data?.pagination.total ?? 0;
+  const actionError =
+    (markAllReadMutation.error &&
+      getApiErrorMessage(markAllReadMutation.error)) ||
+    (markReadMutation.error && getApiErrorMessage(markReadMutation.error)) ||
+    (deleteNotificationMutation.error &&
+      getApiErrorMessage(deleteNotificationMutation.error)) ||
+    null;
+
   if (notificationListQuery.isError) {
     return (
       <ErrorState
@@ -125,26 +153,6 @@ export function NotificationCenter({
       />
     );
   }
-
-  const notifications = notificationListQuery.data?.data ?? [];
-  const visibleNotifications = useMemo(() => {
-    if (activeTab === "all" || activeTab === "unread") return notifications;
-    return notifications.filter((notification) => {
-      const eventType = notification.eventType ?? "";
-      if (activeTab === "deadlines") return eventType.includes("DUE") || eventType.includes("OVERDUE");
-      if (activeTab === "approvals") return eventType.includes("REVIEW") || eventType.includes("APPROVED") || eventType.includes("RETURNED");
-      return eventType.length === 0;
-    });
-  }, [activeTab, notifications]);
-  const pagination = notificationListQuery.data?.pagination;
-  const totalNotifications = totalQuery.data?.pagination.total ?? 0;
-  const unreadNotifications = unreadQuery.data?.pagination.total ?? 0;
-  const actionError =
-    (markAllReadMutation.error && getApiErrorMessage(markAllReadMutation.error)) ||
-    (markReadMutation.error && getApiErrorMessage(markReadMutation.error)) ||
-    (deleteNotificationMutation.error &&
-      getApiErrorMessage(deleteNotificationMutation.error)) ||
-    null;
 
   return (
     <div className="space-y-6">
@@ -170,7 +178,9 @@ export function NotificationCenter({
         />
       </section>
 
-      <div className={`grid gap-6 ${canCreate ? "xl:grid-cols-[1.25fr_0.9fr]" : ""}`}>
+      <div
+        className={`grid gap-6 ${canCreate ? "xl:grid-cols-[1.25fr_0.9fr]" : ""}`}
+      >
         <section className={panelClassName}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-2">
@@ -178,33 +188,44 @@ export function NotificationCenter({
                 Bandeja de notificaciones
               </h2>
               <p className="text-sm leading-7 text-stone-700">
-                Revise eventos recientes del sistema, atienda pendientes y mantenga la bandeja ordenada.
+                Revise eventos recientes del sistema, atienda pendientes y
+                mantenga la bandeja ordenada.
               </p>
             </div>
 
             <button
               className="nibol-btn-secondary justify-center disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={markAllReadMutation.isPending || unreadNotifications === 0}
+              disabled={
+                markAllReadMutation.isPending || unreadNotifications === 0
+              }
               onClick={() => {
                 void markAllReadMutation.mutateAsync();
               }}
               type="button"
             >
-              {markAllReadMutation.isPending ? "Actualizando..." : "Marcar todo como leido"}
+              {markAllReadMutation.isPending
+                ? "Actualizando..."
+                : "Marcar todo como leido"}
             </button>
           </div>
 
           <div className="mt-6 space-y-4">
             <div className="flex flex-wrap gap-2 border-b border-[var(--border)] pb-4">
-              {([
-                ["all", "Todas"],
-                ["unread", "No leídas"],
-                ["deadlines", "Vencimientos"],
-                ["approvals", "Aprobaciones"],
-                ["system", "Sistema"],
-              ] as const).map(([value, label]) => (
+              {(
+                [
+                  ["all", "Todas"],
+                  ["unread", "No leídas"],
+                  ["deadlines", "Vencimientos"],
+                  ["approvals", "Aprobaciones"],
+                  ["system", "Sistema"],
+                ] as const
+              ).map(([value, label]) => (
                 <button
-                  className={activeTab === value ? "nibol-btn-primary px-3 py-2 text-xs" : "nibol-btn-secondary px-3 py-2 text-xs"}
+                  className={
+                    activeTab === value
+                      ? "nibol-btn-primary px-3 py-2 text-xs"
+                      : "nibol-btn-secondary px-3 py-2 text-xs"
+                  }
                   key={value}
                   onClick={() => {
                     setActiveTab(value);
@@ -218,65 +239,80 @@ export function NotificationCenter({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_13rem_13rem_10rem_10rem]">
-            <SearchField
-              onChange={(value) => {
-                setPage(1);
-                setSearch(value);
-              }}
-              placeholder="Buscar notificaciones"
-              value={search}
-            />
+              <SearchField
+                onChange={(value) => {
+                  setPage(1);
+                  setSearch(value);
+                }}
+                placeholder="Buscar notificaciones"
+                value={search}
+              />
 
-            <select
-              className="nibol-field"
-              onChange={(event) => {
-                setPage(1);
-                setTypeFilter(
-                  event.target.value as "all" | "error" | "info" | "success" | "warning",
-                );
-              }}
-              value={typeFilter}
-            >
-              <option value="all">Todos los tipos</option>
-              {notificationTypeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              <select
+                className="nibol-field"
+                onChange={(event) => {
+                  setPage(1);
+                  setTypeFilter(
+                    event.target.value as
+                      "all" | "error" | "info" | "success" | "warning",
+                  );
+                }}
+                value={typeFilter}
+              >
+                <option value="all">Todos los tipos</option>
+                {notificationTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
 
-            <select
-              className="nibol-field"
-              onChange={(event) => {
-                setPage(1);
-                setPriorityFilter(event.target.value);
-              }}
-              value={priorityFilter}
-            >
-              <option value="all">Todas las prioridades</option>
-              <option value="CRITICAL">Crítica</option>
-              <option value="HIGH">Alta</option>
-              <option value="NORMAL">Normal</option>
-              <option value="LOW">Baja</option>
-            </select>
+              <select
+                className="nibol-field"
+                onChange={(event) => {
+                  setPage(1);
+                  setPriorityFilter(event.target.value);
+                }}
+                value={priorityFilter}
+              >
+                <option value="all">Todas las prioridades</option>
+                <option value="CRITICAL">Crítica</option>
+                <option value="HIGH">Alta</option>
+                <option value="NORMAL">Normal</option>
+                <option value="LOW">Baja</option>
+              </select>
 
-            <input className="nibol-field" onChange={(event) => setDateFrom(event.target.value)} type="date" value={dateFrom} />
-            <input className="nibol-field" onChange={(event) => setDateTo(event.target.value)} type="date" value={dateTo} />
+              <input
+                className="nibol-field"
+                onChange={(event) => setDateFrom(event.target.value)}
+                type="date"
+                value={dateFrom}
+              />
+              <input
+                className="nibol-field"
+                onChange={(event) => setDateTo(event.target.value)}
+                type="date"
+                value={dateTo}
+              />
 
-            <button
-              className={`inline-flex h-12 items-center justify-center border px-4 text-sm font-semibold transition ${
-                activeTab === "unread"
-                  ? "border-[var(--primary)] bg-[var(--primary)] text-white"
-                  : "border-[var(--border-strong)] bg-white text-[var(--foreground)] hover:border-[var(--primary)] hover:bg-[var(--surface-soft)]"
-              }`}
-              onClick={() => {
-                setPage(1);
-                setActiveTab((current) => (current === "unread" ? "all" : "unread"));
-              }}
-              type="button"
-            >
-              {activeTab === "unread" ? "Solo no leídas" : "Todas las notificaciones"}
-            </button>
+              <button
+                className={`inline-flex h-12 items-center justify-center border px-4 text-sm font-semibold transition ${
+                  activeTab === "unread"
+                    ? "border-[var(--primary)] bg-[var(--primary)] text-white"
+                    : "border-[var(--border-strong)] bg-white text-[var(--foreground)] hover:border-[var(--primary)] hover:bg-[var(--surface-soft)]"
+                }`}
+                onClick={() => {
+                  setPage(1);
+                  setActiveTab((current) =>
+                    current === "unread" ? "all" : "unread",
+                  );
+                }}
+                type="button"
+              >
+                {activeTab === "unread"
+                  ? "Solo no leídas"
+                  : "Todas las notificaciones"}
+              </button>
             </div>
           </div>
 
@@ -325,7 +361,10 @@ export function NotificationCenter({
                           className="nibol-btn-secondary px-3.5 py-2 text-sm"
                           href={notification.targetUrl}
                           onClick={() => {
-                            if (!notification.isRead) void markReadMutation.mutateAsync(notification.id);
+                            if (!notification.isRead)
+                              void markReadMutation.mutateAsync(
+                                notification.id,
+                              );
                           }}
                         >
                           Abrir registro
@@ -334,7 +373,9 @@ export function NotificationCenter({
                       <NotificationDeleteButton
                         disabled={deleteNotificationMutation.isPending}
                         onClick={() => {
-                          void deleteNotificationMutation.mutateAsync(notification.id);
+                          void deleteNotificationMutation.mutateAsync(
+                            notification.id,
+                          );
                         }}
                       />
                     </>

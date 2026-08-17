@@ -1,5 +1,9 @@
 import { apiClient } from "@/services/api-client";
-import type { ApiSuccessResponse, EntityActivity, EntityActivityListResult } from "@/types";
+import type {
+  ApiSuccessResponse,
+  EntityActivity,
+  EntityActivityListResult,
+} from "@/types";
 
 export type EntityActivityFilters = {
   activityType?: string;
@@ -18,12 +22,19 @@ export type EntityActivityFilters = {
 };
 
 const getList = async (path: string, filters: EntityActivityFilters) => {
-  const response = await apiClient.get<ApiSuccessResponse<EntityActivity[]>>(path, {
-    params: filters,
-  });
+  const response = await apiClient.get<ApiSuccessResponse<EntityActivity[]>>(
+    path,
+    {
+      params: filters,
+    },
+  );
   return {
     data: response.data.data,
-    pagination: response.data.pagination ?? { page: 1, perPage: filters.pageSize ?? 20, total: response.data.data.length },
+    pagination: response.data.pagination ?? {
+      page: 1,
+      perPage: filters.pageSize ?? 20,
+      total: response.data.data.length,
+    },
   } satisfies EntityActivityListResult;
 };
 
@@ -32,7 +43,10 @@ export const entityActivityService = {
     return getList("/activity", filters);
   },
 
-  listObservationHistory(observationId: string, filters: EntityActivityFilters = {}) {
+  listObservationHistory(
+    observationId: string,
+    filters: EntityActivityFilters = {},
+  ) {
     return getList(`/observations/${observationId}/history`, filters);
   },
 

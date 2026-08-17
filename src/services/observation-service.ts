@@ -3,6 +3,7 @@ import type {
   ApiSuccessResponse,
   CreateObservationInput,
   ObservationDetail,
+  ObservationActionItem,
   ObservationFormOptions,
   ObservationTableRow,
   PaginatedApiSuccessResponse,
@@ -10,11 +11,18 @@ import type {
 } from "@/types";
 
 export const observationService = {
-  async createObservation(input: CreateObservationInput): Promise<ObservationDetail> {
-    const response = await apiClient.post<ApiSuccessResponse<ObservationDetail>>(
-      "/observations",
-      input,
-    );
+  async closeObservation(id: string) {
+    const response = await apiClient.post<
+      ApiSuccessResponse<ObservationDetail>
+    >(`/observations/${id}/close`);
+    return response.data.data;
+  },
+  async createObservation(
+    input: CreateObservationInput,
+  ): Promise<ObservationDetail> {
+    const response = await apiClient.post<
+      ApiSuccessResponse<ObservationDetail>
+    >("/observations", input);
 
     return response.data.data;
   },
@@ -32,21 +40,32 @@ export const observationService = {
   },
 
   async getObservationOptions(): Promise<ObservationFormOptions> {
-    const response = await apiClient.get<ApiSuccessResponse<ObservationFormOptions>>(
-      "/config/bootstrap",
-    );
+    const response = await apiClient.get<
+      ApiSuccessResponse<ObservationFormOptions>
+    >("/observations/options");
+
+    return response.data.data;
+  },
+
+  async getObservationActionItems(
+    observationId: string,
+  ): Promise<ObservationActionItem[]> {
+    const response = await apiClient.get<
+      ApiSuccessResponse<ObservationActionItem[]>
+    >(`/observations/${observationId}/action-items`);
 
     return response.data.data;
   },
 
   async listObservations(params: string): Promise<{
     data: ObservationTableRow[];
-    pagination: PaginatedApiSuccessResponse<ObservationTableRow[]>["pagination"];
+    pagination: PaginatedApiSuccessResponse<
+      ObservationTableRow[]
+    >["pagination"];
   }> {
-    const response =
-      await apiClient.get<PaginatedApiSuccessResponse<ObservationTableRow[]>>(
-        `/observations${params}`,
-      );
+    const response = await apiClient.get<
+      PaginatedApiSuccessResponse<ObservationTableRow[]>
+    >(`/observations${params}`);
 
     return {
       data: response.data.data,
@@ -58,10 +77,9 @@ export const observationService = {
     observationId: string,
     input: UpdateObservationInput,
   ): Promise<ObservationDetail> {
-    const response = await apiClient.patch<ApiSuccessResponse<ObservationDetail>>(
-      `/observations/${observationId}`,
-      input,
-    );
+    const response = await apiClient.patch<
+      ApiSuccessResponse<ObservationDetail>
+    >(`/observations/${observationId}`, input);
 
     return response.data.data;
   },

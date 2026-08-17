@@ -28,9 +28,7 @@ const buildCookieHeader = async (): Promise<string> => {
     .join("; ");
 };
 
-const fetchDashboardResource = async <T>(
-  path: string,
-): Promise<T> => {
+const fetchDashboardResource = async <T>(path: string): Promise<T> => {
   const headers = new Headers({
     Accept: "application/json",
   });

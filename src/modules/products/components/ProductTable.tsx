@@ -24,7 +24,7 @@ const productColumns: ColumnDef<ProductRecord>[] = [
     cell: ({ row }) => (
       <div className="min-w-[14rem] space-y-1">
         <p className="font-semibold text-stone-950">{row.original.name}</p>
-        <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
+        <p className="text-xs tracking-[0.18em] text-stone-500 uppercase">
           {row.original.isActive ? "Registro activo" : "Registro inactivo"}
         </p>
       </div>

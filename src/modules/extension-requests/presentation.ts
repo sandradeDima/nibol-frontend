@@ -60,7 +60,9 @@ export const getExtensionRequestStatusClasses = (
   }
 };
 
-export const getFlowTone = (state: "done" | "idle" | "pending" | "rejected"): string => {
+export const getFlowTone = (
+  state: "done" | "idle" | "pending" | "rejected",
+): string => {
   switch (state) {
     case "done":
       return "border-emerald-300 bg-emerald-50 text-emerald-800";

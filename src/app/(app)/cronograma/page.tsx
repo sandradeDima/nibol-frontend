@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { requirePermission } from "@/lib/server-auth";
-import { CommitmentScheduleTable } from "@/modules/remediation/commitment-schedule-table";
+import { ActionPlanScheduleTable } from "@/modules/remediation/action-plan-schedule-table";
 
 export default async function CronogramaPage() {
   await requirePermission("observations.view");
@@ -8,13 +8,12 @@ export default async function CronogramaPage() {
   return (
     <main className="space-y-6">
       <PageHeader
-        description="Visualice compromisos, responsables, vencimientos y avance operativo dentro de un cronograma corporativo unificado."
+        description="Visualice planes de acción, responsables, vencimientos y avance aprobado dentro de un cronograma corporativo unificado."
         eyebrow="Seguimiento"
         title="Cronograma"
       />
 
-      <CommitmentScheduleTable />
+      <ActionPlanScheduleTable />
     </main>
   );
 }
-

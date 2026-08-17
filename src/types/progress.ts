@@ -1,154 +1,91 @@
-import type { ObservationAreaSummary, ObservationRiskLevel, ObservationUserSummary } from "./observations";
+import type { ActionPlanStatus } from "./remediation";
+import type { ObservationUserSummary } from "./observations";
 
-export type ProgressUpdateType = "ADVANCE" | "FINALIZATION" | "CORRECTION";
-
-export type ProgressUpdateStatus =
-  | "DRAFT"
-  | "SENT_TO_AUDIT"
-  | "APPROVED"
-  | "RETURNED"
-  | "REJECTED";
-
+export type ProgressEvaluationType = "ADVANCE" | "FINALIZATION" | "CORRECTION";
+export type ProgressEvaluationReviewStatus =
+  "DRAFT" | "SENT_TO_AUDIT" | "APPROVED" | "RETURNED" | "REJECTED";
+export type ProgressReviewAction =
+  "SENT" | "APPROVED" | "RETURNED" | "REJECTED";
 export type CommentVisibility = "INTERNAL_AUDIT" | "AREA_VISIBLE" | "SYSTEM";
 
-export type ProgressReviewAction = "SENT" | "APPROVED" | "RETURNED" | "REJECTED";
-
-export interface ProgressUserSummary extends ObservationUserSummary {
-  roleLabel: string | null;
-}
-
-export interface ProgressPlanTarget {
-  area: ObservationAreaSummary;
-  id: string;
-  ownerUser: ProgressUserSummary | null;
-  responsibleUser: ProgressUserSummary | null;
-  status: string;
-}
-
-export interface ProgressCommitmentTarget {
-  id: string;
-  progressPercent: number;
-  remediationPlanId: string;
-  responsibleUser: ProgressUserSummary | null;
-  status: string;
-  title: string;
-}
-
-export interface ProgressReviewHistoryEntry {
-  action: ProgressReviewAction;
-  comment: string | null;
-  createdAt: string;
-  fromStatus: ProgressUpdateStatus | null;
-  id: string;
-  toStatus: ProgressUpdateStatus;
-  user: ProgressUserSummary;
-}
-
 export interface EvidenceFileItem {
-  canDelete: boolean;
-  commitmentId: string | null;
+  context: "FINDING" | "ACTION_PLAN" | "PROGRESS_EVALUATION" | "CLOSURE";
   createdAt: string;
   description: string | null;
   downloadPath: string;
   id: string;
   mimeType: string;
   originalName: string;
-  progressUpdateId: string | null;
-  remediationPlanId: string | null;
-  sizeBytes: string;
-  uploadedByUser: ProgressUserSummary;
+  sizeBytes: number;
+}
+
+export interface ProgressReviewHistoryEntry {
+  action: ProgressReviewAction;
+  comment: string | null;
+  createdAt: string;
+  fromStatus: ProgressEvaluationReviewStatus | null;
+  id: string;
+  toStatus: ProgressEvaluationReviewStatus;
+  user: ObservationUserSummary;
+}
+
+export interface ProgressEvaluationItem {
+  actionPlan: {
+    area: { id: string; name: string };
+    id: string;
+    responsibleUser: ObservationUserSummary;
+    title: string;
+  };
+  actionPlanStatus: ActionPlanStatus;
+  comment: string;
+  evidence: EvidenceFileItem[];
+  history: ProgressReviewHistoryEntry[];
+  id: string;
+  observation: { displayCode: string; id: string; title: string };
+  progressPercent: number;
+  reviewedAt: string | null;
+  reviewedByUser: ObservationUserSummary | null;
+  reviewComment: string | null;
+  reviewStatus: ProgressEvaluationReviewStatus;
+  submittedAt: string;
+  submittedByUser: ObservationUserSummary;
+  type: ProgressEvaluationType;
+  updatedAt: string;
+  workflowInstanceId: string | null;
+}
+
+export interface CreateProgressEvaluationInput {
+  actionPlanStatus: ActionPlanStatus;
+  comment: string;
+  progressPercent: number;
+  type: ProgressEvaluationType;
+}
+
+export type UpdateProgressEvaluationInput =
+  Partial<CreateProgressEvaluationInput>;
+export interface ReviewProgressEvaluationInput {
+  comment?: string | null;
 }
 
 export interface ObservationCommentItem {
-  authorUser: ProgressUserSummary;
+  actionPlanId: string | null;
+  authorUser: ObservationUserSummary;
   body: string;
   canDelete: boolean;
   canEdit: boolean;
-  commitmentId: string | null;
   createdAt: string;
   id: string;
-  progressUpdateId: string | null;
-  remediationPlanId: string | null;
+  progressEvaluationId: string | null;
   updatedAt: string;
   visibility: CommentVisibility;
 }
 
-export interface ProgressUpdateItem {
-  canApprove: boolean;
-  canEdit: boolean;
-  canReject: boolean;
-  canReturn: boolean;
-  canSendToAudit: boolean;
-  comment: string;
-  commitmentId: string | null;
-  createdAt: string;
-  evidences: EvidenceFileItem[];
-  history: ProgressReviewHistoryEntry[];
-  id: string;
-  progressPercent: number | null;
-  remediationPlanId: string | null;
-  reviewComment: string | null;
-  reviewedAt: string | null;
-  reviewedByUser: ProgressUserSummary | null;
-  status: ProgressUpdateStatus;
-  submittedByUser: ProgressUserSummary;
-  type: ProgressUpdateType;
-  updatedAt: string;
-}
-
-export interface ObservationProgressWorkspace {
-  canComment: boolean;
-  canCreateProgress: boolean;
-  canReview: boolean;
-  canUploadEvidence: boolean;
-  commitments: ProgressCommitmentTarget[];
-  plans: ProgressPlanTarget[];
-  progressUpdates: ProgressUpdateItem[];
-}
-
-export interface ProgressUpdateTableRow {
-  area: ObservationAreaSummary;
-  canEdit: boolean;
-  canReview: boolean;
-  canSendToAudit: boolean;
-  createdAt: string;
-  evidenceCount: number;
-  evidencePending: boolean;
-  id: string;
-  observation: {
-    code: string;
-    id: string;
-    title: string;
-  };
-  progressPercent: number | null;
-  responsibleUser: ProgressUserSummary | null;
-  riskLevel: ObservationRiskLevel;
-  sentToAuditAt: string | null;
-  status: ProgressUpdateStatus;
-  type: ProgressUpdateType;
-}
-
-export interface CreateProgressUpdateInput {
-  comment: string;
-  commitmentId?: string | null;
-  progressPercent?: number | null;
-  remediationPlanId?: string | null;
-  type: ProgressUpdateType;
-}
-
-export type UpdateProgressUpdateInput = Partial<CreateProgressUpdateInput>;
-
-export interface ReviewProgressUpdateInput {
-  comment?: string | null;
-}
-
 export interface CreateObservationCommentInput {
+  actionPlanId?: string | null;
   body: string;
-  progressUpdateId?: string | null;
+  progressEvaluationId?: string | null;
   visibility?: CommentVisibility;
 }
-
-export interface UpdateObservationCommentInput {
-  body?: string;
-  visibility?: CommentVisibility;
-}
+export type UpdateObservationCommentInput =
+  Partial<CreateObservationCommentInput>;
+export type ProgressEvaluationTableRow = ProgressEvaluationItem;

@@ -6,8 +6,12 @@ export default async function EstadosObservacionPage() {
 
   return (
     <ObservationStatusesPage
-      canCreate={authorization.permissions.includes("observation_statuses.create")}
-      canDelete={authorization.permissions.includes("observation_statuses.delete")}
+      canCreate={authorization.permissions.includes(
+        "observation_statuses.create",
+      )}
+      canDelete={authorization.permissions.includes(
+        "observation_statuses.delete",
+      )}
       canEdit={authorization.permissions.includes("observation_statuses.edit")}
     />
   );

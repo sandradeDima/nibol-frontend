@@ -7,7 +7,8 @@ import type {
 
 export const settingsService = {
   async getSettings(): Promise<AppSettings> {
-    const response = await apiClient.get<ApiSuccessResponse<AppSettings>>("/settings");
+    const response =
+      await apiClient.get<ApiSuccessResponse<AppSettings>>("/settings");
 
     return response.data.data;
   },

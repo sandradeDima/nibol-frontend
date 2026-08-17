@@ -34,7 +34,12 @@ type SidebarNavProps = {
   onNavigate?: () => void;
 };
 
-const GROUP_ORDER = ["Principal", "Gestion", "Control", "Administracion"] as const;
+const GROUP_ORDER = [
+  "Principal",
+  "Gestion",
+  "Control",
+  "Administracion",
+] as const;
 
 const GROUP_LABELS: Record<string, string> = {
   Administracion: "Administracion",
@@ -59,14 +64,18 @@ const buildNavigationGroups = (items: SidebarItem[]) => {
     groupedItems.set(group, [...(groupedItems.get(group) ?? []), item]);
   });
 
-  const orderedGroups = GROUP_ORDER.filter((group) => groupedItems.has(group)).map((group) => ({
+  const orderedGroups = GROUP_ORDER.filter((group) =>
+    groupedItems.has(group),
+  ).map((group) => ({
     items: groupedItems.get(group) ?? [],
     key: group,
     label: GROUP_LABELS[group] ?? group,
   }));
 
   const extraGroups = [...groupedItems.entries()]
-    .filter(([group]) => !GROUP_ORDER.includes(group as (typeof GROUP_ORDER)[number]))
+    .filter(
+      ([group]) => !GROUP_ORDER.includes(group as (typeof GROUP_ORDER)[number]),
+    )
     .map(([group, groupItems]) => ({
       items: groupItems,
       key: group,
@@ -79,7 +88,9 @@ const buildNavigationGroups = (items: SidebarItem[]) => {
 function SidebarNav({ collapsed = false, items, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
   const groups = buildNavigationGroups(items);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    {},
+  );
 
   return (
     <div className="space-y-7">
@@ -89,7 +100,7 @@ function SidebarNav({ collapsed = false, items, onNavigate }: SidebarNavProps) {
             <button
               aria-controls={`sidebar-group-${group.key}`}
               aria-expanded={expandedGroups[group.key] ?? true}
-              className="flex w-full items-center justify-between gap-3 px-3 text-left text-[0.66rem] font-semibold uppercase tracking-[0.24em] text-slate-500 transition hover:text-slate-300"
+              className="flex w-full items-center justify-between gap-3 px-3 text-left text-[0.66rem] font-semibold tracking-[0.24em] text-slate-500 uppercase transition hover:text-slate-300"
               onClick={() => {
                 setExpandedGroups((current) => ({
                   ...current,
@@ -102,7 +113,9 @@ function SidebarNav({ collapsed = false, items, onNavigate }: SidebarNavProps) {
               <ChevronDown
                 className={cn(
                   "h-3.5 w-3.5 transition-transform duration-200",
-                  expandedGroups[group.key] ?? true ? "rotate-0" : "-rotate-90",
+                  (expandedGroups[group.key] ?? true)
+                    ? "rotate-0"
+                    : "-rotate-90",
                 )}
               />
             </button>
@@ -123,8 +136,12 @@ function SidebarNav({ collapsed = false, items, onNavigate }: SidebarNavProps) {
               >
                 {group.items.map((item) => {
                   const Icon =
-                    (IconSet as unknown as Record<string, typeof IconSet.LayoutDashboard>)[item.icon] ??
-                    IconSet.LayoutDashboard;
+                    (
+                      IconSet as unknown as Record<
+                        string,
+                        typeof IconSet.LayoutDashboard
+                      >
+                    )[item.icon] ?? IconSet.LayoutDashboard;
                   const active = isActiveRoute(pathname, item.route);
 
                   return (
@@ -181,8 +198,15 @@ function SidebarBrand({
 }) {
   return (
     <div className="border-b border-white/10 pb-6">
-      <div className={cn("flex items-start gap-3", collapsed ? "justify-center" : "justify-between")}>
-        <div className={cn("space-y-4", collapsed && "flex flex-col items-center")}>
+      <div
+        className={cn(
+          "flex items-start gap-3",
+          collapsed ? "justify-center" : "justify-between",
+        )}
+      >
+        <div
+          className={cn("space-y-4", collapsed && "flex flex-col items-center")}
+        >
           <Image
             alt="NIBOL Bolivia"
             className={cn(
@@ -196,7 +220,7 @@ function SidebarBrand({
           />
           {!collapsed ? (
             <div className="space-y-2">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400">
+              <p className="text-[0.68rem] font-semibold tracking-[0.24em] text-slate-400 uppercase">
                 NIBOL Bolivia
               </p>
               <p className="max-w-[16rem] text-sm leading-6 text-slate-300">
@@ -237,10 +261,12 @@ function SidebarSummary({
     <div className="mt-auto border-t border-white/10 pt-5">
       {!collapsed ? (
         <div className="mb-4 space-y-1">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-500">
+          <p className="text-[0.68rem] font-semibold tracking-[0.24em] text-slate-500 uppercase">
             Sesion activa
           </p>
-          <p className="text-sm font-semibold text-white">{session.user.name}</p>
+          <p className="text-sm font-semibold text-white">
+            {session.user.name}
+          </p>
           <p className="text-xs leading-5 text-slate-400">
             {authorization.roles.join(" • ") || "Usuario autenticado"}
           </p>
@@ -301,7 +327,10 @@ export function AdminShell({
             />
 
             <div className="mt-6 min-h-0 flex-1 overflow-y-auto pr-1">
-              <SidebarNav collapsed={desktopCollapsed} items={navigationItems} />
+              <SidebarNav
+                collapsed={desktopCollapsed}
+                items={navigationItems}
+              />
             </div>
 
             <SidebarSummary

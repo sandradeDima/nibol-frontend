@@ -95,7 +95,7 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
 
             <div className="space-y-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+                <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
                   Ficha de rol
                 </p>
                 <h2 className="mt-2 text-3xl font-semibold tracking-tight text-stone-950">
@@ -105,16 +105,18 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
               <div className="flex flex-wrap items-center gap-3 text-sm text-stone-600">
                 <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5">
                   <Users className="h-4 w-4" />
-                  {role.usersCount} usuario{role.usersCount === 1 ? "" : "s"} asignado{role.usersCount === 1 ? "" : "s"}
+                  {role.usersCount} usuario{role.usersCount === 1 ? "" : "s"}{" "}
+                  asignado{role.usersCount === 1 ? "" : "s"}
                 </span>
                 {role.isAdmin ? (
-                  <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-amber-800">
+                  <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold tracking-[0.18em] text-amber-800 uppercase">
                     Rol Administrador protegido
                   </span>
                 ) : null}
               </div>
               <p className="max-w-3xl text-sm leading-7 text-stone-700">
-                {role.description || "Sin descripcion registrada para este rol."}
+                {role.description ||
+                  "Sin descripcion registrada para este rol."}
               </p>
             </div>
           </div>
@@ -142,7 +144,7 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <section className="nibol-panel p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+          <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
             Permisos
           </p>
           <div className="mt-5">
@@ -152,7 +154,9 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
                   ? "Los permisos criticos del rol Administrador permanecen bloqueados para conservar el acceso total del sistema."
                   : undefined
               }
-              lockedPermissionNames={role.isAdmin ? CRITICAL_ADMIN_PERMISSIONS : []}
+              lockedPermissionNames={
+                role.isAdmin ? CRITICAL_ADMIN_PERMISSIONS : []
+              }
               permissionNames={role.permissions}
               readOnly
             />
@@ -160,18 +164,20 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
         </section>
 
         <section className="nibol-panel p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+          <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
             Metadatos del registro
           </p>
           <dl className="mt-5 space-y-4 text-sm">
             <div className="rounded-[1.3rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-              <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+              <dt className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
                 Usuarios asignados
               </dt>
-              <dd className="mt-2 font-medium text-stone-900">{role.usersCount}</dd>
+              <dd className="mt-2 font-medium text-stone-900">
+                {role.usersCount}
+              </dd>
             </div>
             <div className="rounded-[1.3rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-              <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+              <dt className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
                 Creado
               </dt>
               <dd className="mt-2 font-medium text-stone-900">
@@ -179,7 +185,7 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
               </dd>
             </div>
             <div className="rounded-[1.3rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-              <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+              <dt className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
                 Actualizado
               </dt>
               <dd className="mt-2 font-medium text-stone-900">
@@ -199,7 +205,9 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
                 type="button"
               >
                 <Trash2 className="h-4 w-4" />
-                {role.isAdmin ? "El rol Administrador esta protegido" : "Eliminar rol"}
+                {role.isAdmin
+                  ? "El rol Administrador esta protegido"
+                  : "Eliminar rol"}
               </button>
             </div>
           ) : null}

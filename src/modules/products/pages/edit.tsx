@@ -6,9 +6,7 @@ type EditProductPageProps = {
   productId: string;
 };
 
-export default function EditProductPage({
-  productId,
-}: EditProductPageProps) {
+export default function EditProductPage({ productId }: EditProductPageProps) {
   return (
     <main className="space-y-6">
       <PageHeader

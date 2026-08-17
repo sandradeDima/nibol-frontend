@@ -1,732 +1,237 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  CalendarClock,
-  CheckCheck,
-  FileDown,
-  Save,
-  Send,
-  ShieldAlert,
-  XCircle,
-} from "lucide-react";
+import { ArrowLeft, Check, RotateCcw, Send, X } from "lucide-react";
+import Link from "next/link";
 
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ErrorState } from "@/components/ui/error-state";
-import { QUERY_KEYS } from "@/lib/constants";
 import { extensionRequestService } from "@/services/extension-request-service";
-import { progressService } from "@/services/progress-service";
-import { cn, getApiErrorMessage } from "@/utils";
+import { getApiErrorMessage } from "@/utils";
 
-import { formatObservationDate, getRiskLevelClasses } from "../observations/presentation";
-import {
-  formatExtensionRequestDate,
-  getExtensionRequestStatusClasses,
-  getExtensionRequestStatusLabel,
-  getFlowTone,
-} from "./presentation";
-
-type ExtensionRequestDetailProps = {
-  requestId: string;
-};
-
-const editableStatuses = new Set(["DRAFT", "MANAGER_REJECTED", "AUDIT_REJECTED"]);
-
-export function ExtensionRequestDetail({ requestId }: ExtensionRequestDetailProps) {
+export function ExtensionRequestDetail({ requestId }: { requestId: string }) {
   const queryClient = useQueryClient();
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [decisionComment, setDecisionComment] = useState("");
-  const [requestedDueDate, setRequestedDueDate] = useState("");
-  const [reason, setReason] = useState("");
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [attachmentIds, setAttachmentIds] = useState<string[]>([]);
-
-  const detailQuery = useQuery({
+  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
     queryFn: () => extensionRequestService.getById(requestId),
-    queryKey: QUERY_KEYS.extensionRequestDetails(requestId),
+    queryKey: ["extension-request", requestId],
   });
-
-  useEffect(() => {
-    const detail = detailQuery.data;
-
-    if (!detail) {
-      return;
-    }
-
-    setRequestedDueDate(detail.requestedDueDate.slice(0, 10));
-    setReason(detail.reason);
-    setAttachmentIds(detail.attachments.map((attachment) => attachment.id));
-    setSelectedFiles([]);
-    setDecisionComment("");
-  }, [detailQuery.data?.id, detailQuery.data?.updatedAt]);
-
-  const invalidateRelatedQueries = async (observationId: string) => {
+  const refresh = async () => {
     await Promise.all([
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.extensionRequests,
+        queryKey: ["extension-request", requestId],
       }),
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.extensionRequestDetails(requestId),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.observationDetails(observationId),
-      }),
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.observations,
-      }),
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.commitmentSchedule,
-      }),
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.remediationPlans,
-      }),
+      queryClient.invalidateQueries({ queryKey: ["extension-requests"] }),
     ]);
   };
-
-  const actionMutation = useMutation({
-    mutationFn: async (action: "audit-approve" | "audit-reject" | "cancel" | "manager-approve" | "manager-reject" | "save" | "send") => {
-      const detail = detailQuery.data;
-
-      if (!detail) {
-        throw new Error("La solicitud aún no está disponible.");
-      }
-
-      if (action === "save") {
-        let nextAttachmentIds = attachmentIds;
-
-        if (selectedFiles.length > 0) {
-          const uploadedEvidence = await progressService.uploadObservationEvidence(
-            detail.observation.id,
-            selectedFiles,
-            "Respaldo de ampliacion de plazo",
-          );
-          nextAttachmentIds = [
-            ...new Set([...attachmentIds, ...uploadedEvidence.map((item) => item.id)]),
-          ];
-        }
-
-        return extensionRequestService.update(requestId, {
-          evidenceFileIds: nextAttachmentIds,
-          reason,
-          requestedDueDate,
-        });
-      }
-
-      if (action === "send") {
-        return detail.nextSubmissionTarget === "manager"
-          ? extensionRequestService.sendToManager(requestId)
-          : extensionRequestService.sendToAudit(requestId);
-      }
-
-      if (action === "manager-approve") {
-        return extensionRequestService.managerApprove(requestId, {
-          comment: decisionComment.trim() || null,
-        });
-      }
-
-      if (action === "manager-reject") {
-        return extensionRequestService.managerReject(requestId, {
-          comment: decisionComment.trim(),
-        });
-      }
-
-      if (action === "audit-approve") {
-        return extensionRequestService.auditApprove(requestId, {
-          comment: decisionComment.trim() || null,
-        });
-      }
-
-      if (action === "audit-reject") {
-        return extensionRequestService.auditReject(requestId, {
-          comment: decisionComment.trim(),
-        });
-      }
-
+  const action = useMutation({
+    mutationFn: async (
+      kind:
+        | "submit"
+        | "managerApprove"
+        | "managerReject"
+        | "auditApprove"
+        | "auditReject"
+        | "cancel",
+    ) => {
+      const comment = kind.endsWith("Reject")
+        ? (window.prompt("Motivo del rechazo") ?? "Rechazado")
+        : undefined;
+      if (kind === "submit")
+        return extensionRequestService.sendToManager(requestId);
+      if (kind === "managerApprove")
+        return extensionRequestService.managerApprove(requestId);
+      if (kind === "managerReject")
+        return extensionRequestService.managerReject(requestId, { comment });
+      if (kind === "auditApprove")
+        return extensionRequestService.auditApprove(requestId);
+      if (kind === "auditReject")
+        return extensionRequestService.auditReject(requestId, { comment });
       return extensionRequestService.cancel(requestId);
     },
-    onError: (error) => {
-      setActionSuccess(null);
-      setActionError(getApiErrorMessage(error));
-    },
-    onSuccess: async (detail, action) => {
-      setActionError(null);
-      setActionSuccess(
-        action === "save"
-          ? "La solicitud fue actualizada."
-          : action === "send"
-            ? "La solicitud fue enviada correctamente."
-            : action === "cancel"
-              ? "La solicitud fue cancelada."
-              : action === "manager-approve" || action === "audit-approve"
-                ? "La solicitud fue aprobada."
-                : "La solicitud fue rechazada.",
-      );
-      setCancelOpen(false);
-      setDecisionComment("");
-      setSelectedFiles([]);
-      await invalidateRelatedQueries(detail.observation.id);
-    },
+    onError: (cause) => setError(getApiErrorMessage(cause)),
+    onSuccess: refresh,
   });
-
-  if (detailQuery.isError) {
+  const request = query.data;
+  if (!request)
     return (
-      <ErrorState
-        action={
-          <button
-            className="nibol-btn-secondary px-4 py-2 text-sm"
-            onClick={() => {
-              void detailQuery.refetch();
-            }}
-            type="button"
-          >
-            Reintentar
-          </button>
-        }
-        description={detailQuery.error.message}
-        title="No fue posible cargar esta ampliación"
-      />
-    );
-  }
-
-  const detail = detailQuery.data;
-
-  if (!detail) {
-    return (
-      <section className="nibol-panel p-6 text-sm text-stone-600">
-        Cargando detalle de la ampliación...
+      <section className="nibol-panel p-6 text-sm text-stone-500">
+        Cargando solicitud…
       </section>
     );
-  }
-
-  const canEditPayload = detail.canEdit && editableStatuses.has(detail.status);
-  const flowState = {
-    audit:
-      detail.status === "AUDIT_REJECTED"
-        ? "rejected"
-        : detail.auditReviewedAt
-          ? "done"
-          : detail.status === "SENT_TO_AUDIT"
-            ? "pending"
-            : "idle",
-    final:
-      detail.status === "AUDIT_APPROVED" || detail.status === "MANAGER_APPROVED"
-        ? "done"
-        : detail.status === "CANCELLED"
-          ? "rejected"
-          : "idle",
-    manager:
-      detail.status === "MANAGER_REJECTED"
-        ? "rejected"
-        : detail.managerReviewedAt
-          ? "done"
-          : detail.status === "SENT_TO_MANAGER"
-            ? "pending"
-            : "idle",
-  } as const;
-
+  const observationHref = request.observation
+    ? `/observaciones/${request.observation.id}`
+    : "/observaciones";
   return (
     <div className="space-y-6">
-      <section className="nibol-panel p-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-                {detail.observation.code}
-              </p>
-              <h2 className="max-w-4xl text-3xl font-semibold tracking-tight text-stone-950">
-                {detail.observation.title}
-              </h2>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <span
-                className={cn(
-                  "inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]",
-                  getRiskLevelClasses(detail.observation.riskLevel.colorToken),
-                )}
-              >
-                {detail.observation.riskLevel.name}
-              </span>
-              <span
-                className={cn(
-                  "inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]",
-                  getExtensionRequestStatusClasses(detail.status),
-                )}
-              >
-                {getExtensionRequestStatusLabel(detail.status)}
-              </span>
-              {detail.commitment ? (
-                <span className="inline-flex items-center border border-stone-200 bg-stone-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-stone-700">
-                  Compromiso: {detail.commitment.title}
-                </span>
-              ) : null}
-            </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          className="nibol-btn-secondary px-4 py-2.5 text-sm"
+          href="/ampliaciones-plazo"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Volver
+        </Link>
+        <span className="nibol-badge">
+          {request.status.replaceAll("_", " ")}
+        </span>
+      </div>
+      <section className="nibol-panel overflow-hidden">
+        <div className="border-b border-stone-200 bg-stone-950 p-6 text-white">
+          <p className="text-xs font-semibold tracking-wider text-amber-400 uppercase">
+            {request.targetType === "ACTION_PLAN"
+              ? "Plan de acción"
+              : "Observación"}
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold">
+            {request.actionPlan?.title ??
+              request.observation?.displayCode ??
+              "Solicitud de ampliación"}
+          </h2>
+          <Link
+            className="mt-2 inline-block text-sm text-stone-300 hover:text-white"
+            href={observationHref}
+          >
+            {request.observation?.title ?? "Ver observación relacionada"}
+          </Link>
+        </div>
+        <div className="grid gap-px bg-stone-200 sm:grid-cols-4">
+          <div className="bg-white p-5">
+            <p className="text-xs tracking-wider text-stone-500 uppercase">
+              Fecha anterior
+            </p>
+            <p className="mt-2 font-semibold">
+              {request.previousDueDate.slice(0, 10)}
+            </p>
           </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Link className="nibol-btn-secondary px-4 py-2.5 text-sm" href="/ampliaciones-plazo">
-              <ArrowLeft className="h-4 w-4" />
-              Volver
-            </Link>
-            {detail.canSend ? (
-              <button
-                className="nibol-btn-primary px-4 py-2.5 text-sm"
-                disabled={actionMutation.isPending}
-                onClick={async () => {
-                  await actionMutation.mutateAsync("send");
-                }}
-                type="button"
-              >
-                <Send className="h-4 w-4" />
-                Enviar solicitud
-              </button>
-            ) : null}
-            {detail.canCancel ? (
-              <button
-                className="nibol-btn-secondary px-4 py-2.5 text-sm text-rose-700"
-                onClick={() => {
-                  setCancelOpen(true);
-                }}
-                type="button"
-              >
-                <XCircle className="h-4 w-4" />
-                Cancelar
-              </button>
-            ) : null}
+          <div className="bg-white p-5">
+            <p className="text-xs tracking-wider text-stone-500 uppercase">
+              Fecha propuesta
+            </p>
+            <p className="mt-2 font-semibold">
+              {request.proposedDueDate.slice(0, 10)}
+            </p>
+          </div>
+          <div className="bg-white p-5">
+            <p className="text-xs tracking-wider text-stone-500 uppercase">
+              Impacto
+            </p>
+            <p className="mt-2 font-semibold">+{request.impactDays} días</p>
+          </div>
+          <div className="bg-white p-5">
+            <p className="text-xs tracking-wider text-stone-500 uppercase">
+              Solicitante
+            </p>
+            <p className="mt-2 font-semibold">{request.requestedByUser.name}</p>
           </div>
         </div>
       </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <article className="nibol-panel p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-            Fecha actual
-          </p>
-          <p className="mt-3 text-xl font-semibold text-stone-950">
-            {formatExtensionRequestDate(detail.currentDueDate)}
-          </p>
-        </article>
-
-        <article className="nibol-panel p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-            Nueva fecha solicitada
-          </p>
-          <p className="mt-3 text-xl font-semibold text-stone-950">
-            {formatExtensionRequestDate(detail.requestedDueDate)}
-          </p>
-        </article>
-
-        <article className="nibol-panel p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-            Impacto en plazo
-          </p>
-          <p className="mt-3 text-xl font-semibold text-stone-950">
-            +{detail.impactDays} días
-          </p>
-        </article>
-
-        <article className="nibol-panel p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-            Última actualización
-          </p>
-          <p className="mt-3 text-xl font-semibold text-stone-950">
-            {formatObservationDate(detail.updatedAt, {
-              timeStyle: "short",
-            })}
-          </p>
-        </article>
+      <section className="nibol-panel p-6">
+        <h3 className="text-lg font-semibold">Justificación</h3>
+        <p className="mt-3 text-sm leading-7 whitespace-pre-wrap text-stone-700">
+          {request.reason}
+        </p>
+        {request.observationArea ? (
+          <div className="mt-5 rounded-xl bg-stone-50 p-4 text-sm">
+            <strong>{request.observationArea.area.name}</strong>
+            <p className="mt-1 text-stone-500">
+              Dueño del proceso: {request.observationArea.processOwner.name} ·
+              Responsable: {request.observationArea.areaResponsible.name}
+            </p>
+          </div>
+        ) : null}
       </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <section className="space-y-6">
-          <section className="nibol-panel p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-              Sustento de reprogramación
+      <section className="nibol-panel p-6">
+        <h3 className="text-lg font-semibold">Decisiones y flujo</h3>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-stone-200 p-4">
+            <p className="text-xs tracking-wider text-stone-500 uppercase">
+              Gerencia
             </p>
-            {canEditPayload ? (
-              <div className="mt-5 space-y-4">
-                <label className="space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                    Nueva fecha propuesta
-                  </span>
-                  <input
-                    className="nibol-field h-11 text-sm"
-                    onChange={(event) => {
-                      setRequestedDueDate(event.target.value);
-                    }}
-                    type="date"
-                    value={requestedDueDate}
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                    Sustento
-                  </span>
-                  <textarea
-                    className="nibol-field min-h-[10rem] py-3 text-sm"
-                    onChange={(event) => {
-                      setReason(event.target.value);
-                    }}
-                    value={reason}
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                    Adjuntar respaldo adicional
-                  </span>
-                  <input
-                    className="nibol-field h-11 pt-2.5 text-sm"
-                    multiple
-                    onChange={(event) => {
-                      setSelectedFiles(Array.from(event.target.files ?? []));
-                    }}
-                    type="file"
-                  />
-                </label>
-                <button
-                  className="nibol-btn-secondary px-4 py-2.5 text-sm"
-                  disabled={actionMutation.isPending}
-                  onClick={async () => {
-                    await actionMutation.mutateAsync("save");
-                  }}
-                  type="button"
-                >
-                  <Save className="h-4 w-4" />
-                  Guardar cambios
-                </button>
-              </div>
-            ) : (
-              <p className="mt-4 text-sm leading-7 text-stone-700">{detail.reason}</p>
-            )}
-          </section>
-
-          <section className="nibol-panel p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-              Documentos de respaldo
+            <p className="mt-2 text-sm">
+              {request.managerComment ??
+                (request.managerReviewedAt ? "Revisado" : "Pendiente")}
             </p>
-            <div className="mt-5 space-y-3">
-              {detail.attachments.length > 0 ? (
-                detail.attachments
-                  .filter((attachment) =>
-                    canEditPayload ? attachmentIds.includes(attachment.id) : true,
-                  )
-                  .map((attachment) => (
-                    <div
-                      key={attachment.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-[1.2rem] border border-stone-200 bg-white px-4 py-4"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-stone-950">
-                          {attachment.originalName}
-                        </p>
-                        <p className="text-xs text-stone-500">
-                          {attachment.uploadedByUser.name} ·{" "}
-                          {formatExtensionRequestDate(attachment.createdAt, {
-                            timeStyle: "short",
-                          })}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {canEditPayload ? (
-                          <button
-                            className="nibol-btn-secondary px-3 py-2 text-sm text-rose-700"
-                            onClick={() => {
-                              setAttachmentIds((current) =>
-                                current.filter((item) => item !== attachment.id),
-                              );
-                            }}
-                            type="button"
-                          >
-                            Quitar
-                          </button>
-                        ) : null}
-                        <button
-                          className="nibol-btn-secondary px-3 py-2 text-sm"
-                          onClick={async () => {
-                            await progressService.downloadEvidence(attachment);
-                          }}
-                          type="button"
-                        >
-                          <FileDown className="h-4 w-4" />
-                          Descargar
-                        </button>
-                      </div>
-                    </div>
-                  ))
-              ) : (
-                <div className="rounded-[1.2rem] border border-dashed border-stone-300 bg-[var(--surface-soft)] px-4 py-4 text-sm text-stone-600">
-                  No se adjuntaron respaldos a esta solicitud.
-                </div>
-              )}
-            </div>
-          </section>
-
-          {detail.canManagerApprove ||
-          detail.canManagerReject ||
-          detail.canAuditApprove ||
-          detail.canAuditReject ? (
-            <section className="nibol-panel p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-                Comentario de decisión
-              </p>
-              <textarea
-                className="nibol-field mt-5 min-h-[8rem] py-3 text-sm"
-                onChange={(event) => {
-                  setDecisionComment(event.target.value);
-                }}
-                placeholder="Registre el comentario que acompañará su decisión."
-                value={decisionComment}
-              />
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                {detail.canManagerApprove ? (
-                  <button
-                    className="nibol-btn-primary px-4 py-2.5 text-sm"
-                    disabled={actionMutation.isPending}
-                    onClick={async () => {
-                      await actionMutation.mutateAsync("manager-approve");
-                    }}
-                    type="button"
-                  >
-                    <CheckCheck className="h-4 w-4" />
-                    Aprobar como Gerencia
-                  </button>
-                ) : null}
-                {detail.canManagerReject ? (
-                  <button
-                    className="nibol-btn-secondary px-4 py-2.5 text-sm text-rose-700"
-                    disabled={actionMutation.isPending}
-                    onClick={async () => {
-                      await actionMutation.mutateAsync("manager-reject");
-                    }}
-                    type="button"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Rechazar como Gerencia
-                  </button>
-                ) : null}
-                {detail.canAuditApprove ? (
-                  <button
-                    className="nibol-btn-primary px-4 py-2.5 text-sm"
-                    disabled={actionMutation.isPending}
-                    onClick={async () => {
-                      await actionMutation.mutateAsync("audit-approve");
-                    }}
-                    type="button"
-                  >
-                    <CheckCheck className="h-4 w-4" />
-                    Aprobar como Auditoría
-                  </button>
-                ) : null}
-                {detail.canAuditReject ? (
-                  <button
-                    className="nibol-btn-secondary px-4 py-2.5 text-sm text-rose-700"
-                    disabled={actionMutation.isPending}
-                    onClick={async () => {
-                      await actionMutation.mutateAsync("audit-reject");
-                    }}
-                    type="button"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Rechazar como Auditoría
-                  </button>
-                ) : null}
-              </div>
-            </section>
+          </div>
+          <div className="rounded-xl border border-stone-200 p-4">
+            <p className="text-xs tracking-wider text-stone-500 uppercase">
+              Auditoría
+            </p>
+            <p className="mt-2 text-sm">
+              {request.auditComment ??
+                (request.auditReviewedAt ? "Revisado" : "Pendiente")}
+            </p>
+          </div>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2">
+          {["DRAFT", "MANAGER_REJECTED", "AUDIT_REJECTED"].includes(
+            request.status,
+          ) ? (
+            <button
+              className="nibol-btn-primary px-4 py-2 text-sm"
+              onClick={() => action.mutate("submit")}
+              type="button"
+            >
+              <Send className="h-4 w-4" />
+              Enviar a aprobación
+            </button>
           ) : null}
-        </section>
-
-        <section className="space-y-6">
-          <section className="nibol-panel p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-              Flujo de aprobación
-            </p>
-            <div className="mt-5 space-y-4">
-              <div className="rounded-[1.2rem] border border-stone-200 bg-white px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  Solicitud registrada
-                </p>
-                <p className="mt-2 text-sm font-semibold text-stone-950">
-                  {detail.requestedByUser.name}
-                </p>
-                <p className="text-sm text-stone-600">
-                  {formatExtensionRequestDate(detail.createdAt, {
-                    timeStyle: "short",
-                  })}
-                </p>
-              </div>
-
-              <div
-                className={cn(
-                  "rounded-[1.2rem] border px-4 py-4",
-                  getFlowTone(flowState.manager),
-                )}
+          {request.status === "SENT_TO_MANAGER" ? (
+            <>
+              <button
+                className="nibol-btn-primary px-4 py-2 text-sm"
+                onClick={() => action.mutate("managerApprove")}
+                type="button"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em]">
-                  Gerencia
-                </p>
-                <p className="mt-2 text-sm font-semibold">
-                  {detail.area.managerUser?.name ?? "Gerencia no asignada"}
-                </p>
-                <p className="text-sm">
-                  {detail.managerReviewedAt
-                    ? formatExtensionRequestDate(detail.managerReviewedAt, {
-                        timeStyle: "short",
-                      })
-                    : detail.status === "SENT_TO_MANAGER"
-                      ? "Pendiente de revisión"
-                      : "Sin acción registrada"}
-                </p>
-              </div>
-
-              <div
-                className={cn(
-                  "rounded-[1.2rem] border px-4 py-4",
-                  getFlowTone(flowState.audit),
-                )}
+                <Check className="h-4 w-4" />
+                Aprobar como Gerencia
+              </button>
+              <button
+                className="nibol-btn-secondary px-4 py-2 text-sm"
+                onClick={() => action.mutate("managerReject")}
+                type="button"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em]">
-                  Auditoría
-                </p>
-                <p className="mt-2 text-sm font-semibold">
-                  {detail.observation.auditorUser.name}
-                </p>
-                <p className="text-sm">
-                  {detail.auditReviewedAt
-                    ? formatExtensionRequestDate(detail.auditReviewedAt, {
-                        timeStyle: "short",
-                      })
-                    : detail.status === "SENT_TO_AUDIT"
-                      ? "Pendiente de revisión"
-                      : "Sin acción registrada"}
-                </p>
-              </div>
-
-              <div
-                className={cn(
-                  "rounded-[1.2rem] border px-4 py-4",
-                  getFlowTone(flowState.final),
-                )}
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em]">
-                  Resultado final
-                </p>
-                <p className="mt-2 text-sm font-semibold">
-                  {detail.finalApprovedAt
-                    ? "Fecha límite actualizada"
-                    : detail.status === "CANCELLED"
-                      ? "Solicitud cancelada"
-                      : "Pendiente"}
-                </p>
-                <p className="text-sm">
-                  {detail.finalApprovedAt
-                    ? formatExtensionRequestDate(detail.finalApprovedAt, {
-                        timeStyle: "short",
-                      })
-                    : "Sin cierre definitivo"}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <section className="nibol-panel p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-              Comentarios de decisión
-            </p>
-            <div className="mt-5 space-y-4">
-              <div className="rounded-[1.2rem] border border-stone-200 bg-white px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  Comentario de Gerencia
-                </p>
-                <p className="mt-2 text-sm leading-7 text-stone-700">
-                  {detail.managerComment || "Sin comentario registrado."}
-                </p>
-              </div>
-              <div className="rounded-[1.2rem] border border-stone-200 bg-white px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  Comentario de Auditoría
-                </p>
-                <p className="mt-2 text-sm leading-7 text-stone-700">
-                  {detail.auditComment || "Sin comentario registrado."}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <section className="nibol-panel p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-              Responsables y control
-            </p>
-            <div className="mt-5 space-y-4">
-              <div className="rounded-[1.2rem] border border-stone-200 bg-white px-4 py-4">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-[0.9rem] bg-[var(--primary-soft)] p-2 text-[var(--primary)]">
-                    <ShieldAlert className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                      Solicitante
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-stone-950">
-                      {detail.requestedByUser.name}
-                    </p>
-                    <p className="text-sm text-stone-600">{detail.requestedByUser.email}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-[1.2rem] border border-stone-200 bg-white px-4 py-4">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-[0.9rem] bg-[var(--primary-soft)] p-2 text-[var(--primary)]">
-                    <CalendarClock className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                      Área originadora
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-stone-950">
-                      {detail.area.name}
-                    </p>
-                    <p className="text-sm text-stone-600">
-                      Responsable principal: {detail.observation.responsibleUser?.name ?? "Sin asignación"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {actionError ? (
-            <div className="rounded-[1.2rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {actionError}
-            </div>
+                <RotateCcw className="h-4 w-4" />
+                Rechazar
+              </button>
+            </>
           ) : null}
-          {actionSuccess ? (
-            <div className="rounded-[1.2rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              {actionSuccess}
-            </div>
+          {request.status === "SENT_TO_AUDIT" ? (
+            <>
+              <button
+                className="nibol-btn-primary px-4 py-2 text-sm"
+                onClick={() => action.mutate("auditApprove")}
+                type="button"
+              >
+                <Check className="h-4 w-4" />
+                Aprobar como Auditoría
+              </button>
+              <button
+                className="nibol-btn-secondary px-4 py-2 text-sm"
+                onClick={() => action.mutate("auditReject")}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+                Rechazar
+              </button>
+            </>
           ) : null}
-        </section>
+          {!request.finalApprovedAt && request.status !== "CANCELLED" ? (
+            <button
+              className="nibol-btn-secondary px-4 py-2 text-sm text-rose-700"
+              onClick={() => action.mutate("cancel")}
+              type="button"
+            >
+              Cancelar solicitud
+            </button>
+          ) : null}
+        </div>
       </section>
-
-      <ConfirmDialog
-        confirmLabel="Cancelar solicitud"
-        description="La solicitud saldrá del circuito de aprobación y conservará trazabilidad en los logs."
-        isLoading={actionMutation.isPending}
-        onConfirm={() => {
-          void actionMutation.mutateAsync("cancel");
-        }}
-        onOpenChange={setCancelOpen}
-        open={cancelOpen}
-        title="¿Cancelar solicitud?"
-        tone="danger"
-      />
+      {error ? (
+        <p className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -239,9 +239,16 @@ export type WorkflowConditionRule = {
 };
 
 export type WorkflowSlaInline = {
+  alternateTargetNodeKey?: string | null;
   duration: number;
+  escalationAreaId?: string | null;
   escalationEnabled: boolean;
+  escalationMode?:
+    "NOTIFY_ONLY" | "ADD_VISIBILITY" | "REASSIGN" | "ALTERNATE_ROUTE";
+  escalationRoleId?: string | null;
+  escalationStrategy?: "SUPERVISOR" | "AREA_MANAGER" | "FIXED_USER" | "ROLE";
   escalationThreshold: number | null;
+  escalationUserId?: string | null;
   reminderEnabled: boolean;
   reminderThreshold: number | null;
   unit: "MINUTES" | "HOURS" | "BUSINESS_DAYS" | "CALENDAR_DAYS";

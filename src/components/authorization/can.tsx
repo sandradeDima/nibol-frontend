@@ -2,7 +2,11 @@
 
 import type { ReactNode } from "react";
 
-import { hasAllPermissions, hasAnyPermission, hasPermission } from "@/lib/permissions";
+import {
+  hasAllPermissions,
+  hasAnyPermission,
+  hasPermission,
+} from "@/lib/permissions";
 
 import { usePermissions } from "@/hooks/use-permissions";
 

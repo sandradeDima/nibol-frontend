@@ -7,7 +7,9 @@ export default async function ProductsRoutePage() {
 
   return (
     <ProductsListPage
-      canCreate={authorization.permissions.includes(PRODUCTS_PERMISSIONS.create)}
+      canCreate={authorization.permissions.includes(
+        PRODUCTS_PERMISSIONS.create,
+      )}
     />
   );
 }

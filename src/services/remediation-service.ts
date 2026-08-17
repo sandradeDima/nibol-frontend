@@ -1,135 +1,56 @@
 import { apiClient } from "@/services/api-client";
 import type {
+  ActionPlanDetail,
+  ActionPlanPayload,
   ApiSuccessResponse,
-  CommitmentDetail,
-  CommitmentPayload,
-  ObservationRemediationWorkspace,
-  RemediationPlanDetail,
-  UpdateCommitmentPayload,
-  UpdateRemediationPlanPayload,
+  PaginatedApiSuccessResponse,
+  UpdateActionPlanPayload,
 } from "@/types";
 
 export const remediationService = {
-  async approvePlan(planId: string): Promise<RemediationPlanDetail> {
-    const response = await apiClient.post<ApiSuccessResponse<RemediationPlanDetail>>(
-      `/remediation-plans/${planId}/approve`,
-    );
-
-    return response.data.data;
-  },
-
-  async createCommitment(
-    planId: string,
-    input: CommitmentPayload,
-  ): Promise<CommitmentDetail> {
-    const response = await apiClient.post<ApiSuccessResponse<CommitmentDetail>>(
-      `/remediation-plans/${planId}/commitments`,
-      input,
-    );
-
-    return response.data.data;
-  },
-
-  async deleteCommitment(commitmentId: string) {
-    await apiClient.delete(`/commitments/${commitmentId}`);
-  },
-
-  async getObservationWorkspace(
+  async createActionPlan(
     observationId: string,
-    areaId?: string,
-  ): Promise<ObservationRemediationWorkspace> {
-    const response = await apiClient.get<ApiSuccessResponse<ObservationRemediationWorkspace>>(
-      areaId
-        ? `/observations/${observationId}/remediation-plan?areaId=${encodeURIComponent(areaId)}`
-        : `/observations/${observationId}/remediation-plan`,
-    );
-
-    return response.data.data;
-  },
-
-  async getPlanCommitments(planId: string): Promise<CommitmentDetail[]> {
-    const response = await apiClient.get<ApiSuccessResponse<CommitmentDetail[]>>(
-      `/remediation-plans/${planId}/commitments`,
-    );
-
-    return response.data.data;
-  },
-
-  async markCommitmentComplete(commitmentId: string): Promise<CommitmentDetail> {
-    const response = await apiClient.post<ApiSuccessResponse<CommitmentDetail>>(
-      `/commitments/${commitmentId}/mark-complete`,
-    );
-
-    return response.data.data;
-  },
-
-  async returnPlan(planId: string, reason: string): Promise<RemediationPlanDetail> {
-    const response = await apiClient.post<ApiSuccessResponse<RemediationPlanDetail>>(
-      `/remediation-plans/${planId}/return`,
-      {
-        reason,
-      },
-    );
-
-    return response.data.data;
-  },
-
-  async saveObservationPlan(
-    observationId: string,
-    input: {
-      additionalComments?: string | null;
-      areaId: string;
-      mitigationText?: string | null;
-      ownerUserId?: string | null;
-      strategyText: string;
-    },
-  ): Promise<RemediationPlanDetail> {
-    const response = await apiClient.post<ApiSuccessResponse<RemediationPlanDetail>>(
-      `/observations/${observationId}/remediation-plan`,
+    input: ActionPlanPayload,
+  ): Promise<ActionPlanDetail> {
+    const response = await apiClient.post<ApiSuccessResponse<ActionPlanDetail>>(
+      `/observations/${observationId}/action-plans`,
       input,
     );
-
     return response.data.data;
   },
-
-  async sendCommitmentToAudit(commitmentId: string): Promise<CommitmentDetail> {
-    const response = await apiClient.post<ApiSuccessResponse<CommitmentDetail>>(
-      `/commitments/${commitmentId}/send-to-audit`,
+  async deleteActionPlan(actionPlanId: string) {
+    await apiClient.delete(`/action-plans/${actionPlanId}`);
+  },
+  async getActionPlan(actionPlanId: string): Promise<ActionPlanDetail> {
+    const response = await apiClient.get<ApiSuccessResponse<ActionPlanDetail>>(
+      `/action-plans/${actionPlanId}`,
     );
-
     return response.data.data;
   },
-
-  async sendPlanToAudit(planId: string): Promise<RemediationPlanDetail> {
-    const response = await apiClient.post<ApiSuccessResponse<RemediationPlanDetail>>(
-      `/remediation-plans/${planId}/send-to-audit`,
+  async listActionPlans(params = ""): Promise<{
+    data: ActionPlanDetail[];
+    pagination: PaginatedApiSuccessResponse<ActionPlanDetail[]>["pagination"];
+  }> {
+    const response = await apiClient.get<
+      PaginatedApiSuccessResponse<ActionPlanDetail[]>
+    >(`/action-plans${params}`);
+    return { data: response.data.data, pagination: response.data.pagination };
+  },
+  async markActionPlanComplete(
+    actionPlanId: string,
+  ): Promise<ActionPlanDetail> {
+    const response = await apiClient.post<ApiSuccessResponse<ActionPlanDetail>>(
+      `/action-plans/${actionPlanId}/complete`,
     );
-
     return response.data.data;
   },
-
-  async updateCommitment(
-    commitmentId: string,
-    input: UpdateCommitmentPayload,
-  ): Promise<CommitmentDetail> {
-    const response = await apiClient.patch<ApiSuccessResponse<CommitmentDetail>>(
-      `/commitments/${commitmentId}`,
-      input,
-    );
-
-    return response.data.data;
-  },
-
-  async updatePlan(
-    planId: string,
-    input: UpdateRemediationPlanPayload,
-  ): Promise<RemediationPlanDetail> {
-    const response = await apiClient.patch<ApiSuccessResponse<RemediationPlanDetail>>(
-      `/remediation-plans/${planId}`,
-      input,
-    );
-
+  async updateActionPlan(
+    actionPlanId: string,
+    input: UpdateActionPlanPayload,
+  ): Promise<ActionPlanDetail> {
+    const response = await apiClient.patch<
+      ApiSuccessResponse<ActionPlanDetail>
+    >(`/action-plans/${actionPlanId}`, input);
     return response.data.data;
   },
 };
-

@@ -11,9 +11,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { ErrorState } from "@/components/ui/error-state";
 import { getApiErrorMessage } from "@/utils";
 
-import {
-  PRODUCTS_ROUTES,
-} from "../constants";
+import { PRODUCTS_ROUTES } from "../constants";
 import {
   productFormSchema,
   type ProductFormValues,
@@ -29,8 +27,7 @@ type ProductFormProps =
       productId: string;
     };
 
-const sectionClassName =
-  "nibol-panel p-6";
+const sectionClassName = "nibol-panel p-6";
 
 export function ProductForm(props: ProductFormProps) {
   const router = useRouter();
@@ -119,7 +116,7 @@ export function ProductForm(props: ProductFormProps) {
       <section className={sectionClassName}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+            <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
               {props.mode === "create" ? "Nuevo producto" : "Editar producto"}
             </p>
             <h2 className="text-2xl font-semibold tracking-tight text-stone-950">
@@ -128,13 +125,18 @@ export function ProductForm(props: ProductFormProps) {
                 : `Actualizar ${productQuery.data?.name ?? "producto"}`}
             </h2>
             <p className="max-w-3xl text-sm leading-7 text-stone-700">
-              Mantenga el catalogo consistente con la misma validacion, trazabilidad y controles de permisos del resto del sistema.
+              Mantenga el catalogo consistente con la misma validacion,
+              trazabilidad y controles de permisos del resto del sistema.
             </p>
           </div>
 
           <Link
             className="nibol-btn-secondary px-4 py-2.5 text-sm"
-            href={props.mode === "create" ? PRODUCTS_ROUTES.list : PRODUCTS_ROUTES.view(props.productId)}
+            href={
+              props.mode === "create"
+                ? PRODUCTS_ROUTES.list
+                : PRODUCTS_ROUTES.view(props.productId)
+            }
           >
             <ArrowLeft className="h-4 w-4" />
             Volver
@@ -161,7 +163,9 @@ export function ProductForm(props: ProductFormProps) {
 
           <label className="flex items-center justify-between gap-4 border border-stone-200/90 bg-white/85 px-4 py-4">
             <span className="space-y-1">
-              <span className="block text-sm font-medium text-stone-700">Estado activo</span>
+              <span className="block text-sm font-medium text-stone-700">
+                Estado activo
+              </span>
               <span className="block text-xs text-stone-500">
                 Mantiene este producto visible en los listados operativos.
               </span>
@@ -176,9 +180,11 @@ export function ProductForm(props: ProductFormProps) {
         </div>
 
         <label className="mt-6 block space-y-2">
-          <span className="text-sm font-medium text-stone-700">Descripcion</span>
+          <span className="text-sm font-medium text-stone-700">
+            Descripcion
+          </span>
           <textarea
-            className="nibol-field min-h-40 h-auto py-3 disabled:opacity-70"
+            className="nibol-field h-auto min-h-40 py-3 disabled:opacity-70"
             disabled={isBusy}
             placeholder="Describa el uso o alcance del producto"
             {...form.register("description")}
@@ -209,7 +215,11 @@ export function ProductForm(props: ProductFormProps) {
           disabled={isBusy}
           type="submit"
         >
-          {props.mode === "create" ? <PackagePlus className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+          {props.mode === "create" ? (
+            <PackagePlus className="h-4 w-4" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
           {isBusy
             ? props.mode === "create"
               ? "Creando producto..."

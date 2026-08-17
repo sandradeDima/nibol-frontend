@@ -80,10 +80,18 @@ export function AcceptInvitationForm() {
   return (
     <AuthShell
       description="Confirme sus datos, defina su contrasena y active la cuenta corporativa asociada a este correo."
-      footer={<AuthLinkRow href="/login" label="Ya tiene acceso?" linkLabel="Iniciar sesion" />}
+      footer={
+        <AuthLinkRow
+          href="/login"
+          label="Ya tiene acceso?"
+          linkLabel="Iniciar sesion"
+        />
+      }
       title="Activar invitacion"
     >
-      {invalidMessage ? <AuthBanner tone="info">{invalidMessage}</AuthBanner> : null}
+      {invalidMessage ? (
+        <AuthBanner tone="info">{invalidMessage}</AuthBanner>
+      ) : null}
       {previewQuery.error ? (
         <AuthBanner tone="error">{previewQuery.error.message}</AuthBanner>
       ) : null}
@@ -94,7 +102,7 @@ export function AcceptInvitationForm() {
       {previewQuery.data ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <div className={summaryCardClassName}>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+            <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
               Email
             </p>
             <p className="mt-2 text-sm font-semibold text-stone-950">
@@ -102,7 +110,7 @@ export function AcceptInvitationForm() {
             </p>
           </div>
           <div className={summaryCardClassName}>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+            <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
               Rol
             </p>
             <p className="mt-2 text-sm font-semibold text-stone-950">
@@ -110,7 +118,7 @@ export function AcceptInvitationForm() {
             </p>
           </div>
           <div className={summaryCardClassName}>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+            <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
               Invitado por
             </p>
             <p className="mt-2 text-sm font-semibold text-stone-950">
@@ -118,7 +126,7 @@ export function AcceptInvitationForm() {
             </p>
           </div>
           <div className={summaryCardClassName}>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+            <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
               Vence
             </p>
             <p className="mt-2 text-sm font-semibold text-stone-950">
@@ -156,7 +164,11 @@ export function AcceptInvitationForm() {
 
         <button
           className={buttonClass}
-          disabled={!previewQuery.data || acceptMutation.isPending || previewQuery.isLoading}
+          disabled={
+            !previewQuery.data ||
+            acceptMutation.isPending ||
+            previewQuery.isLoading
+          }
           type="submit"
         >
           {acceptMutation.isPending ? "Activando cuenta..." : "Activar cuenta"}
@@ -169,7 +181,7 @@ export function AcceptInvitationForm() {
         </div>
       ) : null}
 
-      {(invalidMessage || previewQuery.error) ? (
+      {invalidMessage || previewQuery.error ? (
         <div className="nibol-panel-muted px-4 py-3 text-sm text-[var(--foreground-soft)]">
           Necesita ayuda? Vuelva a{" "}
           <Link className="font-semibold text-[var(--primary)]" href="/login">

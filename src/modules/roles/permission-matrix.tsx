@@ -2,6 +2,7 @@
 
 import {
   PERMISSION_ACTIONS,
+  PERMISSION_ACTIONS_BY_RESOURCE,
   PERMISSION_RESOURCES,
   buildPermissionName,
 } from "@/lib/permission-catalog";
@@ -67,7 +68,10 @@ export function PermissionMatrix({
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {PERMISSION_ACTIONS.map((action) => {
+              {(
+                PERMISSION_ACTIONS_BY_RESOURCE[resource.key] ??
+                PERMISSION_ACTIONS
+              ).map((action) => {
                 const permissionName = buildPermissionName(
                   resource.key,
                   action.key,

@@ -546,7 +546,7 @@ function ConditionRules({
               </span>
               <button
                 aria-label={`Eliminar regla ${index + 1}`}
-                className="p-1 text-[var(--muted)] hover:bg-white hover:text-[var(--accent)]"
+                className="flex h-10 w-10 items-center justify-center text-[var(--muted)] hover:bg-white hover:text-[var(--accent)] focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
                 disabled={disabled}
                 onClick={() =>
                   onChange(
@@ -1577,7 +1577,7 @@ export function WorkflowNodeConfigPanel({
         </div>
         <button
           aria-label="Cerrar configuración"
-          className="p-2 text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--foreground)]"
+          className="flex h-10 w-10 shrink-0 items-center justify-center text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--foreground)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
           onClick={onClose}
           type="button"
         >

@@ -15,10 +15,16 @@ import {
 import type { ZodType } from "zod";
 
 import { FormDialog } from "@/components/ui/form-dialog";
-import type { ConfigurationCatalogType, SystemParameterValueType } from "@/types";
+import type {
+  ConfigurationCatalogType,
+  SystemParameterValueType,
+} from "@/types";
 import { cn } from "@/utils";
 
-export const CONFIGURATION_CATALOG_TYPE_LABELS: Record<ConfigurationCatalogType, string> = {
+export const CONFIGURATION_CATALOG_TYPE_LABELS: Record<
+  ConfigurationCatalogType,
+  string
+> = {
   categoria_hallazgo: "Categoria de hallazgo",
   fuente_hallazgo: "Fuente de hallazgo",
   proceso_auditado: "Proceso auditado",
@@ -32,7 +38,10 @@ export const CONFIGURATION_CATALOG_TYPE_OPTIONS = Object.entries(
   value: value as ConfigurationCatalogType,
 }));
 
-export const SYSTEM_PARAMETER_VALUE_TYPE_LABELS: Record<SystemParameterValueType, string> = {
+export const SYSTEM_PARAMETER_VALUE_TYPE_LABELS: Record<
+  SystemParameterValueType,
+  string
+> = {
   boolean: "Booleano",
   date: "Fecha",
   json: "JSON",
@@ -84,7 +93,7 @@ export function ActiveBadge({ active }: { active: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]",
+        "inline-flex items-center border px-3 py-1 text-xs font-semibold tracking-[0.16em] uppercase",
         active
           ? "border-emerald-300 bg-emerald-50 text-emerald-800"
           : "border-stone-300 bg-stone-100 text-stone-600",
@@ -116,7 +125,7 @@ export function ToneBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]",
+        "inline-flex items-center border px-2.5 py-1 text-[11px] font-semibold tracking-[0.16em] uppercase",
         toneClassName,
       )}
     >
@@ -153,8 +162,12 @@ export function ToggleCard({
         {...registration}
       />
       <span className="space-y-1">
-        <span className="block text-sm font-semibold text-stone-900">{label}</span>
-        <span className="block text-xs leading-5 text-stone-500">{description}</span>
+        <span className="block text-sm font-semibold text-stone-900">
+          {label}
+        </span>
+        <span className="block text-xs leading-5 text-stone-500">
+          {description}
+        </span>
       </span>
     </label>
   );
@@ -167,7 +180,10 @@ type ConfigurationDialogFormProps<TFormValues extends FieldValues> = {
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: TFormValues) => Promise<void>;
   open: boolean;
-  renderFields: (form: UseFormReturn<TFormValues>, isBusy: boolean) => ReactNode;
+  renderFields: (
+    form: UseFormReturn<TFormValues>,
+    isBusy: boolean,
+  ) => ReactNode;
   resetKey: string;
   saveLabel: string;
   savingLabel: string;
@@ -254,7 +270,8 @@ export function ConfigurationDialogForm<TFormValues extends FieldValues>({
 
         {mode === "create" ? (
           <p className="text-xs leading-5 text-stone-500">
-            Los cambios quedaran auditados automaticamente al guardar el nuevo registro.
+            Los cambios quedaran auditados automaticamente al guardar el nuevo
+            registro.
           </p>
         ) : null}
       </form>

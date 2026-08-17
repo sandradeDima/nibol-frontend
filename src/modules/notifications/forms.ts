@@ -25,9 +25,15 @@ export const notificationComposerSchema = z.object({
     .trim()
     .min(1, "El mensaje es obligatorio.")
     .max(10_000, "El mensaje es demasiado largo."),
-  title: z.string().trim().min(1, "El titulo es obligatorio.").max(191, "El titulo es demasiado largo."),
+  title: z
+    .string()
+    .trim()
+    .min(1, "El titulo es obligatorio.")
+    .max(191, "El titulo es demasiado largo."),
   type: z.enum(["info", "success", "warning", "error"]),
   userId: z.string().uuid("Seleccione un destinatario."),
 });
 
-export type NotificationComposerValues = z.infer<typeof notificationComposerSchema>;
+export type NotificationComposerValues = z.infer<
+  typeof notificationComposerSchema
+>;

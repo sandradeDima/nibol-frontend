@@ -25,7 +25,10 @@ const loadAuditDashboard = async () => {
 export default async function AuditoriaDashboardPage() {
   const result = await loadAuditDashboard();
 
-  if (result.error instanceof DashboardRequestError && result.error.status === 403) {
+  if (
+    result.error instanceof DashboardRequestError &&
+    result.error.status === 403
+  ) {
     redirect("/dashboard/area");
   }
 

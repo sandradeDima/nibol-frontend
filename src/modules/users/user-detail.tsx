@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Mail, Pencil, Power, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Mail,
+  Pencil,
+  Power,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
@@ -29,9 +36,9 @@ const formatDate = (value: string | null): string => {
 
 export function UserDetail({ userId }: UserDetailProps) {
   const queryClient = useQueryClient();
-  const [pendingAction, setPendingAction] = useState<"delete" | "disable" | "enable" | null>(
-    null,
-  );
+  const [pendingAction, setPendingAction] = useState<
+    "delete" | "disable" | "enable" | null
+  >(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
@@ -150,7 +157,7 @@ export function UserDetail({ userId }: UserDetailProps) {
 
             <div className="space-y-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+                <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
                   Ficha de usuario
                 </p>
                 <h2 className="mt-2 text-3xl font-semibold tracking-tight text-stone-950">
@@ -178,7 +185,9 @@ export function UserDetail({ userId }: UserDetailProps) {
                       : "bg-stone-200 text-stone-700"
                   }`}
                 >
-                  {user.emailVerified ? "Correo verificado" : "Correo sin verificar"}
+                  {user.emailVerified
+                    ? "Correo verificado"
+                    : "Correo sin verificar"}
                 </span>
               </div>
             </div>
@@ -215,7 +224,7 @@ export function UserDetail({ userId }: UserDetailProps) {
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="nibol-panel p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+          <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
             Accesos asignados
           </p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -229,7 +238,9 @@ export function UserDetail({ userId }: UserDetailProps) {
                     <ShieldCheck className="h-4 w-4" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold text-stone-950">{role.name}</p>
+                    <p className="text-sm font-semibold text-stone-950">
+                      {role.name}
+                    </p>
                     <p className="text-xs leading-5 text-stone-500">
                       {role.description || "Sin descripcion registrada."}
                     </p>
@@ -241,12 +252,12 @@ export function UserDetail({ userId }: UserDetailProps) {
         </section>
 
         <section className="nibol-panel p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+          <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
             Metadatos del registro
           </p>
           <dl className="mt-5 space-y-4 text-sm">
             <div className="rounded-[1.3rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-              <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+              <dt className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
                 Ultimo acceso
               </dt>
               <dd className="mt-2 font-medium text-stone-900">
@@ -254,7 +265,7 @@ export function UserDetail({ userId }: UserDetailProps) {
               </dd>
             </div>
             <div className="rounded-[1.3rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-              <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+              <dt className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
                 Creado
               </dt>
               <dd className="mt-2 font-medium text-stone-900">
@@ -262,7 +273,7 @@ export function UserDetail({ userId }: UserDetailProps) {
               </dd>
             </div>
             <div className="rounded-[1.3rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-              <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+              <dt className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
                 Actualizado
               </dt>
               <dd className="mt-2 font-medium text-stone-900">

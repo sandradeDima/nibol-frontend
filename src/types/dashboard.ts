@@ -1,12 +1,7 @@
 export type DashboardScope = "auditoria" | "area";
 
 export type DashboardViewerProfile =
-  | "ADMIN"
-  | "SYSTEMS"
-  | "AUDIT"
-  | "MANAGEMENT"
-  | "EXECUTOR"
-  | "GENERAL";
+  "ADMIN" | "SYSTEMS" | "AUDIT" | "MANAGEMENT" | "EXECUTOR" | "GENERAL";
 
 export interface DashboardDistributionItem {
   colorToken?: string | null;
@@ -72,7 +67,7 @@ export interface DashboardObservationRow {
   updatedAt: string;
 }
 
-export interface DashboardCommitmentRow {
+export interface DashboardActionPlanRow {
   area: DashboardAreaSummary;
   dueDate: string;
   href: string;
@@ -140,7 +135,7 @@ export interface AuditDashboardData {
     criticalObservations: DashboardObservationRow[];
     latestUpdates: DashboardActivityRow[];
     pendingReviews: DashboardReviewQueueRow[];
-    upcomingCommitments: DashboardCommitmentRow[];
+    upcomingActionPlans: DashboardActionPlanRow[];
   };
   viewerProfile: DashboardViewerProfile;
 }
@@ -161,16 +156,16 @@ export interface AreaDashboardData {
     assignedObservations: number;
     averageProgress: number;
     extensionsInProcess: number;
-    overdueCommitments: number;
-    pendingCommitments: number;
-    returnedProgressUpdates: number;
-    upcomingCommitments: number;
+    overdueActionPlans: number;
+    pendingActionPlans: number;
+    returnedProgressEvaluations: number;
+    upcomingActionPlans: number;
   };
   tables: {
     criticalObservations: DashboardObservationRow[];
     latestUpdates: DashboardActivityRow[];
     reviewQueue: DashboardReviewQueueRow[];
-    upcomingCommitments: DashboardCommitmentRow[];
+    upcomingActionPlans: DashboardActionPlanRow[];
   };
   viewerProfile: DashboardViewerProfile;
 }

@@ -45,6 +45,14 @@ const CORE_PERMISSION_RESOURCES = [
     key: "invitations",
     label: "Invitaciones",
   },
+  {
+    key: "reports",
+    label: "Reportes y KPIs",
+  },
+  {
+    key: "audit_reports",
+    label: "Reportes de auditoría",
+  },
 ] as const;
 
 export const PERMISSION_RESOURCES = [
@@ -72,7 +80,18 @@ export const PERMISSION_ACTIONS = [
 ] as const;
 
 export type PermissionResource = (typeof PERMISSION_RESOURCES)[number]["key"];
-export type PermissionAction = (typeof PERMISSION_ACTIONS)[number]["key"];
+export type PermissionAction =
+  (typeof PERMISSION_ACTIONS)[number]["key"] | "export";
+
+export const PERMISSION_ACTIONS_BY_RESOURCE: Partial<
+  Record<
+    PermissionResource,
+    readonly { key: PermissionAction; label: string }[]
+  >
+> = {
+  audit_reports: [...PERMISSION_ACTIONS, { key: "export", label: "Exportar" }],
+  reports: [...PERMISSION_ACTIONS, { key: "export", label: "Exportar" }],
+};
 
 export const buildPermissionName = (
   resource: PermissionResource,
@@ -83,7 +102,7 @@ export const buildPermissionName = (
 
 export const CRITICAL_ADMIN_PERMISSIONS = PERMISSION_RESOURCES.flatMap(
   (resource) =>
-    PERMISSION_ACTIONS.map((action) =>
-      buildPermissionName(resource.key, action.key),
+    (PERMISSION_ACTIONS_BY_RESOURCE[resource.key] ?? PERMISSION_ACTIONS).map(
+      (action) => buildPermissionName(resource.key, action.key),
     ),
 );

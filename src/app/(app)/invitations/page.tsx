@@ -12,10 +12,7 @@ export default async function InvitationsPage() {
       <PageHeader
         actions={
           authorization.permissions.includes("invitations.create") ? (
-            <Link
-              className="nibol-btn-primary"
-              href="/invitations/new"
-            >
+            <Link className="nibol-btn-primary" href="/invitations/new">
               Nueva invitacion
             </Link>
           ) : null

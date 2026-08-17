@@ -37,7 +37,7 @@ export function StatCard({
         <div className="space-y-4">
           <p
             className={cn(
-              "font-display text-xs font-bold uppercase tracking-[0.24em]",
+              "font-display text-xs font-bold tracking-[0.24em] uppercase",
               tone === "accent" ? "text-slate-200" : "text-[var(--primary)]",
             )}
           >
@@ -48,7 +48,9 @@ export function StatCard({
             <p
               className={cn(
                 "max-w-[28ch] text-sm leading-6",
-                tone === "accent" ? "text-slate-300" : "text-[var(--foreground-soft)]",
+                tone === "accent"
+                  ? "text-slate-300"
+                  : "text-[var(--foreground-soft)]",
               )}
             >
               {description}
@@ -72,9 +74,7 @@ export function StatCard({
         <div
           className={cn(
             "mt-6 inline-flex items-center gap-2 text-sm font-semibold",
-            tone === "accent"
-              ? "text-white"
-              : "text-[var(--foreground)]",
+            tone === "accent" ? "text-white" : "text-[var(--foreground)]",
           )}
         >
           Ver modulo

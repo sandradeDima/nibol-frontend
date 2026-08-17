@@ -30,8 +30,7 @@ type UserFormProps =
       userId: string;
     };
 
-const sectionClassName =
-  "nibol-panel p-6";
+const sectionClassName = "nibol-panel p-6";
 
 function RoleSelector({
   disabled = false,
@@ -53,9 +52,12 @@ function RoleSelector({
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-sm font-medium text-stone-700">Asignacion de roles</p>
+        <p className="text-sm font-medium text-stone-700">
+          Asignacion de roles
+        </p>
         <p className="text-xs text-stone-500">
-          Seleccione los roles que este usuario debe heredar dentro del entorno administrativo.
+          Seleccione los roles que este usuario debe heredar dentro del entorno
+          administrativo.
         </p>
       </div>
 
@@ -115,13 +117,16 @@ export function UserForm(props: UserFormProps) {
   const userQuery = useQuery({
     enabled: Boolean(editingUserId),
     queryFn: () => userService.getUserById(editingUserId as string),
-    queryKey: editingUserId ? QUERY_KEYS.userDetails(editingUserId) : ["users", "draft"],
+    queryKey: editingUserId
+      ? QUERY_KEYS.userDetails(editingUserId)
+      : ["users", "draft"],
   });
 
   const initialValues = useMemo(
     () => ({
       email: "",
       isActive: true,
+      jobTitle: "",
       name: "",
       password: "",
       roleIds: [] as string[],
@@ -132,7 +137,9 @@ export function UserForm(props: UserFormProps) {
   const resolver: Resolver<UserCreateValues> =
     props.mode === "create"
       ? zodResolver(userCreateSchema)
-      : (zodResolver(userUpdateSchema) as unknown as Resolver<UserCreateValues>);
+      : (zodResolver(
+          userUpdateSchema,
+        ) as unknown as Resolver<UserCreateValues>);
 
   const form = useForm<UserCreateValues>({
     defaultValues: initialValues,
@@ -152,6 +159,7 @@ export function UserForm(props: UserFormProps) {
     form.reset({
       email: userQuery.data.email,
       isActive: userQuery.data.isActive,
+      jobTitle: userQuery.data.jobTitle ?? "",
       name: userQuery.data.name,
       password: "",
       roleIds: userQuery.data.roleIds,
@@ -160,11 +168,16 @@ export function UserForm(props: UserFormProps) {
 
   const saveMutation = useMutation({
     mutationFn: async (values: UserCreateValues) => {
+      const normalizedValues = {
+        ...values,
+        jobTitle: values.jobTitle || null,
+      };
+
       if (props.mode === "create") {
-        return userService.createUser(values);
+        return userService.createUser(normalizedValues);
       }
 
-      const { password: _password, ...payload } = values;
+      const { password: _password, ...payload } = normalizedValues;
       void _password;
       return userService.updateUser(props.userId, payload as UserUpdateValues);
     },
@@ -234,7 +247,8 @@ export function UserForm(props: UserFormProps) {
     );
   }
 
-  const isBusy = saveMutation.isPending || rolesQuery.isLoading || userQuery.isLoading;
+  const isBusy =
+    saveMutation.isPending || rolesQuery.isLoading || userQuery.isLoading;
 
   return (
     <form
@@ -246,7 +260,7 @@ export function UserForm(props: UserFormProps) {
       <section className={sectionClassName}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+            <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
               {props.mode === "create" ? "Nuevo usuario" : "Editar usuario"}
             </p>
             <h2 className="text-2xl font-semibold tracking-tight text-stone-950">
@@ -255,7 +269,8 @@ export function UserForm(props: UserFormProps) {
                 : `Actualizar ${userQuery.data?.name ?? "usuario"}`}
             </h2>
             <p className="max-w-3xl text-sm leading-7 text-stone-700">
-              Mantenga un flujo consistente con la misma estructura de campos, validaciones y acciones controladas por permisos.
+              Mantenga un flujo consistente con la misma estructura de campos,
+              validaciones y acciones controladas por permisos.
             </p>
           </div>
 
@@ -269,7 +284,9 @@ export function UserForm(props: UserFormProps) {
         </div>
       </section>
 
-      <section className={`${sectionClassName} grid gap-6 xl:grid-cols-[1.1fr_0.9fr]`}>
+      <section
+        className={`${sectionClassName} grid gap-6 xl:grid-cols-[1.1fr_0.9fr]`}
+      >
         <div className="space-y-5">
           <label className="block space-y-2">
             <span className="text-sm font-medium text-stone-700">Nombre</span>
@@ -302,9 +319,21 @@ export function UserForm(props: UserFormProps) {
             ) : null}
           </label>
 
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-stone-700">Cargo</span>
+            <input
+              className="nibol-field h-auto py-3"
+              disabled={isBusy}
+              placeholder="Ej. Gerente Financiero"
+              {...form.register("jobTitle")}
+            />
+          </label>
+
           {props.mode === "create" ? (
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Contrasena</span>
+              <span className="text-sm font-medium text-stone-700">
+                Contrasena
+              </span>
               <input
                 className="nibol-field h-auto py-3"
                 disabled={isBusy}
@@ -328,9 +357,12 @@ export function UserForm(props: UserFormProps) {
               {...form.register("isActive")}
             />
             <span className="space-y-1">
-              <span className="block text-sm font-semibold text-stone-900">Cuenta activa</span>
+              <span className="block text-sm font-semibold text-stone-900">
+                Cuenta activa
+              </span>
               <span className="block text-xs leading-5 text-stone-500">
-                Los usuarios inactivos se mantienen registrados, pero sin acceso operativo hasta ser rehabilitados.
+                Los usuarios inactivos se mantienen registrados, pero sin acceso
+                operativo hasta ser rehabilitados.
               </span>
             </span>
           </label>

@@ -12,10 +12,7 @@ import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { ErrorState } from "@/components/ui/error-state";
 import { QUERY_KEYS } from "@/lib/constants";
 import { CRITICAL_ADMIN_PERMISSIONS } from "@/lib/permission-catalog";
-import {
-  roleFormSchema,
-  type RoleFormValues,
-} from "@/modules/roles/forms";
+import { roleFormSchema, type RoleFormValues } from "@/modules/roles/forms";
 import { PermissionMatrix } from "@/modules/roles/permission-matrix";
 import { roleService } from "@/services/role-service";
 import type { RoleDetails } from "@/types";
@@ -30,8 +27,7 @@ type RoleFormProps =
       roleId: string;
     };
 
-const sectionClassName =
-  "nibol-panel p-6";
+const sectionClassName = "nibol-panel p-6";
 
 export function RoleForm(props: RoleFormProps) {
   const router = useRouter();
@@ -43,7 +39,9 @@ export function RoleForm(props: RoleFormProps) {
   const roleQuery = useQuery({
     enabled: Boolean(editingRoleId),
     queryFn: () => roleService.getRoleById(editingRoleId as string),
-    queryKey: editingRoleId ? QUERY_KEYS.roleDetails(editingRoleId) : ["roles", "draft"],
+    queryKey: editingRoleId
+      ? QUERY_KEYS.roleDetails(editingRoleId)
+      : ["roles", "draft"],
   });
 
   const form = useForm<RoleFormValues>({
@@ -150,7 +148,7 @@ export function RoleForm(props: RoleFormProps) {
       <section className={sectionClassName}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+            <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
               {props.mode === "create" ? "Nuevo rol" : "Editar rol"}
             </p>
             <h2 className="text-2xl font-semibold tracking-tight text-stone-950">
@@ -159,7 +157,8 @@ export function RoleForm(props: RoleFormProps) {
                 : `Actualizar ${currentRole?.name ?? "rol"}`}
             </h2>
             <p className="max-w-3xl text-sm leading-7 text-stone-700">
-              Defina perfiles reutilizables y mantenga la asignacion de permisos clara en todo el espacio administrativo.
+              Defina perfiles reutilizables y mantenga la asignacion de permisos
+              clara en todo el espacio administrativo.
             </p>
           </div>
 
@@ -173,7 +172,9 @@ export function RoleForm(props: RoleFormProps) {
         </div>
       </section>
 
-      <section className={`${sectionClassName} grid gap-6 xl:grid-cols-[0.85fr_1.15fr]`}>
+      <section
+        className={`${sectionClassName} grid gap-6 xl:grid-cols-[0.85fr_1.15fr]`}
+      >
         <div className="space-y-5">
           <label className="block space-y-2">
             <span className="text-sm font-medium text-stone-700">Nombre</span>
@@ -185,7 +186,8 @@ export function RoleForm(props: RoleFormProps) {
             />
             {isAdminRole ? (
               <span className="text-xs text-stone-500">
-                El nombre del rol Administrador esta protegido para conservar siempre un perfil con acceso total.
+                El nombre del rol Administrador esta protegido para conservar
+                siempre un perfil con acceso total.
               </span>
             ) : null}
             {form.formState.errors.name ? (
@@ -196,9 +198,11 @@ export function RoleForm(props: RoleFormProps) {
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-stone-700">Descripcion</span>
+            <span className="text-sm font-medium text-stone-700">
+              Descripcion
+            </span>
             <textarea
-              className="nibol-field min-h-36 h-auto py-3"
+              className="nibol-field h-auto min-h-36 py-3"
               disabled={isBusy}
               placeholder="Describa el alcance o uso esperado de este rol"
               {...form.register("description")}

@@ -52,7 +52,9 @@ function SettingsSummary({
   settings: AppSettings;
 }) {
   return (
-    <section className={`${panelClassName} grid gap-6 xl:grid-cols-[1.1fr_0.9fr]`}>
+    <section
+      className={`${panelClassName} grid gap-6 xl:grid-cols-[1.1fr_0.9fr]`}
+    >
       <div className="space-y-5">
         <div className="flex flex-wrap items-center gap-4">
           <div
@@ -74,21 +76,22 @@ function SettingsSummary({
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+            <p className="text-xs font-semibold tracking-[0.24em] text-amber-700 uppercase">
               Configuracion general
             </p>
             <h2 className="text-2xl font-semibold tracking-tight text-stone-950">
               {settings.appName}
             </h2>
             <p className="text-sm leading-7 text-stone-700">
-              Marca, remitente y localizacion se administran desde una misma capa reutilizable para este proyecto y los siguientes.
+              Marca, remitente y localizacion se administran desde una misma
+              capa reutilizable para este proyecto y los siguientes.
             </p>
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-[1.4rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+            <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
               Soporte
             </p>
             <p className="mt-2 text-sm font-medium text-stone-900">
@@ -96,13 +99,15 @@ function SettingsSummary({
             </p>
           </div>
           <div className="rounded-[1.4rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+            <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
               Zona horaria
             </p>
-            <p className="mt-2 text-sm font-medium text-stone-900">{settings.timezone}</p>
+            <p className="mt-2 text-sm font-medium text-stone-900">
+              {settings.timezone}
+            </p>
           </div>
           <div className="rounded-[1.4rem] border border-stone-200/90 bg-white/80 px-4 py-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+            <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
               Actualizado
             </p>
             <p className="mt-2 text-sm font-medium text-stone-900">
@@ -120,7 +125,7 @@ function SettingsSummary({
           }}
         />
         <div className="relative space-y-5">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-stone-100">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-stone-100 uppercase">
             <Palette className="h-3.5 w-3.5" />
             Vista de marca
           </div>
@@ -133,8 +138,12 @@ function SettingsSummary({
               }}
             />
             <div className="rounded-[1.3rem] border border-white/10 bg-white/8 px-4 py-4">
-              <p className="text-sm font-semibold text-white">{settings.senderName}</p>
-              <p className="mt-1 text-sm text-stone-300">{settings.senderEmail}</p>
+              <p className="text-sm font-semibold text-white">
+                {settings.senderName}
+              </p>
+              <p className="mt-1 text-sm text-stone-300">
+                {settings.senderEmail}
+              </p>
             </div>
             <p className="text-sm leading-7 text-stone-300">
               {canEdit
@@ -164,7 +173,9 @@ function SettingsSection({
       <div className="flex items-start gap-4">
         <div className={sectionIconClassName}>{icon}</div>
         <div className="space-y-2">
-          <h2 className="text-xl font-semibold tracking-tight text-stone-950">{title}</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-stone-950">
+            {title}
+          </h2>
           <p className="text-sm leading-7 text-stone-700">{description}</p>
         </div>
       </div>
@@ -285,9 +296,12 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
   }
 
   const settings = settingsQuery.data;
-  const currentPrimaryColor = watchedPrimaryColor || settings?.primaryColor || "#1f2937";
+  const currentPrimaryColor =
+    watchedPrimaryColor || settings?.primaryColor || "#1f2937";
   const isBusy =
-    settingsQuery.isLoading || updateMutation.isPending || uploadMutation.isPending;
+    settingsQuery.isLoading ||
+    updateMutation.isPending ||
+    uploadMutation.isPending;
 
   if (!settings) {
     return (
@@ -314,7 +328,8 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
 
       {!canEdit ? (
         <div className="rounded-[1.5rem] border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Puede consultar estos ajustes, pero solo los administradores pueden realizar cambios.
+          Puede consultar estos ajustes, pero solo los administradores pueden
+          realizar cambios.
         </div>
       ) : null}
 
@@ -326,7 +341,9 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
         >
           <div className="grid gap-5">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Nombre de la aplicacion</span>
+              <span className="text-sm font-medium text-stone-700">
+                Nombre de la aplicacion
+              </span>
               <input
                 className="nibol-field h-auto py-3 disabled:opacity-70"
                 disabled={!canEdit || isBusy}
@@ -341,7 +358,9 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Correo de soporte</span>
+              <span className="text-sm font-medium text-stone-700">
+                Correo de soporte
+              </span>
               <input
                 className="nibol-field h-auto py-3 disabled:opacity-70"
                 disabled={!canEdit || isBusy}
@@ -412,7 +431,9 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
 
             <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Muestra</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Muestra
+                </span>
                 <input
                   className="h-14 w-full cursor-pointer rounded-2xl border border-stone-200 bg-white p-2 disabled:cursor-not-allowed disabled:opacity-70"
                   disabled={!canEdit || isBusy}
@@ -422,7 +443,9 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Color primario</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Color primario
+                </span>
                 <input
                   className="nibol-field h-auto py-3 disabled:opacity-70"
                   disabled={!canEdit || isBusy}
@@ -446,7 +469,9 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
         >
           <div className="grid gap-5">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Nombre del remitente</span>
+              <span className="text-sm font-medium text-stone-700">
+                Nombre del remitente
+              </span>
               <input
                 className="nibol-field h-auto py-3 disabled:opacity-70"
                 disabled={!canEdit || isBusy}
@@ -461,7 +486,9 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Correo del remitente</span>
+              <span className="text-sm font-medium text-stone-700">
+                Correo del remitente
+              </span>
               <input
                 className="nibol-field h-auto py-3 disabled:opacity-70"
                 disabled={!canEdit || isBusy}
@@ -485,7 +512,9 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
         >
           <div className="grid gap-5">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Zona horaria</span>
+              <span className="text-sm font-medium text-stone-700">
+                Zona horaria
+              </span>
               <input
                 className="nibol-field h-auto py-3 disabled:opacity-70"
                 disabled={!canEdit || isBusy}
@@ -506,7 +535,9 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Formato de fecha</span>
+              <span className="text-sm font-medium text-stone-700">
+                Formato de fecha
+              </span>
               <select
                 className="nibol-field h-auto py-3 disabled:opacity-70"
                 disabled={!canEdit || isBusy}
@@ -560,7 +591,9 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
             type="submit"
           >
             <Save className="h-4 w-4" />
-            {updateMutation.isPending ? "Guardando ajustes..." : "Guardar ajustes"}
+            {updateMutation.isPending
+              ? "Guardando ajustes..."
+              : "Guardar ajustes"}
           </button>
         </div>
       ) : null}

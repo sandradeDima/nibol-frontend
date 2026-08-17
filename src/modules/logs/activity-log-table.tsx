@@ -65,7 +65,7 @@ const activityLogColumns: ColumnDef<ActivityLogTableRow>[] = [
         <p className="font-semibold text-stone-950">
           {activityActionLabels.get(row.original.action) ?? row.original.action}
         </p>
-        <p className="text-xs uppercase tracking-[0.18em] text-stone-500">
+        <p className="text-xs tracking-[0.18em] text-stone-500 uppercase">
           {activityEntityLabels.get(row.original.entityType.toLowerCase()) ??
             row.original.entityType}
         </p>
@@ -188,5 +188,7 @@ export function ActivityLogTable() {
     searchPlaceholder: "Buscar por accion, usuario, entidad o direccion IP",
   };
 
-  return <DataTable config={activityLogTableConfig} endpoint="/activity-logs" />;
+  return (
+    <DataTable config={activityLogTableConfig} endpoint="/activity-logs" />
+  );
 }

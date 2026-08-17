@@ -24,7 +24,6 @@ import {
   ActiveBadge,
   ConfigurationDialogForm,
   FieldError,
-  formatConfigurationDate,
   inputClassName,
   renderOptionalText,
   SYSTEM_PARAMETER_VALUE_TYPE_LABELS,
@@ -75,7 +74,7 @@ const systemParameterColumns: ColumnDef<SystemParameterRecord>[] = [
   {
     accessorKey: "group",
     cell: ({ row }) => (
-      <span className="font-medium capitalize text-stone-800">
+      <span className="font-medium text-stone-800 capitalize">
         {row.original.group.replaceAll("_", " ")}
       </span>
     ),
@@ -154,7 +153,8 @@ const buildPayload = (
   values: SystemParameterFormValues,
 ): SystemParameterMutationInput => ({
   active: values.active,
-  description: values.description.trim().length > 0 ? values.description.trim() : null,
+  description:
+    values.description.trim().length > 0 ? values.description.trim() : null,
   editable: values.editable,
   group: values.group.trim().toLowerCase(),
   key: values.key.trim().toLowerCase(),
@@ -170,7 +170,8 @@ export function SystemParametersPage({
 }: SystemParametersPageProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<SystemParameterRecord | null>(null);
+  const [editingRecord, setEditingRecord] =
+    useState<SystemParameterRecord | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const currentValues = useMemo(
@@ -293,7 +294,10 @@ export function SystemParametersPage({
             const payload = buildPayload(values);
 
             if (editingRecord) {
-              await configurationService.updateSystemParameter(editingRecord.id, payload);
+              await configurationService.updateSystemParameter(
+                editingRecord.id,
+                payload,
+              );
             } else {
               await configurationService.createSystemParameter(payload);
             }
@@ -314,7 +318,9 @@ export function SystemParametersPage({
           <>
             <div className="grid gap-5 md:grid-cols-2">
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Nombre</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Nombre
+                </span>
                 <input
                   className={inputClassName}
                   disabled={isBusy}
@@ -325,7 +331,9 @@ export function SystemParametersPage({
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Clave</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Clave
+                </span>
                 <input
                   className={`${inputClassName} lowercase`}
                   disabled={isBusy}
@@ -336,7 +344,9 @@ export function SystemParametersPage({
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Grupo</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Grupo
+                </span>
                 <input
                   className={`${inputClassName} lowercase`}
                   disabled={isBusy}
@@ -347,7 +357,9 @@ export function SystemParametersPage({
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-stone-700">Tipo de valor</span>
+                <span className="text-sm font-medium text-stone-700">
+                  Tipo de valor
+                </span>
                 <select
                   className={inputClassName}
                   disabled={isBusy}
@@ -375,7 +387,9 @@ export function SystemParametersPage({
             </label>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-stone-700">Descripcion</span>
+              <span className="text-sm font-medium text-stone-700">
+                Descripcion
+              </span>
               <textarea
                 className="nibol-field min-h-24 resize-y py-3"
                 disabled={isBusy}

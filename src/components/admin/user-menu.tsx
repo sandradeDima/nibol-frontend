@@ -27,7 +27,8 @@ const getInitials = (name: string): string => {
 export function UserMenu({ authorization, session }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const canViewNotifications = authorization.permissions.includes("notifications.view");
+  const canViewNotifications =
+    authorization.permissions.includes("notifications.view");
 
   const handleDocumentPointerDown = useEffectEvent((event: PointerEvent) => {
     if (!containerRef.current?.contains(event.target as Node)) {
@@ -79,7 +80,9 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
           </div>
 
           <div className="hidden min-w-0 sm:block">
-            <p className="truncate text-sm font-semibold">{session.user.name}</p>
+            <p className="truncate text-sm font-semibold">
+              {session.user.name}
+            </p>
             <p
               className={cn(
                 "truncate text-xs",
@@ -91,21 +94,28 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
           </div>
 
           <ChevronDown
-            className={cn("h-4 w-4 transition", open ? "rotate-180" : "rotate-0")}
+            className={cn(
+              "h-4 w-4 transition",
+              open ? "rotate-180" : "rotate-0",
+            )}
           />
         </button>
 
         {open ? (
-          <div className="absolute right-0 top-[calc(100%+0.75rem)] z-30 w-[19rem] border border-[var(--border)] bg-white p-3 shadow-[var(--shadow-panel-strong)]">
+          <div className="absolute top-[calc(100%+0.75rem)] right-0 z-30 w-[19rem] border border-[var(--border)] bg-white p-3 shadow-[var(--shadow-panel-strong)]">
             <div className="border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-              <p className="text-sm font-semibold text-[var(--foreground)]">{session.user.name}</p>
-              <p className="mt-1 text-sm text-[var(--muted)]">{session.user.email}</p>
+              <p className="text-sm font-semibold text-[var(--foreground)]">
+                {session.user.name}
+              </p>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                {session.user.email}
+              </p>
               <div className="mt-4 flex items-start gap-3">
                 <div className="bg-[var(--primary)] p-2 text-white">
                   <Shield className="h-4 w-4" />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                  <p className="text-xs font-semibold tracking-[0.2em] text-[var(--muted)] uppercase">
                     Acceso
                   </p>
                   <div className="flex flex-wrap gap-2">

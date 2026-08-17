@@ -18,7 +18,10 @@ const postRecord = async <TRecord, TInput>(
   endpoint: string,
   input: TInput,
 ): Promise<TRecord> => {
-  const response = await apiClient.post<ApiSuccessResponse<TRecord>>(endpoint, input);
+  const response = await apiClient.post<ApiSuccessResponse<TRecord>>(
+    endpoint,
+    input,
+  );
   return response.data.data;
 };
 
@@ -26,7 +29,10 @@ const putRecord = async <TRecord, TInput>(
   endpoint: string,
   input: TInput,
 ): Promise<TRecord> => {
-  const response = await apiClient.put<ApiSuccessResponse<TRecord>>(endpoint, input);
+  const response = await apiClient.put<ApiSuccessResponse<TRecord>>(
+    endpoint,
+    input,
+  );
   return response.data.data;
 };
 
@@ -45,7 +51,9 @@ export const configurationService = {
     return postRecord("/observation-statuses", input);
   },
 
-  async createRiskLevel(input: RiskLevelMutationInput): Promise<RiskLevelRecord> {
+  async createRiskLevel(
+    input: RiskLevelMutationInput,
+  ): Promise<RiskLevelRecord> {
     return postRecord("/risk-levels", input);
   },
 
@@ -76,9 +84,10 @@ export const configurationService = {
   },
 
   async getBootstrap(): Promise<ConfigurationBootstrap> {
-    const response = await apiClient.get<ApiSuccessResponse<ConfigurationBootstrap>>(
-      "/config/bootstrap",
-    );
+    const response =
+      await apiClient.get<ApiSuccessResponse<ConfigurationBootstrap>>(
+        "/config/bootstrap",
+      );
 
     return response.data.data;
   },
@@ -87,7 +96,10 @@ export const configurationService = {
     return putRecord(`/areas/${id}`, input);
   },
 
-  async updateCatalog(id: string, input: CatalogMutationInput): Promise<CatalogRecord> {
+  async updateCatalog(
+    id: string,
+    input: CatalogMutationInput,
+  ): Promise<CatalogRecord> {
     return putRecord(`/catalogs/${id}`, input);
   },
 

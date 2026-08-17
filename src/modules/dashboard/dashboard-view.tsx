@@ -18,7 +18,7 @@ import type {
   AreaDashboardData,
   AuditDashboardData,
   DashboardActivityRow,
-  DashboardCommitmentRow,
+  DashboardActionPlanRow,
   DashboardDistributionItem,
   DashboardObservationRow,
   DashboardRankingItem,
@@ -34,7 +34,7 @@ import {
   getStatusClasses,
 } from "../observations/presentation";
 import { getProgressStatusClasses } from "../progress/presentation";
-import { getCommitmentStatusClasses } from "../remediation/presentation";
+import { getActionPlanStatusClasses } from "../remediation/presentation";
 import { getExtensionRequestStatusClasses } from "../extension-requests/presentation";
 
 type DashboardViewProps = {
@@ -639,10 +639,10 @@ function ObservationsTable({ rows }: { rows: DashboardObservationRow[] }) {
   );
 }
 
-function CommitmentsTable({ rows }: { rows: DashboardCommitmentRow[] }) {
+function ActionPlansTable({ rows }: { rows: DashboardActionPlanRow[] }) {
   if (rows.length === 0) {
     return (
-      <MiniEmpty description="No hay compromisos próximos a vencer en esta vista." />
+      <MiniEmpty description="No hay planes de acción próximos a vencer en esta vista." />
     );
   }
 
@@ -651,7 +651,7 @@ function CommitmentsTable({ rows }: { rows: DashboardCommitmentRow[] }) {
       <table className="min-w-full border-collapse text-left">
         <thead className="bg-[var(--surface-soft)] text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
           <tr>
-            <th className="px-5 py-3">Compromiso</th>
+            <th className="px-5 py-3">Plan de acción</th>
             <th className="px-5 py-3">Observación</th>
             <th className="px-5 py-3">Responsable</th>
             <th className="px-5 py-3">Fecha límite</th>
@@ -701,7 +701,7 @@ function CommitmentsTable({ rows }: { rows: DashboardCommitmentRow[] }) {
                 <span
                   className={cn(
                     "inline-flex items-center border px-3 py-1 text-xs font-semibold tracking-[0.14em] uppercase",
-                    getCommitmentStatusClasses(row.status.key as never),
+                    getActionPlanStatusClasses(row.status.key as never),
                   )}
                 >
                   {row.status.name}
@@ -923,26 +923,26 @@ const buildAreaMetricCards = (data: AreaDashboardData, referenceDate: Date) => {
     },
     {
       description:
-        "Compromisos aún activos dentro del cronograma operativo visible.",
+        "Planes de acción aún activos dentro del cronograma operativo visible.",
       href: "/cronograma",
       icon: <GitPullRequestArrow className="h-5 w-5" />,
-      label: "Compromisos pendientes",
-      value: String(data.summary.pendingCommitments),
+      label: "Planes pendientes",
+      value: String(data.summary.pendingActionPlans),
     },
     {
-      description: "Compromisos que ya superaron su fecha comprometida.",
+      description: "Planes de acción que ya superaron su fecha vigente.",
       href: "/cronograma?filter.overdue=true",
       icon: <ShieldAlert className="h-5 w-5" />,
-      label: "Compromisos vencidos",
+      label: "Planes vencidos",
       tone: "danger" as const,
-      value: String(data.summary.overdueCommitments),
+      value: String(data.summary.overdueActionPlans),
     },
     {
-      description: `Compromisos que vencerán dentro de ${data.reminderDaysBeforeDue} días.`,
+      description: `Planes de acción que vencerán dentro de ${data.reminderDaysBeforeDue} días.`,
       href: `/cronograma?filter.dueDateFrom=${formatDateFilter(startOfDay(referenceDate))}&filter.dueDateTo=${formatDateFilter(dueThreshold)}`,
       icon: <CalendarClock className="h-5 w-5" />,
-      label: "Compromisos próximos",
-      value: String(data.summary.upcomingCommitments),
+      label: "Planes próximos",
+      value: String(data.summary.upcomingActionPlans),
     },
     {
       description:
@@ -988,7 +988,7 @@ const buildSecondaryMetrics = (
         "Avances devueltos por Auditoría que requieren ajuste o corrección.",
       href: "/avances-evidencias?filter.status=RETURNED",
       label: "Avances devueltos por Auditoría",
-      value: String(data.summary.returnedProgressUpdates),
+      value: String(data.summary.returnedProgressEvaluations),
     },
     {
       description:
@@ -1089,10 +1089,10 @@ export function DashboardView({ data }: DashboardViewProps) {
         </TableShell>
 
         <TableShell
-          description="Compromisos próximos a vencer dentro del umbral de alerta vigente."
-          title="Próximos compromisos"
+          description="Planes de acción próximos a vencer dentro del umbral de alerta vigente."
+          title="Próximos planes de acción"
         >
-          <CommitmentsTable rows={data.tables.upcomingCommitments} />
+          <ActionPlansTable rows={data.tables.upcomingActionPlans} />
         </TableShell>
 
         <TableShell

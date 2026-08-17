@@ -12,10 +12,7 @@ export default async function RolesPage() {
       <PageHeader
         actions={
           authorization.permissions.includes("roles.create") ? (
-            <Link
-              className="nibol-btn-primary"
-              href="/roles/new"
-            >
+            <Link className="nibol-btn-primary" href="/roles/new">
               Nuevo rol
             </Link>
           ) : null

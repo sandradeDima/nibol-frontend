@@ -67,6 +67,8 @@ export const buildDataTableSearchParams = ({
   return params;
 };
 
-export const hasActiveFilterValue = (value: DataTableFilterValue | undefined): boolean => {
+export const hasActiveFilterValue = (
+  value: DataTableFilterValue | undefined,
+): boolean => {
   return hasFilterValue(value);
 };

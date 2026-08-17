@@ -4,12 +4,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
-import {
-  Bell,
-  CheckCheck,
-  LoaderCircle,
-  Trash2,
-} from "lucide-react";
+import { Bell, CheckCheck, LoaderCircle, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { EmptyState } from "@/components/ui/empty-state";
@@ -99,7 +94,8 @@ export function NotificationBell({ canView }: { canView: boolean }) {
   const unreadCount = unreadNotificationsQuery.data?.pagination.total ?? 0;
   const notifications = recentNotificationsQuery.data?.data ?? [];
   const actionError =
-    (markAllReadMutation.error && getApiErrorMessage(markAllReadMutation.error)) ||
+    (markAllReadMutation.error &&
+      getApiErrorMessage(markAllReadMutation.error)) ||
     (markReadMutation.error && getApiErrorMessage(markReadMutation.error)) ||
     (deleteNotificationMutation.error &&
       getApiErrorMessage(deleteNotificationMutation.error)) ||
@@ -136,13 +132,11 @@ export function NotificationBell({ canView }: { canView: boolean }) {
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-[calc(100%+0.75rem)] z-30 w-[min(30rem,92vw)] border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-panel-strong)]">
+        <div className="absolute top-[calc(100%+0.75rem)] right-0 z-30 w-[min(30rem,92vw)] border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-panel-strong)]">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
-              <p className="nibol-eyebrow">
-                Centro de alertas
-              </p>
-              <h2 className="font-display text-2xl font-bold uppercase leading-none text-[var(--foreground)]">
+              <p className="nibol-eyebrow">Centro de alertas</p>
+              <h2 className="font-display text-2xl leading-none font-bold text-[var(--foreground)] uppercase">
                 Notificaciones recientes
               </h2>
               <p className="text-sm text-[var(--muted)]">
@@ -200,14 +194,16 @@ export function NotificationBell({ canView }: { canView: boolean }) {
                     <div
                       className={cn(
                         "mt-1 h-2.5 w-2.5 shrink-0",
-                        notification.isRead ? "bg-[var(--border-strong)]" : "bg-[var(--accent)]",
+                        notification.isRead
+                          ? "bg-[var(--border-strong)]"
+                          : "bg-[var(--accent)]",
                       )}
                     />
                     <div className="min-w-0 flex-1 space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <NotificationTypeBadge type={notification.type} />
                         {!notification.isRead ? (
-                          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+                          <span className="text-xs font-semibold tracking-[0.18em] text-[var(--accent)] uppercase">
                             Sin leer
                           </span>
                         ) : null}
@@ -219,8 +215,14 @@ export function NotificationBell({ canView }: { canView: boolean }) {
                         <p className="text-sm leading-6 text-[var(--foreground-soft)]">
                           {notification.message}
                         </p>
-                        <time className="block text-xs text-[var(--muted)]" dateTime={notification.createdAt}>
-                          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                        <time
+                          className="block text-xs text-[var(--muted)]"
+                          dateTime={notification.createdAt}
+                        >
+                          {formatDistanceToNow(
+                            new Date(notification.createdAt),
+                            { addSuffix: true },
+                          )}
                         </time>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -229,7 +231,9 @@ export function NotificationBell({ canView }: { canView: boolean }) {
                             className="nibol-btn-secondary px-3 py-2 text-xs"
                             disabled={markReadMutation.isPending}
                             onClick={() => {
-                              void markReadMutation.mutateAsync(notification.id);
+                              void markReadMutation.mutateAsync(
+                                notification.id,
+                              );
                             }}
                             type="button"
                           >
@@ -241,7 +245,10 @@ export function NotificationBell({ canView }: { canView: boolean }) {
                             className="nibol-btn-secondary px-3 py-2 text-xs"
                             href={notification.targetUrl}
                             onClick={() => {
-                              if (!notification.isRead) void markReadMutation.mutateAsync(notification.id);
+                              if (!notification.isRead)
+                                void markReadMutation.mutateAsync(
+                                  notification.id,
+                                );
                               setOpen(false);
                             }}
                           >
@@ -252,7 +259,9 @@ export function NotificationBell({ canView }: { canView: boolean }) {
                           className="nibol-btn-secondary px-3 py-2 text-xs"
                           disabled={deleteNotificationMutation.isPending}
                           onClick={() => {
-                            void deleteNotificationMutation.mutateAsync(notification.id);
+                            void deleteNotificationMutation.mutateAsync(
+                              notification.id,
+                            );
                           }}
                           type="button"
                         >
