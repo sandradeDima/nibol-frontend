@@ -31,6 +31,8 @@ import { DashboardRefreshButton } from "./dashboard-refresh-button";
 import {
   formatObservationDate,
   getRiskLevelClasses,
+  getRiskLevelColor,
+  getRiskLevelStyle,
   getStatusClasses,
 } from "../observations/presentation";
 import { getProgressStatusClasses } from "../progress/presentation";
@@ -66,6 +68,7 @@ const formatDateFilter = (value: Date): string => {
 };
 
 const getSegmentColor = (item: DashboardDistributionItem): string => {
+  if (item.colorToken) return getRiskLevelColor(item.colorToken);
   switch (item.colorToken) {
     case "critical":
       return "#b42318";
@@ -593,8 +596,9 @@ function ObservationsTable({ rows }: { rows: DashboardObservationRow[] }) {
                 <span
                   className={cn(
                     "inline-flex items-center border px-3 py-1 text-xs font-semibold tracking-[0.14em] uppercase",
-                    getRiskLevelClasses(row.riskLevel.colorToken),
+                    getRiskLevelClasses(),
                   )}
+                  style={getRiskLevelStyle(row.riskLevel.colorToken)}
                 >
                   {row.riskLevel.name}
                 </span>
@@ -653,7 +657,7 @@ function ActionPlansTable({ rows }: { rows: DashboardActionPlanRow[] }) {
           <tr>
             <th className="px-5 py-3">Plan de acción</th>
             <th className="px-5 py-3">Observación</th>
-            <th className="px-5 py-3">Responsable</th>
+            <th className="px-5 py-3">Ejecutor</th>
             <th className="px-5 py-3">Fecha límite</th>
             <th className="px-5 py-3">Estado</th>
           </tr>

@@ -62,7 +62,7 @@ export function ActionPlanDetailView({
         </div>
         <div className="grid gap-px bg-stone-200 sm:grid-cols-2 lg:grid-cols-5">
           {[
-            ["Responsable", plan.responsibleUser.name],
+            ["Ejecutor", plan.responsibleUser.name],
             ["Progreso", `${plan.progressPercent}%`],
             ["Estado", plan.statusLabel],
             ["Fecha original", formatRemediationDate(plan.originalDueDate)],

@@ -23,7 +23,7 @@ export function ActionPlanScheduleTable() {
               <th className="px-5 py-4">Informe / Obs.</th>
               <th className="px-5 py-4">Plan de acción</th>
               <th className="px-5 py-4">Área</th>
-              <th className="px-5 py-4">Responsable</th>
+              <th className="px-5 py-4">Ejecutor</th>
               <th className="px-5 py-4">Progreso</th>
               <th className="px-5 py-4">Fecha actual</th>
             </tr>

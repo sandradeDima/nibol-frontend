@@ -28,6 +28,7 @@ import type {
   ReportFilters,
   ReportType,
 } from "@/types";
+import { getRiskLevelColor } from "@/modules/observations/presentation";
 import { cn } from "@/utils";
 
 export const REPORT_TYPE_META: Array<{
@@ -602,7 +603,9 @@ export function ReportBarList({
               <div
                 className="h-full transition-[width]"
                 style={{
-                  background: item.colorToken || chartColor(index),
+                  background: item.colorToken
+                    ? getRiskLevelColor(item.colorToken)
+                    : chartColor(index),
                   width: `${Math.max(6, (item.value / max) * 100)}%`,
                 }}
               />
@@ -631,7 +634,7 @@ export function ReportDonut({ items }: { items: ReportChartItem[] }) {
   const segments = items.map((item, index) => {
     const start = cursor;
     cursor += total === 0 ? 0 : (item.value / total) * 100;
-    return `${item.colorToken || chartColor(index)} ${start}% ${cursor}%`;
+    return `${item.colorToken ? getRiskLevelColor(item.colorToken) : chartColor(index)} ${start}% ${cursor}%`;
   });
   return (
     <div className="grid gap-5 sm:grid-cols-[11rem_1fr] sm:items-center">
@@ -660,7 +663,11 @@ export function ReportDonut({ items }: { items: ReportChartItem[] }) {
               <span className="flex min-w-0 items-center gap-2 text-sm text-[var(--foreground)]">
                 <span
                   className="h-2.5 w-2.5 shrink-0"
-                  style={{ background: item.colorToken || chartColor(index) }}
+                  style={{
+                    background: item.colorToken
+                      ? getRiskLevelColor(item.colorToken)
+                      : chartColor(index),
+                  }}
                 />
                 {item.label}
               </span>

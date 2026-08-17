@@ -30,6 +30,7 @@ import { ObservationActionPanel } from "./observation-action-panel";
 import {
   formatObservationDate,
   getRiskLevelClasses,
+  getRiskLevelStyle,
   getStatusClasses,
 } from "./presentation";
 
@@ -179,9 +180,14 @@ export function ObservationDetail({
                 className={cn(
                   "mt-2 text-base font-semibold text-stone-950",
                   kind === "risk" &&
-                    getRiskLevelClasses(observation.riskLevel.colorToken),
+                    `inline-flex border px-2.5 py-1 ${getRiskLevelClasses()}`,
                   kind === "status" && getStatusClasses(observation.status.key),
                 )}
+                style={
+                  kind === "risk"
+                    ? getRiskLevelStyle(observation.riskLevel.colorToken)
+                    : undefined
+                }
               >
                 {value}
               </p>

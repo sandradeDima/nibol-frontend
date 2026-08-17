@@ -40,7 +40,10 @@ export const areaFormSchema = z.object({
 
 export const riskLevelFormSchema = z.object({
   active: z.boolean().default(true),
-  colorToken: optionalTextSchema,
+  colorToken: z
+    .string()
+    .trim()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Seleccione un color válido."),
   defaultDeadlineDays: optionalPositiveNumberStringSchema,
   description: optionalTextSchema,
   key: uppercaseKeySchema,

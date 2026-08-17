@@ -14,6 +14,10 @@ import {
   type RiskLevelFormValues,
 } from "@/modules/configuration/forms";
 import { configurationService } from "@/services/configuration-service";
+import {
+  getRiskLevelClasses,
+  getRiskLevelStyle,
+} from "@/modules/observations/presentation";
 import type { RiskLevelMutationInput, RiskLevelRecord } from "@/types";
 import { getApiErrorMessage } from "@/utils";
 
@@ -26,7 +30,6 @@ import {
   inputClassName,
   renderOptionalText,
   ToggleCard,
-  ToneBadge,
 } from "./shared";
 
 type RiskLevelsPageProps = {
@@ -41,7 +44,12 @@ const riskLevelColumns: ColumnDef<RiskLevelRecord>[] = [
     cell: ({ row }) => (
       <div className="min-w-[18rem] space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="font-semibold text-stone-950">{row.original.name}</p>
+          <p
+            className={`inline-flex border px-2.5 py-1 text-sm font-semibold ${getRiskLevelClasses()}`}
+            style={getRiskLevelStyle(row.original.colorToken)}
+          >
+            {row.original.name}
+          </p>
           <span className="inline-flex items-center border border-stone-300 bg-stone-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.16em] text-stone-700 uppercase">
             {row.original.key}
           </span>
@@ -75,12 +83,16 @@ const riskLevelColumns: ColumnDef<RiskLevelRecord>[] = [
   },
   {
     accessorKey: "colorToken",
-    cell: ({ row }) =>
-      row.original.colorToken ? (
-        <ToneBadge label={row.original.colorToken} tone="info" />
-      ) : (
-        <span className="text-stone-500">Sin token</span>
-      ),
+    cell: ({ row }) => (
+      <span className="inline-flex items-center gap-2 text-sm font-medium text-stone-700">
+        <span
+          aria-hidden="true"
+          className="h-5 w-5 rounded-full border border-black/10"
+          style={{ backgroundColor: row.original.colorToken ?? "#78716C" }}
+        />
+        {row.original.colorToken ?? "Sin color"}
+      </span>
+    ),
     enableSorting: false,
     header: "Color",
   },
@@ -103,7 +115,7 @@ const riskLevelColumns: ColumnDef<RiskLevelRecord>[] = [
 
 const emptyFormValues: RiskLevelFormValues = {
   active: true,
-  colorToken: "",
+  colorToken: "#B42318",
   defaultDeadlineDays: "",
   description: "",
   key: "",
@@ -120,7 +132,7 @@ const mapRecordToFormValues = (
 
   return {
     active: record.active,
-    colorToken: record.colorToken ?? "",
+    colorToken: record.colorToken ?? "#78716C",
     defaultDeadlineDays:
       record.defaultDeadlineDays === null
         ? ""
@@ -134,8 +146,7 @@ const mapRecordToFormValues = (
 
 const buildPayload = (values: RiskLevelFormValues): RiskLevelMutationInput => ({
   active: values.active,
-  colorToken:
-    values.colorToken.trim().length > 0 ? values.colorToken.trim() : null,
+  colorToken: values.colorToken.trim().toUpperCase(),
   defaultDeadlineDays:
     values.defaultDeadlineDays.trim().length > 0
       ? Number(values.defaultDeadlineDays)
@@ -253,7 +264,7 @@ export function RiskLevelsPage({
 
       <ConfigurationDialogForm
         defaultValues={currentValues}
-        description="Mantenga la severidad, el plazo por defecto y el token visual usado por el sistema de seguimiento."
+        description="Mantenga la severidad, el plazo por defecto y el color aplicado a todas las etiquetas del nivel."
         mode={editingRecord ? "edit" : "create"}
         onOpenChange={(open) => {
           setDialogOpen(open);
@@ -357,14 +368,20 @@ export function RiskLevelsPage({
 
               <label className="block space-y-2 md:col-span-2">
                 <span className="text-sm font-medium text-stone-700">
-                  Token de color
+                  Color de las etiquetas
                 </span>
-                <input
-                  className={inputClassName}
-                  disabled={isBusy}
-                  placeholder="critical, high, medium, low"
-                  {...form.register("colorToken")}
-                />
+                <div className="flex items-center gap-3 rounded-xl border border-stone-300 bg-white p-2">
+                  <input
+                    aria-label="Selector de color"
+                    className="h-10 w-14 cursor-pointer rounded-lg border-0 bg-transparent p-0"
+                    disabled={isBusy}
+                    type="color"
+                    {...form.register("colorToken")}
+                  />
+                  <span className="text-sm font-medium text-stone-700">
+                    {form.watch("colorToken")}
+                  </span>
+                </div>
                 <FieldError error={form.formState.errors.colorToken?.message} />
               </label>
             </div>

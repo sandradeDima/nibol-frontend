@@ -26,6 +26,7 @@ import {
 } from "react-hook-form";
 
 import { ErrorState } from "@/components/ui/error-state";
+import { UserSearchSelect } from "@/components/ui/user-search-select";
 import { QUERY_KEYS } from "@/lib/constants";
 import {
   observationFormSchema,
@@ -87,26 +88,29 @@ function Field({
   );
 }
 
-function UserCaption({
-  userId,
-  users,
-}: {
-  userId: string;
-  users: Array<{
-    email: string;
-    id: string;
-    jobTitle: string | null;
-    name: string;
-  }>;
-}) {
-  const user = users.find((item) => item.id === userId);
-  if (!user) return null;
-  return (
-    <span className="block text-xs font-normal text-stone-500">
-      {user.jobTitle ?? "Cargo no registrado"} · {user.email}
-    </span>
-  );
-}
+type ActionPlanDraft = {
+  description: string;
+  dueDate: string;
+  id: string;
+  responsibleUserId: string;
+  title: string;
+};
+
+const updatePlanDraft = (
+  setter: React.Dispatch<
+    React.SetStateAction<Record<string, ActionPlanDraft[]>>
+  >,
+  areaKey: string,
+  planId: string,
+  property: Exclude<keyof ActionPlanDraft, "id">,
+  value: string,
+) =>
+  setter((current) => ({
+    ...current,
+    [areaKey]: (current[areaKey] ?? []).map((plan) =>
+      plan.id === planId ? { ...plan, [property]: value } : plan,
+    ),
+  }));
 
 const calculatedDeadline = (
   reportDate: string | undefined,
@@ -123,6 +127,9 @@ export function ObservationForm(props: ObservationFormProps) {
   const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [supportFiles, setSupportFiles] = useState<File[]>([]);
+  const [plansByArea, setPlansByArea] = useState<
+    Record<string, ActionPlanDraft[]>
+  >({});
   const observationId = props.mode === "edit" ? props.observationId : null;
   const optionsQuery = useQuery({
     queryFn: observationService.getObservationOptions,
@@ -191,7 +198,18 @@ export function ObservationForm(props: ObservationFormProps) {
     mutationFn: async (values: ObservationFormValues) => {
       const observation =
         props.mode === "create"
-          ? observationService.createObservation(values)
+          ? observationService.createObservation({
+              ...values,
+              actionPlans: areas.fields.flatMap((areaField, index) =>
+                (plansByArea[areaField.id] ?? []).map((plan) => ({
+                  areaId: watchedAreas[index]?.areaId ?? "",
+                  description: plan.description,
+                  dueDate: plan.dueDate,
+                  responsibleUserId: plan.responsibleUserId,
+                  title: plan.title,
+                })),
+              ),
+            })
           : observationService.updateObservation(props.observationId, values);
       const savedObservation = await observation;
       if (supportFiles.length > 0) {
@@ -229,10 +247,32 @@ export function ObservationForm(props: ObservationFormProps) {
   return (
     <form
       className="space-y-6"
-      onSubmit={form.handleSubmit((values) => {
-        setSubmitError(null);
-        mutation.mutate(values);
-      })}
+      onSubmit={form.handleSubmit(
+        (values) => {
+          setSubmitError(null);
+          const incompletePlan = Object.values(plansByArea)
+            .flat()
+            .some(
+              (plan) =>
+                !plan.title.trim() ||
+                !plan.description.trim() ||
+                !plan.dueDate ||
+                !plan.responsibleUserId,
+            );
+          if (incompletePlan) {
+            setSubmitError(
+              "Complete título, ejecutor, descripción y fecha límite de cada plan de acción agregado.",
+            );
+            return;
+          }
+          mutation.mutate(values);
+        },
+        () => {
+          setSubmitError(
+            "Revise los campos marcados antes de crear la observación.",
+          );
+        },
+      )}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
@@ -257,6 +297,16 @@ export function ObservationForm(props: ObservationFormProps) {
               : "Guardar cambios"}
         </button>
       </div>
+
+      {submitError ? (
+        <div
+          aria-live="polite"
+          className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800"
+          role="alert"
+        >
+          {submitError}
+        </div>
+      ) : null}
 
       <section className="nibol-panel overflow-hidden">
         <div className="border-b border-stone-200 bg-stone-50 px-6 py-5">
@@ -396,7 +446,10 @@ export function ObservationForm(props: ObservationFormProps) {
               />
             </Field>
           </div>
-          <Field label="Auditor responsable">
+          <Field
+            error={form.formState.errors.auditorUserId?.message}
+            label="Auditor responsable"
+          >
             <select className={fieldClass} {...form.register("auditorUserId")}>
               <option value="">Seleccione un auditor</option>
               {optionsQuery.data?.users.map((user) => (
@@ -535,7 +588,14 @@ export function ObservationForm(props: ObservationFormProps) {
                   <button
                     aria-label={`Quitar área ${index + 1}`}
                     className="rounded-lg p-2 text-stone-500 hover:bg-rose-50 hover:text-rose-700"
-                    onClick={() => areas.remove(index)}
+                    onClick={() => {
+                      areas.remove(index);
+                      setPlansByArea((current) => {
+                        const next = { ...current };
+                        delete next[field.id];
+                        return next;
+                      });
+                    }}
                     type="button"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -577,22 +637,16 @@ export function ObservationForm(props: ObservationFormProps) {
                   }
                   label="Dueño del proceso"
                 >
-                  <select
-                    className={fieldClass}
-                    {...form.register(
-                      `areaAssignments.${index}.processOwnerUserId`,
-                    )}
-                  >
-                    <option value="">Seleccione</option>
-                    {optionsQuery.data?.users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name}
-                      </option>
-                    ))}
-                  </select>
-                  <UserCaption
-                    userId={watchedAreas[index]?.processOwnerUserId ?? ""}
+                  <UserSearchSelect
+                    onChange={(userId) =>
+                      form.setValue(
+                        `areaAssignments.${index}.processOwnerUserId`,
+                        userId,
+                        { shouldDirty: true, shouldValidate: true },
+                      )
+                    }
                     users={optionsQuery.data?.users ?? []}
+                    value={watchedAreas[index]?.processOwnerUserId ?? ""}
                   />
                 </Field>
                 <Field
@@ -602,25 +656,161 @@ export function ObservationForm(props: ObservationFormProps) {
                   }
                   label="Responsable del área"
                 >
-                  <select
-                    className={fieldClass}
-                    {...form.register(
-                      `areaAssignments.${index}.areaResponsibleUserId`,
-                    )}
-                  >
-                    <option value="">Seleccione</option>
-                    {optionsQuery.data?.users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name}
-                      </option>
-                    ))}
-                  </select>
-                  <UserCaption
-                    userId={watchedAreas[index]?.areaResponsibleUserId ?? ""}
+                  <UserSearchSelect
+                    onChange={(userId) =>
+                      form.setValue(
+                        `areaAssignments.${index}.areaResponsibleUserId`,
+                        userId,
+                        { shouldDirty: true, shouldValidate: true },
+                      )
+                    }
                     users={optionsQuery.data?.users ?? []}
+                    value={watchedAreas[index]?.areaResponsibleUserId ?? ""}
                   />
                 </Field>
               </div>
+              {props.mode === "create" ? (
+                <div className="mt-5 border-t border-stone-200 pt-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-stone-900">
+                        Planes de acción opcionales
+                      </p>
+                      <p className="mt-1 text-xs text-stone-500">
+                        Puede crear ninguno, uno o varios para esta área.
+                      </p>
+                    </div>
+                    <button
+                      className="nibol-btn-secondary px-3 py-2 text-xs"
+                      onClick={() =>
+                        setPlansByArea((current) => ({
+                          ...current,
+                          [field.id]: [
+                            ...(current[field.id] ?? []),
+                            {
+                              description: "",
+                              dueDate: dueDate ?? "",
+                              id: crypto.randomUUID(),
+                              responsibleUserId:
+                                watchedAreas[index]?.areaResponsibleUserId ??
+                                "",
+                              title: "",
+                            },
+                          ],
+                        }))
+                      }
+                      type="button"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Agregar plan de acción
+                    </button>
+                  </div>
+                  <div className="mt-4 space-y-4">
+                    {(plansByArea[field.id] ?? []).map((plan, planIndex) => (
+                      <div
+                        className="rounded-xl border border-amber-200 bg-white p-4"
+                        key={plan.id}
+                      >
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-stone-900">
+                            Plan {planIndex + 1}
+                          </p>
+                          <button
+                            aria-label={`Quitar plan ${planIndex + 1}`}
+                            className="rounded-lg p-2 text-stone-500 hover:bg-rose-50 hover:text-rose-700"
+                            onClick={() =>
+                              setPlansByArea((current) => ({
+                                ...current,
+                                [field.id]:
+                                  current[field.id]?.filter(
+                                    (item) => item.id !== plan.id,
+                                  ) ?? [],
+                              }))
+                            }
+                            type="button"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <Field label="Título">
+                            <input
+                              className={fieldClass}
+                              minLength={2}
+                              onChange={(event) =>
+                                updatePlanDraft(
+                                  setPlansByArea,
+                                  field.id,
+                                  plan.id,
+                                  "title",
+                                  event.target.value,
+                                )
+                              }
+                              required
+                              value={plan.title}
+                            />
+                          </Field>
+                          <Field label="Ejecutor">
+                            <UserSearchSelect
+                              onChange={(userId) =>
+                                updatePlanDraft(
+                                  setPlansByArea,
+                                  field.id,
+                                  plan.id,
+                                  "responsibleUserId",
+                                  userId,
+                                )
+                              }
+                              users={optionsQuery.data?.users ?? []}
+                              value={plan.responsibleUserId}
+                            />
+                            {!plan.responsibleUserId ? (
+                              <span className="block text-xs font-normal text-stone-500">
+                                Seleccione por nombre o correo.
+                              </span>
+                            ) : null}
+                          </Field>
+                          <div className="md:col-span-2">
+                            <Field label="Descripción">
+                              <textarea
+                                className={textareaClass}
+                                onChange={(event) =>
+                                  updatePlanDraft(
+                                    setPlansByArea,
+                                    field.id,
+                                    plan.id,
+                                    "description",
+                                    event.target.value,
+                                  )
+                                }
+                                required
+                                value={plan.description}
+                              />
+                            </Field>
+                          </div>
+                          <Field label="Fecha límite">
+                            <input
+                              className={fieldClass}
+                              onChange={(event) =>
+                                updatePlanDraft(
+                                  setPlansByArea,
+                                  field.id,
+                                  plan.id,
+                                  "dueDate",
+                                  event.target.value,
+                                )
+                              }
+                              required
+                              type="date"
+                              value={plan.dueDate}
+                            />
+                          </Field>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </article>
           ))}
         </div>
@@ -672,15 +862,6 @@ export function ObservationForm(props: ObservationFormProps) {
           </ul>
         ) : null}
       </section>
-
-      {submitError ? (
-        <div
-          className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800"
-          role="alert"
-        >
-          {submitError}
-        </div>
-      ) : null}
     </form>
   );
 }

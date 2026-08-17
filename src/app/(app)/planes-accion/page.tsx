@@ -8,7 +8,7 @@ export default async function ActionPlansPage() {
   return (
     <main className="space-y-6">
       <PageHeader
-        description="Centralice los planes de acción por observación y área, con responsables, fechas y avance aprobado."
+        description="Centralice los planes de acción por observación y área, con ejecutores, fechas y avance aprobado."
         eyebrow="Seguimiento"
         title="Planes de acción"
       />

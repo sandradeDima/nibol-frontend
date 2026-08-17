@@ -1,9 +1,8 @@
 import { z } from "zod";
 
 const optionalText = z
-  .string()
-  .trim()
-  .transform((value) => value || null);
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => value?.trim() || null);
 
 export const observationAreaFormSchema = z.object({
   areaId: z.string().min(1, "Seleccione un área."),

@@ -21,6 +21,7 @@ import { cn, getApiErrorMessage } from "@/utils";
 import {
   formatObservationDate,
   getRiskLevelClasses,
+  getRiskLevelStyle,
   getStatusClasses,
 } from "./presentation";
 
@@ -115,8 +116,9 @@ export function ObservationTable({
                   <span
                     className={cn(
                       "inline-flex border px-2 py-1 text-xs font-semibold",
-                      getRiskLevelClasses(row.riskLevel.colorToken),
+                      getRiskLevelClasses(),
                     )}
+                    style={getRiskLevelStyle(row.riskLevel.colorToken)}
                   >
                     {row.riskLevel.name}
                   </span>

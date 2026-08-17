@@ -127,6 +127,7 @@ export interface ObservationAreaInput {
 }
 
 export interface CreateObservationInput {
+  actionPlans?: ObservationActionPlanInput[];
   areaAssignments: ObservationAreaInput[];
   auditRecommendation: string;
   auditReportId: string;
@@ -140,6 +141,14 @@ export interface CreateObservationInput {
   riskIds: string[];
   riskLevelId: string;
   source?: string | null;
+  title: string;
+}
+
+export interface ObservationActionPlanInput {
+  areaId: string;
+  description: string;
+  dueDate: string;
+  responsibleUserId: string;
   title: string;
 }
 

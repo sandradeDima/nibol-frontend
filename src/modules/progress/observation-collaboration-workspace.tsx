@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, FileUp, MessageSquare, Send, ShieldCheck } from "lucide-react";
 
+import { QUERY_KEYS } from "@/lib/constants";
 import { apiClient } from "@/services/api-client";
 import { progressService } from "@/services/progress-service";
 import { remediationService } from "@/services/remediation-service";
@@ -85,6 +86,9 @@ export function ObservationCollaborationWorkspace({
       queryClient.invalidateQueries({
         queryKey: ["observation-evidence", observationId],
       }),
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.observationDetails(observationId),
+      }),
     ]);
   const createEvaluation = useMutation({
     mutationFn: async () => {
@@ -118,7 +122,10 @@ export function ObservationCollaborationWorkspace({
   const submit = useMutation({
     mutationFn: (id: string) => progressService.submitProgressEvaluation(id),
     onError: (cause) => setError(getApiErrorMessage(cause)),
-    onSuccess: refresh,
+    onSuccess: async () => {
+      setError(null);
+      await refresh();
+    },
   });
   const review = useMutation({
     mutationFn: ({
@@ -139,7 +146,10 @@ export function ObservationCollaborationWorkspace({
             },
       ),
     onError: (cause) => setError(getApiErrorMessage(cause)),
-    onSuccess: refresh,
+    onSuccess: async () => {
+      setError(null);
+      await refresh();
+    },
   });
   const upload = useMutation({
     mutationFn: () => {
@@ -206,6 +216,15 @@ export function ObservationCollaborationWorkspace({
           observación se agrega solo desde evaluaciones aprobadas.
         </p>
       </div>
+      {error ? (
+        <p
+          aria-live="assertive"
+          className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-800"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1.25fr]">
         <form
           className="rounded-2xl border border-stone-200 bg-stone-50 p-5"
@@ -245,7 +264,7 @@ export function ObservationCollaborationWorkspace({
                     ?.area.name
                 }
                 <br />
-                Responsable:{" "}
+                Ejecutor:{" "}
                 {
                   plans.data?.data.find((plan) => plan.id === selectedPlanId)
                     ?.responsibleUser.name
@@ -395,6 +414,7 @@ export function ObservationCollaborationWorkspace({
                       <>
                         <button
                           className="nibol-btn-primary px-3 py-2 text-xs"
+                          disabled={review.isPending}
                           onClick={() =>
                             review.mutate({ action: "approve", id: item.id })
                           }
@@ -556,11 +576,6 @@ export function ObservationCollaborationWorkspace({
           </div>
         </section>
       </div>
-      {error ? (
-        <p className="mt-4 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
-          {error}
-        </p>
-      ) : null}
     </section>
   );
 }

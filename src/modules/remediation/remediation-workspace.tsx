@@ -74,8 +74,8 @@ export function RemediationWorkspace({
             Planes de acción
           </h3>
           <p className="mt-1 text-sm text-stone-500">
-            Cada plan conserva su responsable, plazo, evaluaciones y evidencia
-            de forma independiente.
+            Cada plan conserva su ejecutor, plazo, evaluaciones y evidencia de
+            forma independiente.
           </p>
         </div>
         <button
@@ -118,7 +118,7 @@ export function RemediationWorkspace({
             </select>
           </label>
           <label className="space-y-2 text-sm font-semibold">
-            Responsable
+            Ejecutor
             <select
               className="nibol-field"
               required

@@ -19,6 +19,10 @@ import { reportService, triggerDownload } from "@/services/report-service";
 import type { ReportFilters, ReportObservationRow } from "@/types";
 import { cn } from "@/utils";
 import {
+  getRiskLevelClasses,
+  getRiskLevelStyle,
+} from "@/modules/observations/presentation";
+import {
   formatReportDate,
   formatReportNumber,
   getReportDateRange,
@@ -305,8 +309,13 @@ function AttentionTable({
               <td className="px-3 py-3 align-top whitespace-nowrap text-[var(--foreground-soft)]">
                 {row.responsibleUser?.name ?? "Sin asignar"}
               </td>
-              <td className="px-3 py-3 align-top whitespace-nowrap text-[var(--foreground-soft)]">
-                {row.riskLevel.name}
+              <td className="px-3 py-3 align-top whitespace-nowrap">
+                <span
+                  className={`inline-flex border px-2.5 py-1 text-xs font-semibold ${getRiskLevelClasses()}`}
+                  style={getRiskLevelStyle(row.riskLevel.colorToken)}
+                >
+                  {row.riskLevel.name}
+                </span>
               </td>
               <td
                 className={cn(
