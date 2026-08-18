@@ -15,6 +15,44 @@ export type WorkflowRuntimeVersion = {
   versionNumber: number;
 };
 
+export type WorkflowSpecialRequestSummary = {
+  description: string;
+  reference: string;
+  title: string;
+};
+
+export type WorkflowEvidenceReviewSummary = {
+  context: string;
+  originalName: string;
+};
+
+export type WorkflowStartOptions = {
+  areas: WorkflowRuntimeAssignment[];
+  riskLevels: Array<{ key: string | null; name: string }>;
+  users: WorkflowRuntimeUser[];
+  workflows: Array<{
+    activeVersion: { id: string; versionNumber: number } | null;
+    description: string | null;
+    id: string;
+    name: string;
+  }>;
+};
+
+export type WorkflowInstanceStartInput = {
+  context?: {
+    areaId?: string;
+    custom?: Record<string, unknown>;
+    dueDate?: string;
+    requestType?: string;
+    responsibleUserId?: string;
+    riskLevel?: string;
+  };
+  entityId: string;
+  entityType: string;
+  processType: string;
+  workflowDefinitionId?: string;
+};
+
 export type WorkflowRuntimeNode = {
   configuration?: unknown;
   id: string;
@@ -40,9 +78,11 @@ export type WorkflowTaskListItem = {
   instance: {
     entityId: string;
     entityType: string;
+    evidenceReview: WorkflowEvidenceReviewSummary | null;
     id: string;
     processType: string;
     relatedRecordUrl: string | null;
+    specialRequest: WorkflowSpecialRequestSummary | null;
     startedBy: WorkflowRuntimeUser;
     version: WorkflowRuntimeVersion;
     workflow: {
@@ -74,9 +114,11 @@ export type WorkflowTaskDetail = {
   instance: {
     entityId: string;
     entityType: string;
+    evidenceReview: WorkflowEvidenceReviewSummary | null;
     id: string;
     processType: string;
     relatedRecordUrl: string | null;
+    specialRequest: WorkflowSpecialRequestSummary | null;
     startedAt: string;
     startedBy: WorkflowRuntimeUser;
     status: string;
@@ -122,7 +164,9 @@ export type WorkflowInstanceDetail = {
   };
   entityId: string;
   entityType: string;
+  evidenceReview: WorkflowEvidenceReviewSummary | null;
   relatedRecordUrl: string | null;
+  specialRequest: WorkflowSpecialRequestSummary | null;
   finalResult: string | null;
   id: string;
   runtimeError: { code: string; message: string | null } | null;

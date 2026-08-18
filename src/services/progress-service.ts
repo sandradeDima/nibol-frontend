@@ -106,6 +106,13 @@ export const progressService = {
   async deleteEvidence(id: string) {
     await apiClient.delete(`/evidences/${id}`);
   },
+  async submitEvidenceForReview(id: string) {
+    const response = await apiClient.post<ApiSuccessResponse<EvidenceFileItem>>(
+      `/evidences/${id}/submit-review`,
+      {},
+    );
+    return response.data.data;
+  },
   async getComments(observationId: string) {
     const response = await apiClient.get<
       ApiSuccessResponse<ObservationCommentItem[]>

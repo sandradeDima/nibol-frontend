@@ -227,9 +227,38 @@ export function WorkflowTaskDetail({
               </span>
             </div>
             <div className="grid gap-4 border-t border-[var(--border)] pt-5 sm:grid-cols-2">
+              {task.instance.specialRequest ? (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+                    Solicitud
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                    {task.instance.specialRequest.title}
+                  </p>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 whitespace-pre-wrap text-[var(--foreground-soft)]">
+                    {task.instance.specialRequest.description}
+                  </p>
+                </div>
+              ) : null}
+              {task.instance.evidenceReview ? (
+                <div className="sm:col-span-2">
+                  <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+                    Evidencia en revisión
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                    {task.instance.evidenceReview.originalName}
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--foreground-soft)]">
+                    Contexto: {task.instance.evidenceReview.context}
+                  </p>
+                </div>
+              ) : null}
               <Info
                 label="Registro"
-                value={`${task.instance.entityType} · ${task.instance.entityId}`}
+                value={
+                  task.instance.specialRequest?.reference ??
+                  `${task.instance.entityType} · ${task.instance.entityId}`
+                }
               />
               {task.instance.relatedRecordUrl ? (
                 <Link

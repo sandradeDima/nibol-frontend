@@ -4,10 +4,45 @@ import type {
   ActionPlanPayload,
   ApiSuccessResponse,
   PaginatedApiSuccessResponse,
+  RemediationPlanDetail,
+  RemediationPlanPayload,
   UpdateActionPlanPayload,
+  UpdateRemediationPlanPayload,
 } from "@/types";
 
 export const remediationService = {
+  async createRemediationPlan(
+    observationId: string,
+    input: RemediationPlanPayload,
+  ): Promise<RemediationPlanDetail> {
+    const response = await apiClient.post<
+      ApiSuccessResponse<RemediationPlanDetail>
+    >(`/observations/${observationId}/remediation-plans`, input);
+    return response.data.data;
+  },
+  async listRemediationPlans(
+    observationId: string,
+  ): Promise<RemediationPlanDetail[]> {
+    const response = await apiClient.get<
+      ApiSuccessResponse<RemediationPlanDetail[]>
+    >(`/observations/${observationId}/remediation-plans`);
+    return response.data.data;
+  },
+  async submitRemediationPlan(id: string): Promise<RemediationPlanDetail> {
+    const response = await apiClient.post<
+      ApiSuccessResponse<RemediationPlanDetail>
+    >(`/remediation-plans/${id}/submit`, {});
+    return response.data.data;
+  },
+  async updateRemediationPlan(
+    id: string,
+    input: UpdateRemediationPlanPayload,
+  ): Promise<RemediationPlanDetail> {
+    const response = await apiClient.patch<
+      ApiSuccessResponse<RemediationPlanDetail>
+    >(`/remediation-plans/${id}`, input);
+    return response.data.data;
+  },
   async createActionPlan(
     observationId: string,
     input: ActionPlanPayload,

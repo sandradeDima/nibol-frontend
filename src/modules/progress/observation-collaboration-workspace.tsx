@@ -2,8 +2,17 @@
 
 import { useMemo, useState } from "react";
 
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, FileUp, MessageSquare, Send, ShieldCheck } from "lucide-react";
+import {
+  ArrowUpRight,
+  Check,
+  FileUp,
+  GitBranch,
+  MessageSquare,
+  Send,
+  ShieldCheck,
+} from "lucide-react";
 
 import { QUERY_KEYS } from "@/lib/constants";
 import { apiClient } from "@/services/api-client";
@@ -27,6 +36,13 @@ const contextLabels: Record<EvidenceFileItem["context"], string> = {
   CLOSURE: "Cierre",
   FINDING: "Hallazgo",
   PROGRESS_EVALUATION: "Evaluación",
+};
+const evidenceReviewLabels: Record<EvidenceFileItem["reviewStatus"], string> = {
+  APPROVED: "Aprobada",
+  DRAFT: "Sin enviar",
+  PENDING: "En revisión",
+  REJECTED: "Rechazada",
+  RETURNED: "Con observaciones",
 };
 
 export function ObservationCollaborationWorkspace({
@@ -174,6 +190,14 @@ export function ObservationCollaborationWorkspace({
     onError: (cause) => setError(getApiErrorMessage(cause)),
     onSuccess: async () => {
       setFiles([]);
+      await refresh();
+    },
+  });
+  const submitEvidence = useMutation({
+    mutationFn: (id: string) => progressService.submitEvidenceForReview(id),
+    onError: (cause) => setError(getApiErrorMessage(cause)),
+    onSuccess: async () => {
+      setError(null);
       await refresh();
     },
   });
@@ -511,16 +535,54 @@ export function ObservationCollaborationWorkspace({
                 <div className="mt-2 space-y-2">
                   {groupedEvidence[context as EvidenceFileItem["context"]].map(
                     (file) => (
-                      <a
-                        className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-2 text-sm hover:border-amber-300"
-                        href={`${apiClient.defaults.baseURL}${file.downloadPath}`}
+                      <article
+                        className="border border-stone-200 bg-white p-3"
                         key={file.id}
                       >
-                        <span className="truncate">{file.originalName}</span>
-                        <span className="text-xs text-stone-500">
-                          {Math.ceil(file.sizeBytes / 1024)} KB
-                        </span>
-                      </a>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <a
+                              className="block truncate text-sm font-semibold text-stone-900 hover:text-amber-800 hover:underline"
+                              href={`${apiClient.defaults.baseURL}${file.downloadPath}`}
+                            >
+                              {file.originalName}
+                            </a>
+                            <p className="mt-1 text-xs text-stone-500">
+                              {Math.ceil(file.sizeBytes / 1024)} KB ·{" "}
+                              {evidenceReviewLabels[file.reviewStatus]}
+                            </p>
+                            {file.reviewComment ? (
+                              <p className="mt-2 text-xs leading-5 text-amber-900">
+                                {file.reviewComment}
+                              </p>
+                            ) : null}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {["DRAFT", "RETURNED"].includes(
+                              file.reviewStatus,
+                            ) ? (
+                              <button
+                                className="nibol-btn-secondary px-3 py-2 text-xs"
+                                disabled={submitEvidence.isPending}
+                                onClick={() => submitEvidence.mutate(file.id)}
+                                type="button"
+                              >
+                                <Send className="h-3.5 w-3.5" />
+                                Enviar a revisión
+                              </button>
+                            ) : null}
+                            {file.workflowInstanceId ? (
+                              <Link
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 hover:underline"
+                                href={`/configuracion/flujos/instancias/${file.workflowInstanceId}`}
+                              >
+                                <GitBranch className="h-3.5 w-3.5" />
+                                Flujo <ArrowUpRight className="h-3 w-3" />
+                              </Link>
+                            ) : null}
+                          </div>
+                        </div>
+                      </article>
                     ),
                   )}
                 </div>

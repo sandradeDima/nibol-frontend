@@ -124,6 +124,7 @@ export const QUERY_KEYS = {
     ["workflows", "designer", versionId] as const,
   workflowDesignerOptions: ["workflows", "designer-options"] as const,
   workflowTasks: ["workflow-tasks"] as const,
+  workflowStartOptions: ["workflow-instances", "start-options"] as const,
   workflowTask: (taskId: string) => ["workflow-tasks", taskId] as const,
   workflowInstance: (instanceId: string) =>
     ["workflow-instances", instanceId] as const,

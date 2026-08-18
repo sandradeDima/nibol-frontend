@@ -10,6 +10,7 @@ export default async function WorkflowInstanceDetailPage({
   const authorization = await requireAnyPermission([
     "workflows.view_instances",
     "workflow_tasks.view",
+    "workflow_instances.start",
   ]);
   const { instanceId } = await params;
   return (

@@ -11,6 +11,8 @@ import { observationService } from "@/services/observation-service";
 import { remediationService } from "@/services/remediation-service";
 import { getApiErrorMessage } from "@/utils";
 
+import { RemediationApprovalPanel } from "./remediation-approval-panel";
+
 const emptyForm = {
   description: "",
   dueDate: "",
@@ -43,6 +45,14 @@ export function RemediationWorkspace({
       ),
     queryKey: ["action-plans", observationId],
   });
+  const remediationPlans = useQuery({
+    queryFn: () => remediationService.listRemediationPlans(observationId),
+    queryKey: [QUERY_KEYS.remediationPlans, observationId],
+  });
+  const refreshRemediationPlans = () =>
+    queryClient.invalidateQueries({
+      queryKey: [QUERY_KEYS.remediationPlans, observationId],
+    });
   const create = useMutation({
     mutationFn: () => remediationService.createActionPlan(observationId, form),
     onError: (cause) => setError(getApiErrorMessage(cause)),
@@ -227,6 +237,22 @@ export function RemediationWorkspace({
                   {areaPlans.length === 1 ? "plan" : "planes"}
                 </span>
               </div>
+              {remediationPlans.isPending ? (
+                <div className="mb-4 h-28 animate-pulse bg-[var(--surface-muted)]" />
+              ) : (
+                <RemediationApprovalPanel
+                  area={area.area}
+                  key={`${area.id}-${remediationPlans.data?.find((plan) => plan.area.id === area.area.id)?.updatedAt ?? "new"}`}
+                  observationId={observationId}
+                  onChanged={refreshRemediationPlans}
+                  plan={
+                    remediationPlans.data?.find(
+                      (plan) => plan.area.id === area.area.id,
+                    ) ?? null
+                  }
+                  users={options.data?.users ?? []}
+                />
+              )}
               {areaPlans.length ? (
                 <div className="grid gap-3 lg:grid-cols-2">
                   {areaPlans.map((plan) => (

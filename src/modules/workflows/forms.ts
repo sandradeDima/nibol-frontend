@@ -55,3 +55,30 @@ export const workflowDuplicateFormSchema = z.object({
 export type WorkflowDuplicateFormValues = z.infer<
   typeof workflowDuplicateFormSchema
 >;
+
+export const specialRequestStartFormSchema = z.object({
+  areaId: z.string(),
+  description: z
+    .string()
+    .trim()
+    .min(10, "Describa la solicitud con al menos 10 caracteres.")
+    .max(10_000, "La descripción no puede superar los 10.000 caracteres."),
+  dueDate: z.string(),
+  requestType: z
+    .string()
+    .trim()
+    .min(2, "Indique el tipo de solicitud.")
+    .max(100, "El tipo no puede superar los 100 caracteres."),
+  responsibleUserId: z.string(),
+  riskLevel: z.string(),
+  title: z
+    .string()
+    .trim()
+    .min(3, "Ingrese un título de al menos 3 caracteres.")
+    .max(191, "El título no puede superar los 191 caracteres."),
+  workflowDefinitionId: z.string().uuid("Seleccione un flujo publicado."),
+});
+
+export type SpecialRequestStartFormValues = z.infer<
+  typeof specialRequestStartFormSchema
+>;

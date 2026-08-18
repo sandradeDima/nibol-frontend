@@ -174,10 +174,14 @@ export function WorkflowTaskInbox() {
                     </td>
                     <td className="px-5 py-5">
                       <p className="font-semibold text-[var(--foreground)]">
-                        {task.instance.entityId}
+                        {task.instance.specialRequest?.title ??
+                          task.instance.evidenceReview?.originalName ??
+                          task.instance.entityId}
                       </p>
                       <p className="mt-1 text-xs text-[var(--muted)]">
-                        {task.instance.entityType}
+                        {task.instance.specialRequest?.reference ??
+                          task.instance.evidenceReview?.context ??
+                          task.instance.entityType}
                       </p>
                     </td>
                     <td className="px-5 py-5">

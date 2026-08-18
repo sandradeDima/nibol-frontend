@@ -16,7 +16,12 @@ export interface EvidenceFileItem {
   id: string;
   mimeType: string;
   originalName: string;
+  reviewComment: string | null;
+  reviewedAt: string | null;
+  reviewStatus: "DRAFT" | "PENDING" | "APPROVED" | "RETURNED" | "REJECTED";
   sizeBytes: number;
+  submittedAt: string | null;
+  workflowInstanceId: string | null;
 }
 
 export interface ProgressReviewHistoryEntry {

@@ -44,3 +44,33 @@ export interface ActionPlanPayload {
 
 export type UpdateActionPlanPayload = Partial<ActionPlanPayload>;
 export type ActionPlanScheduleRow = ActionPlanDetail;
+
+export type RemediationPlanStatus =
+  "DRAFT" | "SENT_TO_AUDIT" | "APPROVED" | "RETURNED" | "CLOSED";
+
+export interface RemediationPlanDetail {
+  additionalComments: string | null;
+  area: { id: string; name: string };
+  createdAt: string;
+  id: string;
+  mitigationText: string | null;
+  observationId: string;
+  ownerUser: ObservationUserSummary | null;
+  returnReason: string | null;
+  status: RemediationPlanStatus;
+  strategyText: string;
+  updatedAt: string;
+  workflowInstanceId: string | null;
+}
+
+export interface RemediationPlanPayload {
+  additionalComments?: string | null;
+  areaId: string;
+  mitigationText?: string | null;
+  ownerUserId?: string | null;
+  strategyText: string;
+}
+
+export type UpdateRemediationPlanPayload = Partial<
+  Omit<RemediationPlanPayload, "areaId">
+>;

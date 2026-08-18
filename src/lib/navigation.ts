@@ -77,6 +77,13 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
   },
   {
     group: "Control",
+    icon: "Send",
+    label: "Solicitud especial",
+    permission: "workflow_instances.start",
+    route: "/solicitudes-especiales/nueva",
+  },
+  {
+    group: "Control",
     icon: "CalendarRange",
     label: "Cronograma",
     permission: "observations.view",
@@ -221,6 +228,7 @@ routeLabelMap.set("/configuracion", "Configuración");
 routeLabelMap.set("/configuracion/flujos", "Flujos");
 routeLabelMap.set("/configuracion/flujos/nuevo", "Nuevo flujo");
 routeLabelMap.set("/aprobaciones/flujos", "Tareas de flujos");
+routeLabelMap.set("/solicitudes-especiales/nueva", "Nueva solicitud especial");
 routeLabelMap.set("/configuracion/flujos/instancias", "Instancias de flujos");
 
 const titleCaseSegment = (segment: string): string => {

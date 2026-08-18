@@ -114,12 +114,23 @@ export function WorkflowInstanceDetail({
           <div>
             <p className="nibol-eyebrow">Ejecución de workflow</p>
             <h2 className="font-display mt-3 text-4xl leading-none font-bold text-[var(--foreground)] uppercase">
-              {instance.workflow.name}
+              {instance.specialRequest?.title ?? instance.workflow.name}
             </h2>
             <p className="mt-3 text-sm leading-6 text-[var(--foreground-soft)]">
-              {formatProcessType(instance.workflow.processType)} ·{" "}
-              {instance.entityType} · {instance.entityId}
+              {instance.workflow.name} ·{" "}
+              {instance.specialRequest?.reference ?? instance.entityId}
             </p>
+            {instance.specialRequest?.description ? (
+              <p className="mt-4 max-w-3xl text-sm leading-6 whitespace-pre-wrap text-[var(--foreground-soft)]">
+                {instance.specialRequest.description}
+              </p>
+            ) : null}
+            {instance.evidenceReview ? (
+              <p className="mt-4 text-sm font-semibold text-[var(--foreground)]">
+                Archivo: {instance.evidenceReview.originalName} ·{" "}
+                {instance.evidenceReview.context}
+              </p>
+            ) : null}
             {instance.relatedRecordUrl ? (
               <Link
                 className="mt-3 inline-flex text-sm font-semibold text-[var(--primary)] hover:underline"
