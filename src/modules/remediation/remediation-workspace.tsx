@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, ChevronRight, Plus, Target } from "lucide-react";
+import { CalendarDays, ChevronRight, Pencil, Plus, Target } from "lucide-react";
 import Link from "next/link";
 
 import { QUERY_KEYS } from "@/lib/constants";
@@ -11,6 +11,10 @@ import { observationService } from "@/services/observation-service";
 import { remediationService } from "@/services/remediation-service";
 import { getApiErrorMessage } from "@/utils";
 
+import {
+  ActionPlanEditor,
+  type ActionPlanEditorValues,
+} from "./action-plan-editor";
 import { RemediationApprovalPanel } from "./remediation-approval-panel";
 
 const emptyForm = {
@@ -21,12 +25,15 @@ const emptyForm = {
 };
 
 export function RemediationWorkspace({
+  canEditActionPlans,
   observationId,
 }: {
+  canEditActionPlans: boolean;
   observationId: string;
 }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const observation = useQuery({
@@ -58,6 +65,28 @@ export function RemediationWorkspace({
     onSuccess: async () => {
       setForm(emptyForm);
       setShowForm(false);
+      setError(null);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["action-plans", observationId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.observationDetails(observationId),
+        }),
+      ]);
+    },
+  });
+  const update = useMutation({
+    mutationFn: ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: ActionPlanEditorValues;
+    }) => remediationService.updateActionPlan(id, input),
+    onError: (cause) => setError(getApiErrorMessage(cause)),
+    onSuccess: async () => {
+      setEditingPlanId(null);
       setError(null);
       await Promise.all([
         queryClient.invalidateQueries({
@@ -240,45 +269,87 @@ export function RemediationWorkspace({
               )}
               {areaPlans.length ? (
                 <div className="grid gap-3 lg:grid-cols-2">
-                  {areaPlans.map((plan) => (
-                    <Link
-                      className="group rounded-2xl border border-stone-200 bg-white p-5 transition hover:border-amber-300 hover:shadow-sm"
-                      href={`/planes-accion/${plan.id}`}
-                      key={plan.id}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">
-                            {plan.statusLabel}
-                          </p>
-                          <h5 className="mt-2 font-semibold text-stone-950">
-                            Plan de acción
-                          </h5>
-                          <p className="mt-2 line-clamp-2 text-sm leading-6 text-stone-600">
-                            {plan.description}
-                          </p>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-stone-400 transition group-hover:translate-x-1 group-hover:text-amber-700" />
+                  {areaPlans.map((plan) =>
+                    editingPlanId === plan.id ? (
+                      <ActionPlanEditor
+                        areas={data.areas}
+                        error={error}
+                        initial={{
+                          description: plan.description,
+                          dueDate: plan.currentDueDate,
+                          observationAreaId: plan.observationAreaId,
+                          responsibleUserId: plan.responsibleUser.id,
+                        }}
+                        isSaving={
+                          update.isPending && update.variables?.id === plan.id
+                        }
+                        key={`${plan.id}-editor`}
+                        onCancel={() => {
+                          setEditingPlanId(null);
+                          setError(null);
+                        }}
+                        onSubmit={(input) =>
+                          update.mutate({ id: plan.id, input })
+                        }
+                        users={options.data?.users ?? []}
+                      />
+                    ) : (
+                      <div
+                        className="relative rounded-2xl border border-stone-200 bg-white transition hover:border-amber-300 hover:shadow-sm"
+                        key={plan.id}
+                      >
+                        <Link
+                          className="group block p-5 pr-14"
+                          href={`/planes-accion/${plan.id}`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">
+                                {plan.statusLabel}
+                              </p>
+                              <h5 className="mt-2 font-semibold text-stone-950">
+                                Plan de acción
+                              </h5>
+                              <p className="mt-2 line-clamp-2 text-sm leading-6 text-stone-600">
+                                {plan.description}
+                              </p>
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-stone-400 transition group-hover:translate-x-1 group-hover:text-amber-700" />
+                          </div>
+                          <div className="mt-4 flex flex-wrap gap-4 text-xs text-stone-600">
+                            <span className="flex items-center gap-1">
+                              <Target className="h-3.5 w-3.5" />
+                              {plan.progressPercent}%
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <CalendarDays className="h-3.5 w-3.5" />
+                              {plan.currentDueDate.slice(0, 10)}
+                            </span>
+                            <span>{plan.responsibleUser.name}</span>
+                          </div>
+                          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-100">
+                            <div
+                              className="h-full bg-amber-600"
+                              style={{ width: `${plan.progressPercent}%` }}
+                            />
+                          </div>
+                        </Link>
+                        {canEditActionPlans ? (
+                          <button
+                            aria-label="Editar plan de acción"
+                            className="absolute top-4 right-4 rounded-lg p-2 text-stone-500 transition hover:bg-amber-50 hover:text-amber-800"
+                            onClick={() => {
+                              setError(null);
+                              setEditingPlanId(plan.id);
+                            }}
+                            type="button"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        ) : null}
                       </div>
-                      <div className="mt-4 flex flex-wrap gap-4 text-xs text-stone-600">
-                        <span className="flex items-center gap-1">
-                          <Target className="h-3.5 w-3.5" />
-                          {plan.progressPercent}%
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <CalendarDays className="h-3.5 w-3.5" />
-                          {plan.currentDueDate.slice(0, 10)}
-                        </span>
-                        <span>{plan.responsibleUser.name}</span>
-                      </div>
-                      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-100">
-                        <div
-                          className="h-full bg-amber-600"
-                          style={{ width: `${plan.progressPercent}%` }}
-                        />
-                      </div>
-                    </Link>
-                  ))}
+                    ),
+                  )}
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-500">

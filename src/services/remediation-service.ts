@@ -84,8 +84,11 @@ export const remediationService = {
     input: UpdateActionPlanPayload,
   ): Promise<ActionPlanDetail> {
     const response = await apiClient.patch<
-      ApiSuccessResponse<ActionPlanDetail>
+      ApiSuccessResponse<{
+        current: ActionPlanDetail;
+        previous: ActionPlanDetail;
+      }>
     >(`/action-plans/${actionPlanId}`, input);
-    return response.data.data;
+    return response.data.data.current;
   },
 };

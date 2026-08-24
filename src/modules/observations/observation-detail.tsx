@@ -39,6 +39,7 @@ type Props = {
   canClose: boolean;
   canDelete: boolean;
   canEdit: boolean;
+  canEditActionPlans: boolean;
   canViewTechnical: boolean;
   observationId: string;
 };
@@ -57,6 +58,7 @@ export function ObservationDetail({
   canClose,
   canDelete,
   canEdit,
+  canEditActionPlans,
   canViewTechnical,
   observationId,
 }: Props) {
@@ -334,7 +336,10 @@ export function ObservationDetail({
       </section>
 
       <div id="planes-accion">
-        <RemediationWorkspace observationId={observationId} />
+        <RemediationWorkspace
+          canEditActionPlans={canEditActionPlans}
+          observationId={observationId}
+        />
       </div>
       <div id="colaboracion">
         <ObservationCollaborationWorkspace observationId={observationId} />

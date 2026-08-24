@@ -3,7 +3,7 @@ import { requirePermission } from "@/lib/server-auth";
 import { RemediationPlanTable } from "@/modules/remediation/remediation-plan-table";
 
 export default async function ActionPlansPage() {
-  await requirePermission("action_plans.view");
+  const authorization = await requirePermission("action_plans.view");
 
   return (
     <main className="space-y-6">
@@ -12,7 +12,9 @@ export default async function ActionPlansPage() {
         eyebrow="Seguimiento"
         title="Planes de acción"
       />
-      <RemediationPlanTable />
+      <RemediationPlanTable
+        canEdit={authorization.permissions.includes("action_plans.edit")}
+      />
     </main>
   );
 }

@@ -1,25 +1,42 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CalendarDays,
   ClipboardCheck,
   FileText,
+  Pencil,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
 
+import { QUERY_KEYS } from "@/lib/constants";
+import { observationService } from "@/services/observation-service";
 import { progressService } from "@/services/progress-service";
 import { remediationService } from "@/services/remediation-service";
+import { getApiErrorMessage } from "@/utils";
 
+import {
+  ActionPlanEditor,
+  type ActionPlanEditorValues,
+} from "./action-plan-editor";
 import { formatRemediationDate } from "./presentation";
 
 export function ActionPlanDetailView({
+  canEdit,
   actionPlanId,
+  initialEditing = false,
 }: {
+  canEdit: boolean;
   actionPlanId: string;
+  initialEditing?: boolean;
 }) {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(canEdit && initialEditing);
+  const [error, setError] = useState<string | null>(null);
   const planQuery = useQuery({
     queryFn: () => remediationService.getActionPlan(actionPlanId),
     queryKey: ["action-plan", actionPlanId],
@@ -32,6 +49,34 @@ export function ActionPlanDetailView({
     queryKey: ["progress-evaluations", "action-plan", actionPlanId],
   });
   const plan = planQuery.data;
+  const observationQuery = useQuery({
+    enabled: Boolean(plan && editing),
+    queryFn: () => observationService.getObservationById(plan!.observation.id),
+    queryKey: plan
+      ? QUERY_KEYS.observationDetails(plan.observation.id)
+      : ["action-plan", actionPlanId, "observation"],
+  });
+  const optionsQuery = useQuery({
+    enabled: Boolean(plan && editing),
+    queryFn: observationService.getObservationOptions,
+    queryKey: QUERY_KEYS.observationOptions,
+  });
+  const update = useMutation({
+    mutationFn: (input: ActionPlanEditorValues) =>
+      remediationService.updateActionPlan(actionPlanId, input),
+    onError: (cause) => setError(getApiErrorMessage(cause)),
+    onSuccess: async () => {
+      setEditing(false);
+      setError(null);
+      await Promise.all([
+        planQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["action-plans"] }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.observationDetails(plan!.observation.id),
+        }),
+      ]);
+    },
+  });
   if (!plan)
     return (
       <section className="nibol-panel p-6 text-sm text-stone-500">
@@ -48,7 +93,22 @@ export function ActionPlanDetailView({
           <ArrowLeft className="h-4 w-4" />
           Volver a la observación
         </Link>
-        <span className="nibol-badge">{plan.statusLabel}</span>
+        <div className="flex items-center gap-2">
+          {canEdit ? (
+            <button
+              className="nibol-btn-secondary px-3 py-2 text-sm"
+              onClick={() => {
+                setError(null);
+                setEditing((value) => !value);
+              }}
+              type="button"
+            >
+              <Pencil className="h-4 w-4" />
+              {editing ? "Cerrar edición" : "Editar plan"}
+            </button>
+          ) : null}
+          <span className="nibol-badge">{plan.statusLabel}</span>
+        </div>
       </div>
       <section className="nibol-panel overflow-hidden">
         <div className="bg-stone-950 p-6 text-white">
@@ -77,6 +137,36 @@ export function ActionPlanDetailView({
           ))}
         </div>
       </section>
+      {editing ? (
+        observationQuery.data && optionsQuery.data ? (
+          <ActionPlanEditor
+            areas={observationQuery.data.areas}
+            error={error}
+            initial={{
+              description: plan.description,
+              dueDate: plan.currentDueDate,
+              observationAreaId: plan.observationAreaId,
+              responsibleUserId: plan.responsibleUser.id,
+            }}
+            isSaving={update.isPending}
+            key={`${plan.id}-${plan.updatedAt}`}
+            onCancel={() => {
+              setEditing(false);
+              setError(null);
+            }}
+            onSubmit={(input) => update.mutate(input)}
+            users={optionsQuery.data.users}
+          />
+        ) : (
+          <section className="nibol-panel p-5 text-sm text-stone-500">
+            Cargando opciones de edición…
+          </section>
+        )
+      ) : error ? (
+        <p className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
+          {error}
+        </p>
+      ) : null}
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="nibol-panel p-5">
           <UserRound className="h-5 w-5 text-amber-700" />
