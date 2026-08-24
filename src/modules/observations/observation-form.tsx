@@ -123,12 +123,102 @@ const calculatedDeadline = (
   return date.toISOString().slice(0, 10);
 };
 
+function AreaEvidencePicker({
+  files,
+  inputKey,
+  onFilesChange,
+  onInputReset,
+  onLimitExceeded,
+  onRemove,
+}: {
+  files: File[];
+  inputKey: number;
+  onFilesChange: (files: File[]) => void;
+  onInputReset: () => void;
+  onLimitExceeded: () => void;
+  onRemove: (file: File) => void;
+}) {
+  return (
+    <div className="mt-5 border-t border-stone-200 pt-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-stone-900">
+            Documentos soporte de esta área
+          </p>
+          <p className="mt-1 text-xs text-stone-500">
+            Los archivos quedarán asociados exclusivamente a esta área.
+          </p>
+        </div>
+        <label className="nibol-btn-secondary cursor-pointer px-3 py-2 text-xs">
+          <Upload className="h-3.5 w-3.5" />
+          Agregar documentos
+          <input
+            aria-label="Documentos soporte del área"
+            className="sr-only"
+            key={inputKey}
+            multiple
+            onChange={(event) => {
+              const selected = Array.from(event.target.files ?? []);
+              const next = [...files, ...selected].filter(
+                (file, index, allFiles) =>
+                  allFiles.findIndex(
+                    (candidate) =>
+                      candidate.name === file.name &&
+                      candidate.size === file.size &&
+                      candidate.lastModified === file.lastModified,
+                  ) === index,
+              );
+              if (next.length > 10) onLimitExceeded();
+              onFilesChange(next.slice(0, 10));
+              onInputReset();
+            }}
+            type="file"
+          />
+        </label>
+      </div>
+      {files.length > 0 ? (
+        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          {files.map((file) => (
+            <li
+              className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700"
+              key={`${file.name}-${file.size}-${file.lastModified}`}
+            >
+              <span className="min-w-0 truncate">
+                {file.name}
+                <span className="ml-2 text-xs text-stone-400">
+                  {Math.ceil(file.size / 1024)} KB
+                </span>
+              </span>
+              <button
+                aria-label={`Quitar archivo ${file.name}`}
+                className="shrink-0 rounded-lg p-1.5 text-stone-400 transition hover:bg-rose-50 hover:text-rose-700"
+                onClick={() => onRemove(file)}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 rounded-xl border border-dashed border-stone-300 px-4 py-3 text-xs text-stone-500">
+          Todavía no hay documentos para esta área.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function ObservationForm(props: ObservationFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [supportFiles, setSupportFiles] = useState<File[]>([]);
-  const [supportFileInputKey, setSupportFileInputKey] = useState(0);
+  const [supportFilesByArea, setSupportFilesByArea] = useState<
+    Record<string, File[]>
+  >({});
+  const [supportFileInputKeys, setSupportFileInputKeys] = useState<
+    Record<string, number>
+  >({});
   const [plansByArea, setPlansByArea] = useState<
     Record<string, ActionPlanDraft[]>
   >({});
@@ -214,19 +304,34 @@ export function ObservationForm(props: ObservationFormProps) {
             })
           : observationService.updateObservation(props.observationId, values);
       const savedObservation = await observation;
-      if (supportFiles.length > 0) {
-        await progressService.uploadObservationEvidence(
-          savedObservation.id,
-          supportFiles,
-          "Documentos soporte registrados con el hallazgo.",
-        );
-      }
+      await Promise.all(
+        areas.fields.flatMap((areaField, index) => {
+          const files = supportFilesByArea[areaField.id] ?? [];
+          if (files.length === 0) return [];
+          const areaId = values.areaAssignments[index]?.areaId;
+          const observationArea = savedObservation.areas.find(
+            (area) => area.area.id === areaId,
+          );
+          if (!observationArea)
+            throw new Error(
+              "No fue posible asociar los documentos con el área seleccionada.",
+            );
+          return [
+            progressService.uploadObservationEvidence(
+              savedObservation.id,
+              files,
+              "Documentos soporte registrados para el área.",
+              observationArea.id,
+            ),
+          ];
+        }),
+      );
       return savedObservation;
     },
     onError: (error) => setSubmitError(getApiErrorMessage(error)),
     onSuccess: async (observation) => {
-      setSupportFiles([]);
-      setSupportFileInputKey((value) => value + 1);
+      setSupportFilesByArea({});
+      setSupportFileInputKeys({});
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.observations,
       });
@@ -585,6 +690,16 @@ export function ObservationForm(props: ObservationFormProps) {
                         delete next[field.id];
                         return next;
                       });
+                      setSupportFilesByArea((current) => {
+                        const next = { ...current };
+                        delete next[field.id];
+                        return next;
+                      });
+                      setSupportFileInputKeys((current) => {
+                        const next = { ...current };
+                        delete next[field.id];
+                        return next;
+                      });
                     }}
                     type="button"
                   >
@@ -603,6 +718,31 @@ export function ObservationForm(props: ObservationFormProps) {
                   <select
                     className={fieldClass}
                     {...form.register(`areaAssignments.${index}.areaId`)}
+                    onChange={(event) => {
+                      const previousAreaId = watchedAreas[index]?.areaId;
+                      if (
+                        previousAreaId &&
+                        previousAreaId !== event.target.value &&
+                        (supportFilesByArea[field.id]?.length ?? 0) > 0
+                      ) {
+                        setSupportFilesByArea((current) => ({
+                          ...current,
+                          [field.id]: [],
+                        }));
+                        setSupportFileInputKeys((current) => ({
+                          ...current,
+                          [field.id]: (current[field.id] ?? 0) + 1,
+                        }));
+                        setSubmitError(
+                          "Se quitaron los documentos porque cambió el área seleccionada.",
+                        );
+                      }
+                      form.setValue(
+                        `areaAssignments.${index}.areaId`,
+                        event.target.value,
+                        { shouldDirty: true, shouldValidate: true },
+                      );
+                    }}
                   >
                     <option value="">Seleccione</option>
                     {optionsQuery.data?.areas
@@ -783,89 +923,39 @@ export function ObservationForm(props: ObservationFormProps) {
                   </div>
                 </div>
               ) : null}
+              <AreaEvidencePicker
+                files={supportFilesByArea[field.id] ?? []}
+                inputKey={supportFileInputKeys[field.id] ?? 0}
+                onFilesChange={(files) =>
+                  setSupportFilesByArea((current) => ({
+                    ...current,
+                    [field.id]: files,
+                  }))
+                }
+                onInputReset={() =>
+                  setSupportFileInputKeys((current) => ({
+                    ...current,
+                    [field.id]: (current[field.id] ?? 0) + 1,
+                  }))
+                }
+                onLimitExceeded={() =>
+                  setSubmitError("Puede adjuntar hasta 10 documentos por área.")
+                }
+                onRemove={(file) =>
+                  setSupportFilesByArea((current) => ({
+                    ...current,
+                    [field.id]: (current[field.id] ?? []).filter(
+                      (candidate) =>
+                        candidate.name !== file.name ||
+                        candidate.size !== file.size ||
+                        candidate.lastModified !== file.lastModified,
+                    ),
+                  }))
+                }
+              />
             </article>
           ))}
         </div>
-      </section>
-
-      <section className="nibol-panel p-6">
-        <div className="mb-5 flex items-center gap-3">
-          <Upload className="h-5 w-5 text-amber-700" />
-          <div>
-            <h2 className="text-lg font-semibold text-stone-950">
-              Documentos soporte del hallazgo
-            </h2>
-            <p className="text-sm text-stone-500">
-              Adjunte la evidencia de origen. Se conservará con contexto
-              Hallazgo y trazabilidad del usuario.
-            </p>
-          </div>
-        </div>
-        <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-6 py-8 text-center transition hover:border-amber-400 hover:bg-amber-50/40">
-          <Upload className="mb-3 h-6 w-6 text-amber-700" />
-          <span className="text-sm font-semibold text-stone-900">
-            Seleccionar archivos
-          </span>
-          <span className="mt-1 text-xs text-stone-500">
-            Puede elegir hasta 10 documentos y quitarlos antes de guardar.
-          </span>
-          <input
-            className="sr-only"
-            key={supportFileInputKey}
-            multiple
-            onChange={(event) => {
-              const selected = Array.from(event.target.files ?? []);
-              const next = [...supportFiles, ...selected].filter(
-                (file, index, files) =>
-                  files.findIndex(
-                    (candidate) =>
-                      candidate.name === file.name &&
-                      candidate.size === file.size &&
-                      candidate.lastModified === file.lastModified,
-                  ) === index,
-              );
-              if (next.length > 10) {
-                setSubmitError("Puede adjuntar hasta 10 documentos.");
-              }
-              setSupportFiles(next.slice(0, 10));
-            }}
-            type="file"
-          />
-        </label>
-        {supportFiles.length > 0 ? (
-          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-            {supportFiles.map((file) => (
-              <li
-                className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700"
-                key={`${file.name}-${file.size}`}
-              >
-                <span className="min-w-0 truncate">
-                  {file.name}
-                  <span className="ml-2 text-xs text-stone-400">
-                    {Math.ceil(file.size / 1024)} KB
-                  </span>
-                </span>
-                <button
-                  aria-label={`Quitar archivo ${file.name}`}
-                  className="shrink-0 rounded-lg p-1.5 text-stone-400 transition hover:bg-rose-50 hover:text-rose-700"
-                  onClick={() =>
-                    setSupportFiles((current) =>
-                      current.filter(
-                        (candidate) =>
-                          candidate.name !== file.name ||
-                          candidate.size !== file.size ||
-                          candidate.lastModified !== file.lastModified,
-                      ),
-                    )
-                  }
-                  type="button"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
       </section>
     </form>
   );

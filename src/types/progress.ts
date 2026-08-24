@@ -15,6 +15,7 @@ export interface EvidenceFileItem {
   downloadPath: string;
   id: string;
   mimeType: string;
+  observationArea: { id: string; name: string } | null;
   originalName: string;
   reviewComment: string | null;
   reviewedAt: string | null;

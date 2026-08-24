@@ -551,6 +551,11 @@ export function ObservationCollaborationWorkspace({
                               {Math.ceil(file.sizeBytes / 1024)} KB ·{" "}
                               {evidenceReviewLabels[file.reviewStatus]}
                             </p>
+                            {file.observationArea ? (
+                              <p className="mt-1 text-xs font-medium text-amber-800">
+                                Área: {file.observationArea.name}
+                              </p>
+                            ) : null}
                             {file.reviewComment ? (
                               <p className="mt-2 text-xs leading-5 text-amber-900">
                                 {file.reviewComment}

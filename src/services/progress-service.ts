@@ -64,11 +64,13 @@ export const progressService = {
     files: File[],
     context: EvidenceFileItem["context"],
     description = "",
+    observationAreaId?: string,
   ) {
     const body = new FormData();
     files.forEach((file) => body.append("files", file));
     body.append("context", context);
     body.append("description", description);
+    if (observationAreaId) body.append("observationAreaId", observationAreaId);
     const response = await apiClient.post<
       ApiSuccessResponse<EvidenceFileItem[]>
     >(path, body);
@@ -78,12 +80,14 @@ export const progressService = {
     observationId: string,
     files: File[],
     description = "",
+    observationAreaId?: string,
   ) {
     return this.uploadEvidence(
       `/observations/${observationId}/evidence`,
       files,
       "FINDING",
       description,
+      observationAreaId,
     );
   },
   async downloadEvidence(file: { downloadPath: string; originalName: string }) {
