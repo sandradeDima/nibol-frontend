@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   Trash2,
   Upload,
+  X,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -26,6 +27,7 @@ import {
 } from "react-hook-form";
 
 import { ErrorState } from "@/components/ui/error-state";
+import { RiskSearchMultiSelect } from "@/components/ui/risk-search-multi-select";
 import { UserSearchSelect } from "@/components/ui/user-search-select";
 import { QUERY_KEYS } from "@/lib/constants";
 import {
@@ -93,7 +95,6 @@ type ActionPlanDraft = {
   dueDate: string;
   id: string;
   responsibleUserId: string;
-  title: string;
 };
 
 const updatePlanDraft = (
@@ -127,6 +128,7 @@ export function ObservationForm(props: ObservationFormProps) {
   const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [supportFiles, setSupportFiles] = useState<File[]>([]);
+  const [supportFileInputKey, setSupportFileInputKey] = useState(0);
   const [plansByArea, setPlansByArea] = useState<
     Record<string, ActionPlanDraft[]>
   >({});
@@ -154,6 +156,7 @@ export function ObservationForm(props: ObservationFormProps) {
   });
   const reportId = useWatch({ control: form.control, name: "auditReportId" });
   const riskLevelId = useWatch({ control: form.control, name: "riskLevelId" });
+  const watchedRiskIds = useWatch({ control: form.control, name: "riskIds" });
   const watchedAreas = useWatch({
     control: form.control,
     name: "areaAssignments",
@@ -206,7 +209,6 @@ export function ObservationForm(props: ObservationFormProps) {
                   description: plan.description,
                   dueDate: plan.dueDate,
                   responsibleUserId: plan.responsibleUserId,
-                  title: plan.title,
                 })),
               ),
             })
@@ -223,6 +225,8 @@ export function ObservationForm(props: ObservationFormProps) {
     },
     onError: (error) => setSubmitError(getApiErrorMessage(error)),
     onSuccess: async (observation) => {
+      setSupportFiles([]);
+      setSupportFileInputKey((value) => value + 1);
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.observations,
       });
@@ -254,14 +258,13 @@ export function ObservationForm(props: ObservationFormProps) {
             .flat()
             .some(
               (plan) =>
-                !plan.title.trim() ||
                 !plan.description.trim() ||
                 !plan.dueDate ||
                 !plan.responsibleUserId,
             );
           if (incompletePlan) {
             setSubmitError(
-              "Complete título, ejecutor, descripción y fecha límite de cada plan de acción agregado.",
+              "Complete ejecutor, descripción y fecha límite de cada plan de acción agregado.",
             );
             return;
           }
@@ -489,29 +492,16 @@ export function ObservationForm(props: ObservationFormProps) {
             error={form.formState.errors.riskIds?.message}
             label="Riesgos asociados"
           >
-            <div className="grid gap-2 sm:grid-cols-2">
-              {optionsQuery.data?.risks.map((risk) => (
-                <label
-                  className="flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3 font-medium"
-                  key={risk.id}
-                >
-                  <input
-                    className="mt-1 h-4 w-4 accent-amber-700"
-                    type="checkbox"
-                    value={risk.id}
-                    {...form.register("riskIds")}
-                  />
-                  <span>
-                    {risk.name}
-                    {risk.description ? (
-                      <small className="mt-1 block font-normal text-stone-500">
-                        {risk.description}
-                      </small>
-                    ) : null}
-                  </span>
-                </label>
-              ))}
-            </div>
+            <RiskSearchMultiSelect
+              onChange={(riskIds) =>
+                form.setValue("riskIds", riskIds, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              risks={optionsQuery.data?.risks ?? []}
+              value={watchedRiskIds}
+            />
           </Field>
           <div className="space-y-4">
             <Field
@@ -694,7 +684,6 @@ export function ObservationForm(props: ObservationFormProps) {
                               responsibleUserId:
                                 watchedAreas[index]?.areaResponsibleUserId ??
                                 "",
-                              title: "",
                             },
                           ],
                         }))
@@ -733,23 +722,6 @@ export function ObservationForm(props: ObservationFormProps) {
                           </button>
                         </div>
                         <div className="grid gap-4 md:grid-cols-2">
-                          <Field label="Título">
-                            <input
-                              className={fieldClass}
-                              minLength={2}
-                              onChange={(event) =>
-                                updatePlanDraft(
-                                  setPlansByArea,
-                                  field.id,
-                                  plan.id,
-                                  "title",
-                                  event.target.value,
-                                )
-                              }
-                              required
-                              value={plan.title}
-                            />
-                          </Field>
                           <Field label="Ejecutor">
                             <UserSearchSelect
                               onChange={(userId) =>
@@ -835,14 +807,28 @@ export function ObservationForm(props: ObservationFormProps) {
             Seleccionar archivos
           </span>
           <span className="mt-1 text-xs text-stone-500">
-            Puede elegir varios documentos en una sola carga.
+            Puede elegir hasta 10 documentos y quitarlos antes de guardar.
           </span>
           <input
             className="sr-only"
+            key={supportFileInputKey}
             multiple
-            onChange={(event) =>
-              setSupportFiles(Array.from(event.target.files ?? []))
-            }
+            onChange={(event) => {
+              const selected = Array.from(event.target.files ?? []);
+              const next = [...supportFiles, ...selected].filter(
+                (file, index, files) =>
+                  files.findIndex(
+                    (candidate) =>
+                      candidate.name === file.name &&
+                      candidate.size === file.size &&
+                      candidate.lastModified === file.lastModified,
+                  ) === index,
+              );
+              if (next.length > 10) {
+                setSubmitError("Puede adjuntar hasta 10 documentos.");
+              }
+              setSupportFiles(next.slice(0, 10));
+            }}
             type="file"
           />
         </label>
@@ -850,13 +836,32 @@ export function ObservationForm(props: ObservationFormProps) {
           <ul className="mt-4 grid gap-2 sm:grid-cols-2">
             {supportFiles.map((file) => (
               <li
-                className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700"
+                className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700"
                 key={`${file.name}-${file.size}`}
               >
-                {file.name}
-                <span className="ml-2 text-xs text-stone-400">
-                  {Math.ceil(file.size / 1024)} KB
+                <span className="min-w-0 truncate">
+                  {file.name}
+                  <span className="ml-2 text-xs text-stone-400">
+                    {Math.ceil(file.size / 1024)} KB
+                  </span>
                 </span>
+                <button
+                  aria-label={`Quitar archivo ${file.name}`}
+                  className="shrink-0 rounded-lg p-1.5 text-stone-400 transition hover:bg-rose-50 hover:text-rose-700"
+                  onClick={() =>
+                    setSupportFiles((current) =>
+                      current.filter(
+                        (candidate) =>
+                          candidate.name !== file.name ||
+                          candidate.size !== file.size ||
+                          candidate.lastModified !== file.lastModified,
+                      ),
+                    )
+                  }
+                  type="button"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </li>
             ))}
           </ul>

@@ -40,10 +40,10 @@ export function ProgressEvaluationsTable() {
                   </p>
                 </td>
                 <td className="px-5 py-4">
-                  <p className="font-semibold">{item.actionPlan.title}</p>
-                  <p className="mt-1 text-xs text-stone-500">
-                    {item.actionPlan.area.name}
+                  <p className="line-clamp-2 font-semibold">
+                    {item.actionPlan.area.name} · {item.comment}
                   </p>
+                  <p className="mt-1 text-xs text-stone-500">Plan de acción</p>
                 </td>
                 <td className="px-5 py-4 text-lg font-semibold">
                   {item.progressPercent}%

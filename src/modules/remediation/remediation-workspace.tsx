@@ -18,7 +18,6 @@ const emptyForm = {
   dueDate: "",
   observationAreaId: "",
   responsibleUserId: "",
-  title: "",
 };
 
 export function RemediationWorkspace({
@@ -149,20 +148,6 @@ export function RemediationWorkspace({
             </select>
           </label>
           <label className="space-y-2 text-sm font-semibold md:col-span-2">
-            Título
-            <input
-              className="nibol-field"
-              required
-              value={form.title}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  title: event.target.value,
-                }))
-              }
-            />
-          </label>
-          <label className="space-y-2 text-sm font-semibold md:col-span-2">
             Descripción
             <textarea
               className="nibol-field min-h-24 resize-y py-3"
@@ -267,7 +252,7 @@ export function RemediationWorkspace({
                             {plan.statusLabel}
                           </p>
                           <h5 className="mt-2 font-semibold text-stone-950">
-                            {plan.title}
+                            Plan de acción
                           </h5>
                           <p className="mt-2 line-clamp-2 text-sm leading-6 text-stone-600">
                             {plan.description}

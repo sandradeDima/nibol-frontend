@@ -34,9 +34,12 @@ export function RemediationPlanTable() {
                 {plan.observation.displayCode} · {plan.area.name}
               </p>
               <h3 className="mt-1 font-semibold text-stone-950">
-                {plan.title}
+                Plan de acción
               </h3>
-              <p className="mt-1 text-sm text-stone-500">
+              <p className="mt-1 line-clamp-2 text-sm text-stone-500">
+                {plan.description}
+              </p>
+              <p className="mt-2 text-xs text-stone-500">
                 {plan.responsibleUser.name}
               </p>
             </div>

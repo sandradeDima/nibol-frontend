@@ -125,7 +125,7 @@ export function ObservationExtensionPanel({
             <div>
               <p className="font-semibold">
                 {request.targetType === "ACTION_PLAN"
-                  ? request.actionPlan?.title
+                  ? "Plan de acción"
                   : request.observation?.displayCode}
               </p>
               <p className="mt-1 line-clamp-1 text-sm text-stone-500">

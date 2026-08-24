@@ -52,7 +52,7 @@ export function PendingProgressApprovals() {
                 {item.observation.displayCode}
               </Link>
               <h4 className="mt-2 font-semibold text-stone-950">
-                {item.actionPlan.title}
+                Plan de acción
               </h4>
               <p className="mt-1 text-sm text-stone-500">
                 {item.actionPlan.area.name} · {item.submittedByUser.name}

@@ -31,9 +31,9 @@ export function PendingExtensionRequestApprovals({
                   : "Observación"}
               </p>
               <h4 className="mt-2 font-semibold">
-                {request.actionPlan?.title ??
-                  request.observation?.displayCode ??
-                  "Solicitud"}
+                {request.targetType === "ACTION_PLAN"
+                  ? "Plan de acción"
+                  : (request.observation?.displayCode ?? "Solicitud")}
               </h4>
               <p className="mt-1 text-sm text-stone-500">
                 {request.observationArea?.area.name ?? "Varias áreas"} ·{" "}

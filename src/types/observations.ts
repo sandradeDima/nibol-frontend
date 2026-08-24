@@ -149,7 +149,6 @@ export interface ObservationActionPlanInput {
   description: string;
   dueDate: string;
   responsibleUserId: string;
-  title: string;
 }
 
 export type UpdateObservationInput = Partial<CreateObservationInput>;

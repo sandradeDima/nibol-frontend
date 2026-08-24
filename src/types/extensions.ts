@@ -25,7 +25,6 @@ export interface ExtensionRequestDetail {
     id: string;
     originalDueDate: string;
     responsibleUser: ObservationUserSummary;
-    title: string;
   } | null;
   attachments: ExtensionRequestEvidenceItem[];
   auditComment: string | null;

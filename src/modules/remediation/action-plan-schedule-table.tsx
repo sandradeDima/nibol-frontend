@@ -21,7 +21,7 @@ export function ActionPlanScheduleTable() {
           <thead className="bg-stone-50 text-xs tracking-wider text-stone-500 uppercase">
             <tr>
               <th className="px-5 py-4">Informe / Obs.</th>
-              <th className="px-5 py-4">Plan de acción</th>
+              <th className="px-5 py-4">Descripción del plan</th>
               <th className="px-5 py-4">Área</th>
               <th className="px-5 py-4">Ejecutor</th>
               <th className="px-5 py-4">Progreso</th>
@@ -44,7 +44,7 @@ export function ActionPlanScheduleTable() {
                     className="font-semibold hover:underline"
                     href={`/planes-accion/${plan.id}`}
                   >
-                    {plan.title}
+                    {plan.description}
                   </Link>
                 </td>
                 <td className="px-5 py-4">{plan.area.name}</td>

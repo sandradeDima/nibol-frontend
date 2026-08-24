@@ -55,7 +55,7 @@ export function ActionPlanDetailView({
           <p className="text-xs font-semibold tracking-[0.2em] text-amber-400 uppercase">
             {plan.observation.displayCode} · {plan.area.name}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold">{plan.title}</h1>
+          <h1 className="mt-2 text-3xl font-semibold">Plan de acción</h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-300">
             {plan.description}
           </p>

@@ -27,9 +27,9 @@ export function ExtensionRequestTable() {
                   : "Observación"}
               </p>
               <h3 className="mt-1 font-semibold">
-                {request.actionPlan?.title ??
-                  request.observation?.displayCode ??
-                  "Solicitud"}
+                {request.targetType === "ACTION_PLAN"
+                  ? "Plan de acción"
+                  : (request.observation?.displayCode ?? "Solicitud")}
               </h3>
               <p className="mt-1 line-clamp-1 text-sm text-stone-500">
                 {request.reason}

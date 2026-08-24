@@ -29,7 +29,6 @@ export interface ActionPlanDetail {
   sortOrder: number;
   status: ActionPlanStatus;
   statusLabel: string;
-  title: string;
   updatedAt: string;
 }
 
@@ -39,7 +38,6 @@ export interface ActionPlanPayload {
   observationAreaId: string;
   responsibleUserId: string;
   sortOrder?: number;
-  title: string;
 }
 
 export type UpdateActionPlanPayload = Partial<ActionPlanPayload>;

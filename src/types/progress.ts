@@ -39,7 +39,6 @@ export interface ProgressEvaluationItem {
     area: { id: string; name: string };
     id: string;
     responsibleUser: ObservationUserSummary;
-    title: string;
   };
   actionPlanStatus: ActionPlanStatus;
   comment: string;

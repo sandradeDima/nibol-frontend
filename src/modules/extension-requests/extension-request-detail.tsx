@@ -84,9 +84,9 @@ export function ExtensionRequestDetail({ requestId }: { requestId: string }) {
               : "Observación"}
           </p>
           <h2 className="mt-2 text-2xl font-semibold">
-            {request.actionPlan?.title ??
-              request.observation?.displayCode ??
-              "Solicitud de ampliación"}
+            {request.targetType === "ACTION_PLAN"
+              ? "Plan de acción"
+              : (request.observation?.displayCode ?? "Solicitud de ampliación")}
           </h2>
           <Link
             className="mt-2 inline-block text-sm text-stone-300 hover:text-white"

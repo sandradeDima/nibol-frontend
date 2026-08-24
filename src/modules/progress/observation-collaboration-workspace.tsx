@@ -270,7 +270,7 @@ export function ObservationCollaborationWorkspace({
                 <option value="">Seleccione el plan</option>
                 {plans.data?.data.map((plan) => (
                   <option key={plan.id} value={plan.id}>
-                    {plan.area.name} · {plan.title}
+                    {plan.area.name} · {plan.description}
                   </option>
                 ))}
               </select>
@@ -401,7 +401,7 @@ export function ObservationCollaborationWorkspace({
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">
-                        {item.actionPlan.area.name} · {item.actionPlan.title}
+                        {item.actionPlan.area.name} · Plan de acción
                       </p>
                       <p className="mt-2 text-2xl font-semibold">
                         {item.progressPercent}%
