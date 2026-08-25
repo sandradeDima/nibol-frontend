@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
+  Eye,
   Pencil,
   Search,
   Trash2,
@@ -28,9 +30,11 @@ import {
 export function ObservationTable({
   canDelete,
   canEdit,
+  canViewActionPlans,
 }: {
   canDelete: boolean;
   canEdit: boolean;
+  canViewActionPlans: boolean;
 }) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -96,12 +100,9 @@ export function ObservationTable({
             {query.data?.data.map((row) => (
               <tr className="group hover:bg-amber-50/30" key={row.id}>
                 <td className="px-5 py-4">
-                  <Link
-                    className="font-semibold text-amber-800 hover:underline"
-                    href={`/observaciones/${row.id}`}
-                  >
+                  <p className="font-semibold text-stone-950">
                     {row.displayCode}
-                  </Link>
+                  </p>
                   <p className="mt-1 text-xs text-stone-500">
                     {formatObservationDate(row.auditReport.reportDate)}
                   </p>
@@ -189,25 +190,53 @@ export function ObservationTable({
                   </span>
                 </td>
                 <td className="px-5 py-4">
-                  <div className="flex justify-end gap-1">
-                    {canEdit ? (
+                  <div className="flex min-w-48 flex-col gap-2">
+                    <Link
+                      className="nibol-btn-primary justify-center px-3 py-2 text-xs"
+                      href={`/observaciones/${row.id}`}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      Ver observación
+                    </Link>
+                    {canViewActionPlans && row.actionPlanCount > 0 ? (
                       <Link
-                        aria-label="Editar"
-                        className="rounded-lg p-2 text-stone-500 hover:bg-stone-100 hover:text-stone-900"
-                        href={`/observaciones/${row.id}/editar`}
+                        className="nibol-btn-secondary justify-center px-3 py-2 text-xs"
+                        href={
+                          row.actionPlans.length === 1
+                            ? `/planes-accion/${row.actionPlans[0].id}`
+                            : `/observaciones/${row.id}#planes-accion`
+                        }
                       >
-                        <Pencil className="h-4 w-4" />
+                        <ClipboardList className="h-3.5 w-3.5" />
+                        {row.actionPlans.length === 1
+                          ? "Ver plan de acción"
+                          : "Ver planes de acción"}
                       </Link>
                     ) : null}
-                    {canDelete ? (
-                      <button
-                        aria-label="Eliminar"
-                        className="rounded-lg p-2 text-stone-500 hover:bg-rose-50 hover:text-rose-700"
-                        onClick={() => setPendingDelete(row)}
-                        type="button"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                    {canEdit || canDelete ? (
+                      <div className="flex justify-end gap-1 border-t border-stone-200 pt-1">
+                        {canEdit ? (
+                          <Link
+                            aria-label="Editar observación"
+                            className="rounded-lg p-2 text-stone-500 hover:bg-stone-100 hover:text-stone-900"
+                            href={`/observaciones/${row.id}/editar`}
+                            title="Editar observación"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                        ) : null}
+                        {canDelete ? (
+                          <button
+                            aria-label="Eliminar observación"
+                            className="rounded-lg p-2 text-stone-500 hover:bg-rose-50 hover:text-rose-700"
+                            onClick={() => setPendingDelete(row)}
+                            title="Eliminar observación"
+                            type="button"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                 </td>

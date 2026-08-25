@@ -9,6 +9,8 @@ export default async function ObservacionesPage() {
   const canCreate = authorization.permissions.includes("observations.create");
   const canDelete = authorization.permissions.includes("observations.delete");
   const canEdit = authorization.permissions.includes("observations.edit");
+  const canViewActionPlans =
+    authorization.permissions.includes("action_plans.view");
 
   return (
     <main className="space-y-6">
@@ -33,7 +35,11 @@ export default async function ObservacionesPage() {
         title="Observaciones"
       />
 
-      <ObservationTable canDelete={canDelete} canEdit={canEdit} />
+      <ObservationTable
+        canDelete={canDelete}
+        canEdit={canEdit}
+        canViewActionPlans={canViewActionPlans}
+      />
     </main>
   );
 }

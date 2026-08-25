@@ -64,6 +64,7 @@ export interface ObservationArea {
 
 export interface ObservationTableRow {
   actionPlanCount: number;
+  actionPlans: Array<{ id: string }>;
   actionSummary?: ObservationActionSummary;
   areas: ObservationArea[];
   auditReport: {

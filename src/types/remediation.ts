@@ -3,6 +3,36 @@ import type { ObservationUserSummary } from "./observations";
 export type ActionPlanStatus =
   "NOT_STARTED" | "STARTED" | "WITH_PROGRESS" | "CONCLUDED";
 
+export interface ActionPlanEvidenceItem {
+  context: "ACTION_PLAN";
+  createdAt: string;
+  description: string | null;
+  downloadPath: string;
+  id: string;
+  mimeType: string;
+  originalName: string;
+  reviewComment: string | null;
+  reviewedAt: string | null;
+  reviewStatus: "DRAFT" | "PENDING" | "APPROVED" | "RETURNED" | "REJECTED";
+  sizeBytes: number;
+  submittedAt: string | null;
+  uploadedByUser: ObservationUserSummary;
+  workflowInstanceId: string | null;
+}
+
+export interface ActionPlanEvaluationSummary {
+  actionPlanStatus: ActionPlanStatus;
+  comment: string;
+  id: string;
+  progressPercent: number;
+  reviewedAt: string | null;
+  reviewedByUser: ObservationUserSummary | null;
+  reviewStatus:
+    "DRAFT" | "SENT_TO_AUDIT" | "APPROVED" | "RETURNED" | "REJECTED";
+  submittedAt: string;
+  submittedByUser: ObservationUserSummary;
+}
+
 export interface ActionPlanDetail {
   area: { id: string; name: string };
   areaResponsible: ObservationUserSummary;
@@ -10,7 +40,9 @@ export interface ActionPlanDetail {
   createdAt: string;
   currentDueDate: string;
   description: string;
+  evidence?: ActionPlanEvidenceItem[];
   evidenceCount: number;
+  evaluations?: ActionPlanEvaluationSummary[];
   id: string;
   isOverdue: boolean;
   observation: {

@@ -17,6 +17,17 @@ export default async function ActionPlanPage({
       <ActionPlanDetailView
         actionPlanId={id}
         canEdit={authorization.permissions.includes("action_plans.edit")}
+        canManageExtensions={authorization.permissions.includes(
+          "extension_requests.edit",
+        )}
+        canViewExtensions={authorization.permissions.includes(
+          "extension_requests.view",
+        )}
+        canReviewProgress={
+          authorization.isAdmin ||
+          (authorization.permissions.includes("progress_evaluations.review") &&
+            authorization.permissions.includes("progress_evaluations.approve"))
+        }
         initialEditing={edit === "1"}
       />
     </main>
