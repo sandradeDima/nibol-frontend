@@ -52,8 +52,103 @@ export interface AutomaticNotificationRule {
   valueType: string;
 }
 
+export type DeadlineReminderRole =
+  | "AREA_RESPONSIBLE"
+  | "EXECUTOR"
+  | "PROCESS_OWNER";
+
+export interface DeadlineReminderPolicy {
+  cadenceMonths: number;
+  cutoffDay: number;
+  createdAt?: string;
+  enabled: boolean;
+  role: DeadlineReminderRole;
+  upcomingWindowDays: number;
+}
+
+export interface DeadlineReminderPlan {
+  actionPlanId: string;
+  area: string;
+  bucket: "OVERDUE" | "DUE_TODAY" | "UPCOMING";
+  deadlineStatus: "VIGENTE" | "VENCIDO";
+  description: string;
+  effectiveDueDate: string;
+  executor?: string;
+  observation: string;
+  officialProgress: string;
+  officialProgressPercent: number;
+  plan: string;
+  reprogrammed: boolean;
+  report: string;
+  risk: string;
+}
+
+export interface DeadlineReminderRecipient {
+  plans: DeadlineReminderPlan[];
+  recipient: {
+    email: string;
+    id: string;
+    name: string;
+  };
+  roles: DeadlineReminderRole[];
+  upcomingWindowDays: number;
+}
+
+export interface DeadlineReminderSchedule {
+  cadenceKey: string;
+  lastExecution: {
+    finishedAt: string | null;
+    id: string;
+    periodKey: string | null;
+    status: string;
+  } | null;
+  nextExecution: string | null;
+  role: DeadlineReminderRole;
+}
+
+export interface DeadlineReminderConfig {
+  policies: DeadlineReminderPolicy[];
+  roleLabels: Record<DeadlineReminderRole, string>;
+  schedules: DeadlineReminderSchedule[];
+  timezone: string;
+}
+
+export interface DeadlineReminderPreview {
+  cutoffDate: string;
+  policy: DeadlineReminderPolicy;
+  recipients: DeadlineReminderRecipient[];
+  timezone: string;
+  totals: {
+    dueToday: number;
+    overdue: number;
+    plans: number;
+    recipients: number;
+    reprogrammed: number;
+    upcoming: number;
+  };
+  willSend: false;
+}
+
+export interface DeadlineReminderRunSummary {
+  emailsSent: number;
+  executionIds: string[];
+  failures: Array<{ entityId: string; entityType: string; message: string }>;
+  failuresCount: number;
+  finishedAt: string;
+  jobName: string;
+  lockSkipped: boolean;
+  notificationsCreated: number;
+  plansIncluded: number;
+  recipientsEvaluated: number;
+  recipientsNotified: number;
+  startedAt: string;
+  status: "SUCCESS" | "PARTIAL" | "FAILED";
+}
+
 export interface ScheduledJobExecution {
+  cadenceKey: string | null;
   createdAt: string;
+  dedupeKey: string | null;
   detailsJson: unknown;
   emailsSent: number;
   errorMessage: string | null;
@@ -65,6 +160,9 @@ export interface ScheduledJobExecution {
   processedActionPlans: number;
   processedCount: number;
   processedObservations: number;
+  periodKey: string | null;
+  runType: string | null;
+  scheduledFor: string | null;
   startedAt: string;
   status: "RUNNING" | "SUCCESS" | "PARTIAL" | "FAILED";
   triggeredBy: "CRON" | "USER" | "SYSTEM";

@@ -23,19 +23,45 @@ export default async function ObservationDetailPage({
       />
 
       <ObservationDetail
-        canAccessExtensions={authorization.permissions.includes(
-          "extension_requests.view",
+        canAssignRecommendedExecutor={authorization.permissions.includes(
+          "action_plans.assign_executor",
         )}
         canDelete={authorization.permissions.includes("observations.delete")}
         canClose={authorization.permissions.includes("observations.close")}
+        canCreateRecommended={authorization.permissions.includes(
+          "recommended_action_plans.create",
+        )}
+        canSend={authorization.permissions.includes("observations.send")}
         canEdit={authorization.permissions.includes("observations.edit")}
         canEditActionPlans={authorization.permissions.includes(
           "action_plans.edit",
+        )}
+        canEditRecommended={authorization.permissions.includes(
+          "recommended_action_plans.edit",
+        )}
+        canReviewProgress={authorization.permissions.includes(
+          "action_plans.evaluate",
+        )}
+        canReviewEvidence={
+          authorization.roleCode === "AUDITOR" &&
+          authorization.permissions.includes("evidence.review")
+        }
+        canSubmitProgress={authorization.permissions.includes(
+          "action_plans.submit_to_audit",
+        )}
+        canSubmitRecommended={authorization.permissions.includes(
+          "recommended_action_plans.submit_to_audit",
+        )}
+        canUploadEvidence={authorization.permissions.includes(
+          "evidence.create",
         )}
         canViewTechnical={
           authorization.permissions.includes("activity.technical") ||
           authorization.isAdmin
         }
+        canViewRecommended={authorization.permissions.includes(
+          "recommended_action_plans.view",
+        )}
         observationId={id}
       />
     </main>

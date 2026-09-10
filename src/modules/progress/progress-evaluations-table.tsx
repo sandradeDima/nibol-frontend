@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import { progressService } from "@/services/progress-service";
+import { getActionPlanStatusLabel } from "../remediation/presentation";
+import { getProgressStatusLabel } from "./presentation";
 
 export function ProgressEvaluationsTable() {
   const query = useQuery({
@@ -46,14 +48,14 @@ export function ProgressEvaluationsTable() {
                   <p className="mt-1 text-xs text-stone-500">Plan de acción</p>
                 </td>
                 <td className="px-5 py-4 text-lg font-semibold">
-                  {item.progressPercent}%
+                  {item.reportedProgressPercent ?? 0}%
                 </td>
                 <td className="px-5 py-4">
-                  {item.actionPlanStatus.replaceAll("_", " ")}
+                  {getActionPlanStatusLabel(item.officialStatus)}
                 </td>
                 <td className="px-5 py-4">
                   <span className="nibol-badge">
-                    {item.reviewStatus.replaceAll("_", " ")}
+                    {getProgressStatusLabel(item.reviewStatus)}
                   </span>
                 </td>
                 <td className="px-5 py-4">{item.submittedByUser.name}</td>

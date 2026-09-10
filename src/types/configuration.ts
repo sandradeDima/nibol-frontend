@@ -28,7 +28,7 @@ export interface RiskLevelRecord {
   active: boolean;
   colorToken: string | null;
   createdAt: string;
-  defaultDeadlineDays: number | null;
+  maxRemediationDays: number | null;
   description: string | null;
   id: string;
   key: string;
@@ -87,7 +87,7 @@ export interface ConfigurationBootstrap {
   catalogs: Record<ConfigurationCatalogType, CatalogRecord[]>;
   riskLevels: Array<{
     colorToken: string | null;
-    defaultDeadlineDays: number | null;
+    maxRemediationDays: number | null;
     id: string;
     key: string;
     name: string;
@@ -116,7 +116,7 @@ export interface AreaMutationInput {
 export interface RiskLevelMutationInput {
   active: boolean;
   colorToken: string | null;
-  defaultDeadlineDays: number | null;
+  maxRemediationDays: number | null;
   description: string | null;
   key: string;
   name: string;

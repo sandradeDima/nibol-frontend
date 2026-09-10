@@ -1,14 +1,18 @@
 import type { ActionPlanStatus } from "./remediation";
 import type { ObservationUserSummary } from "./observations";
 
-export type ProgressEvaluationType = "ADVANCE" | "FINALIZATION" | "CORRECTION";
+export type ProgressEvaluationType = "ADVANCE" | "FINALIZATION";
 export type ProgressEvaluationReviewStatus =
-  "DRAFT" | "SENT_TO_AUDIT" | "APPROVED" | "RETURNED" | "REJECTED";
-export type ProgressReviewAction =
-  "SENT" | "APPROVED" | "RETURNED" | "REJECTED";
+  | "DRAFT"
+  | "SENT_TO_AUDIT"
+  | "APPROVED"
+  | "RETURNED";
+export type ProgressReviewAction = "SENT" | "APPROVED" | "RETURNED";
 export type CommentVisibility = "INTERNAL_AUDIT" | "AREA_VISIBLE" | "SYSTEM";
 
 export interface EvidenceFileItem {
+  actionPlanId?: string | null;
+  actionPlanTitle?: string | null;
   context: "FINDING" | "ACTION_PLAN" | "PROGRESS_EVALUATION" | "CLOSURE";
   createdAt: string;
   description: string | null;
@@ -17,11 +21,13 @@ export interface EvidenceFileItem {
   mimeType: string;
   observationArea: { id: string; name: string } | null;
   originalName: string;
+  progressEvaluationId?: string | null;
   reviewComment: string | null;
   reviewedAt: string | null;
   reviewStatus: "DRAFT" | "PENDING" | "APPROVED" | "RETURNED" | "REJECTED";
   sizeBytes: number;
   submittedAt: string | null;
+  uploadedByUser?: ObservationUserSummary;
   workflowInstanceId: string | null;
 }
 
@@ -41,13 +47,15 @@ export interface ProgressEvaluationItem {
     id: string;
     responsibleUser: ObservationUserSummary;
   };
-  actionPlanStatus: ActionPlanStatus;
+  evaluatedStatus: ActionPlanStatus | null;
   comment: string;
   evidence: EvidenceFileItem[];
   history: ProgressReviewHistoryEntry[];
   id: string;
   observation: { displayCode: string; id: string; title: string };
-  progressPercent: number;
+  officialProgressPercent: number;
+  officialStatus: ActionPlanStatus;
+  reportedProgressPercent: number | null;
   reviewedAt: string | null;
   reviewedByUser: ObservationUserSummary | null;
   reviewComment: string | null;
@@ -60,9 +68,8 @@ export interface ProgressEvaluationItem {
 }
 
 export interface CreateProgressEvaluationInput {
-  actionPlanStatus: ActionPlanStatus;
   comment: string;
-  progressPercent: number;
+  reportedProgressPercent: number;
   type: ProgressEvaluationType;
 }
 
@@ -70,6 +77,7 @@ export type UpdateProgressEvaluationInput =
   Partial<CreateProgressEvaluationInput>;
 export interface ReviewProgressEvaluationInput {
   comment?: string | null;
+  officialStatus: ActionPlanStatus;
 }
 
 export interface ObservationCommentItem {

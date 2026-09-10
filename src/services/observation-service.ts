@@ -1,4 +1,5 @@
 import { apiClient } from "@/services/api-client";
+import { APP_CONFIG } from "@/lib/constants";
 import type {
   ApiSuccessResponse,
   CreateObservationInput,
@@ -17,12 +18,22 @@ export const observationService = {
     >(`/observations/${id}/close`);
     return response.data.data;
   },
+  async sendObservation(id: string) {
+    const response = await apiClient.post<
+      ApiSuccessResponse<ObservationDetail>
+    >(`/observations/${id}/send`);
+    return response.data.data;
+  },
+  async sendObservations(ids: string[]) {
+    const response = await apiClient.post<ApiSuccessResponse<{ observations: ObservationDetail[] }>>("/observations/send", { ids });
+    return response.data.data.observations;
+  },
   async createObservation(
     input: CreateObservationInput,
   ): Promise<ObservationDetail> {
     const response = await apiClient.post<
       ApiSuccessResponse<ObservationDetail>
-    >("/observations", input);
+    >("/observations", input, { timeout: APP_CONFIG.mutationTimeoutMs });
 
     return response.data.data;
   },

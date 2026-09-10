@@ -5,9 +5,6 @@ export type ExtensionRequestStatus =
   | "SENT_TO_MANAGER"
   | "MANAGER_APPROVED"
   | "MANAGER_REJECTED"
-  | "SENT_TO_AUDIT"
-  | "AUDIT_APPROVED"
-  | "AUDIT_REJECTED"
   | "CANCELLED";
 
 export interface ExtensionRequestEvidenceItem {
@@ -27,9 +24,12 @@ export interface ExtensionRequestDetail {
     responsibleUser: ObservationUserSummary;
   } | null;
   attachments: ExtensionRequestEvidenceItem[];
-  auditComment: string | null;
-  auditReviewedAt: string | null;
-  auditReviewer: ObservationUserSummary | null;
+  classification: {
+    code: string;
+    description: string;
+    maxAdditionalDays: number;
+    name: string;
+  } | null;
   createdAt: string;
   finalApprovedAt: string | null;
   id: string;
@@ -55,9 +55,16 @@ export interface ExtensionRequestDetail {
 
 export type ExtensionRequestTableRow = ExtensionRequestDetail;
 export interface CreateExtensionRequestInput {
+  classificationCode: string;
   evidenceFileIds?: string[];
   proposedDueDate: string;
   reason: string;
+}
+export interface ExtensionClassification {
+  code: string;
+  description: string;
+  maxAdditionalDays: number;
+  name: string;
 }
 export type UpdateExtensionRequestInput = Partial<CreateExtensionRequestInput>;
 export interface ReviewExtensionRequestInput {

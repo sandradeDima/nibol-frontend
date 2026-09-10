@@ -6,9 +6,9 @@ import Link from "next/link";
 import { extensionRequestService } from "@/services/extension-request-service";
 
 export function PendingExtensionRequestApprovals({
-  status = "SENT_TO_AUDIT",
+  status = "SENT_TO_MANAGER",
 }: {
-  status?: "SENT_TO_MANAGER" | "SENT_TO_AUDIT";
+  status?: "SENT_TO_MANAGER";
 }) {
   const query = useQuery({
     queryFn: () =>

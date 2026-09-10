@@ -71,11 +71,11 @@ const riskLevelColumns: ColumnDef<RiskLevelRecord>[] = [
     header: "Prioridad",
   },
   {
-    accessorKey: "defaultDeadlineDays",
+    accessorKey: "maxRemediationDays",
     cell: ({ row }) => (
       <span className="text-stone-700">
-        {row.original.defaultDeadlineDays
-          ? `${row.original.defaultDeadlineDays} dias`
+        {row.original.maxRemediationDays
+          ? `${row.original.maxRemediationDays} dias`
           : "Sin plazo por defecto"}
       </span>
     ),
@@ -116,7 +116,7 @@ const riskLevelColumns: ColumnDef<RiskLevelRecord>[] = [
 const emptyFormValues: RiskLevelFormValues = {
   active: true,
   colorToken: "#B42318",
-  defaultDeadlineDays: "",
+  maxRemediationDays: "",
   description: "",
   key: "",
   name: "",
@@ -133,10 +133,10 @@ const mapRecordToFormValues = (
   return {
     active: record.active,
     colorToken: record.colorToken ?? "#78716C",
-    defaultDeadlineDays:
-      record.defaultDeadlineDays === null
+    maxRemediationDays:
+      record.maxRemediationDays === null
         ? ""
-        : String(record.defaultDeadlineDays),
+        : String(record.maxRemediationDays),
     description: record.description ?? "",
     key: record.key,
     name: record.name,
@@ -147,9 +147,9 @@ const mapRecordToFormValues = (
 const buildPayload = (values: RiskLevelFormValues): RiskLevelMutationInput => ({
   active: values.active,
   colorToken: values.colorToken.trim().toUpperCase(),
-  defaultDeadlineDays:
-    values.defaultDeadlineDays.trim().length > 0
-      ? Number(values.defaultDeadlineDays)
+  maxRemediationDays:
+    values.maxRemediationDays.trim().length > 0
+      ? Number(values.maxRemediationDays)
       : null,
   description:
     values.description.trim().length > 0 ? values.description.trim() : null,
@@ -351,7 +351,7 @@ export function RiskLevelsPage({
 
               <label className="block space-y-2">
                 <span className="text-sm font-medium text-stone-700">
-                  Dias de plazo por defecto
+                  Plazo máximo de remediación (días)
                 </span>
                 <input
                   className={inputClassName}
@@ -359,10 +359,10 @@ export function RiskLevelsPage({
                   min={1}
                   placeholder="30"
                   type="number"
-                  {...form.register("defaultDeadlineDays")}
+                  {...form.register("maxRemediationDays")}
                 />
                 <FieldError
-                  error={form.formState.errors.defaultDeadlineDays?.message}
+                  error={form.formState.errors.maxRemediationDays?.message}
                 />
               </label>
 

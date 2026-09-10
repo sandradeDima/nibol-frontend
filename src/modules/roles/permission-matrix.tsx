@@ -111,9 +111,6 @@ export function PermissionMatrix({
                       <span className="block text-sm font-semibold break-words text-stone-900">
                         {action.label}
                       </span>
-                      <span className="block text-xs break-all text-stone-500">
-                        {permissionName}
-                      </span>
                       {isLocked ? (
                         <span className="block text-[11px] font-semibold tracking-[0.16em] text-amber-700 uppercase">
                           Protegido

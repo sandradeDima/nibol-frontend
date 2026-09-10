@@ -27,7 +27,7 @@ const entityLabels: Record<string, string> = {
   NOTIFICATION: "Notificacion",
   OBSERVATION: "Observacion",
   PROGRESS_EVALUATION: "Avance",
-  REMEDIATION_PLAN: "Plan de remediacion",
+  REMEDIATION_PLAN: "Plan de acción recomendado",
 };
 
 const dateLabel = (value: string) =>

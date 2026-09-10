@@ -44,7 +44,7 @@ export const riskLevelFormSchema = z.object({
     .string()
     .trim()
     .regex(/^#[0-9A-Fa-f]{6}$/, "Seleccione un color válido."),
-  defaultDeadlineDays: optionalPositiveNumberStringSchema,
+  maxRemediationDays: optionalPositiveNumberStringSchema,
   description: optionalTextSchema,
   key: uppercaseKeySchema,
   name: z.string().trim().min(2, "Ingrese un nombre válido.").max(100),

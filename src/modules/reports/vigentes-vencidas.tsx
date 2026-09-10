@@ -1,27 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
-  ArrowUpRight,
+  ArrowRight,
   CheckCircle2,
   Clock3,
   TriangleAlert,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
-import { QUERY_KEYS } from "@/lib/constants";
-import { configurationService } from "@/services/configuration-service";
-import { reportService, triggerDownload } from "@/services/report-service";
-import type { ReportFilters, ReportObservationRow } from "@/types";
-import { cn } from "@/utils";
 import {
-  getRiskLevelClasses,
-  getRiskLevelStyle,
-} from "@/modules/observations/presentation";
+  buildReportQuery,
+  parseReportFilters,
+  reportService,
+  triggerDownload,
+} from "@/services/report-service";
+import type { ReportActionPlanRow, ReportFilters } from "@/types";
 import {
   formatReportDate,
   formatReportNumber,
@@ -46,34 +45,53 @@ const DEFAULT_FILTERS: ReportFilters = {
 };
 
 export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
-  const [draft, setDraft] = useState<ReportFilters>(DEFAULT_FILTERS);
-  const [filters, setFilters] = useState<ReportFilters>(DEFAULT_FILTERS);
-  const [view, setView] = useState<AttentionView>("current");
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.toString();
+  const urlFilters = useMemo(
+    () => parseReportFilters(new URLSearchParams(searchQuery)),
+    [searchQuery],
+  );
+  const initialFilters = useMemo(
+    () => ({ ...DEFAULT_FILTERS, ...urlFilters }),
+    [urlFilters],
+  );
+  const [draft, setDraft] = useState<ReportFilters>(initialFilters);
+  const view: AttentionView = urlFilters.dueSoon
+    ? "dueSoon"
+    : urlFilters.deadlineStatus === "VENCIDO"
+      ? "overdue"
+      : "current";
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const filters = initialFilters;
   const optionsQuery = useQuery({
-    queryFn: configurationService.getBootstrap,
-    queryKey: QUERY_KEYS.configurationBootstrap,
+    queryFn: reportService.getOptions,
+    queryKey: ["reports", "options"],
     staleTime: 60_000,
   });
   const dashboardQuery = useQuery({
     queryFn: () => reportService.getDashboard(filters),
-    queryKey: [...QUERY_KEYS.reportDashboard, "vigentes", filters],
+    queryKey: ["reports", "dashboard", "attention", filters],
     staleTime: 30_000,
   });
   const listFilters: ReportFilters =
     view === "overdue"
-      ? { ...filters, overdue: true, dueSoon: undefined }
+      ? { ...filters, deadlineStatus: "VENCIDO", dueSoon: undefined }
       : view === "dueSoon"
-        ? { ...filters, dueSoon: true, overdue: undefined }
+        ? {
+            ...filters,
+            deadlineStatus: "VIGENTE",
+            dueSoon: true,
+          }
         : {
             ...filters,
-            activeOnly: true,
-            overdue: undefined,
+            deadlineStatus: filters.deadlineStatus ?? "VIGENTE",
             dueSoon: undefined,
           };
-  const observationsQuery = useQuery({
-    queryFn: () => reportService.listObservations(listFilters, 1, 100),
+  const plansQuery = useQuery({
+    queryFn: () => reportService.listActionPlans(listFilters, 1, 100),
     queryKey: ["reports", "attention-list", view, listFilters],
     staleTime: 30_000,
   });
@@ -90,9 +108,14 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
     });
   };
 
+  const applyFilters = (next: ReportFilters) => {
+    setDraft(next);
+    router.replace(`${pathname}${buildReportQuery(next)}`);
+  };
+
   const reset = () => {
     setDraft(DEFAULT_FILTERS);
-    setFilters(DEFAULT_FILTERS);
+    applyFilters(DEFAULT_FILTERS);
   };
 
   const handleExport = async (format: "excel" | "pdf") => {
@@ -103,15 +126,15 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
       const blob = await reportService.downloadReport(listFilters, format, {
         reportName:
           view === "overdue"
-            ? "Observaciones vencidas"
+            ? "Planes de acción vencidos"
             : view === "dueSoon"
-              ? "Observaciones próximas a vencer"
-              : "Observaciones vigentes",
-        type: "OBSERVATIONS",
+              ? "Planes de acción próximos a vencer"
+              : "Planes de acción vigentes",
+        type: "ACTION_PLANS",
       });
       triggerDownload(
         blob,
-        `observaciones-${view}-${format === "excel" ? "nibol.xls" : "nibol.pdf"}`,
+        `planes-${view}-${format === "excel" ? "nibol.xls" : "nibol.pdf"}`,
       );
     } catch {
       setExportError(
@@ -124,7 +147,7 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
 
   const dashboard = dashboardQuery.data;
   return (
-    <main className="space-y-6">
+    <main className="min-w-0 space-y-6">
       <PageHeader
         actions={
           <>
@@ -136,22 +159,20 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
             </Link>
             {canExport ? (
               <ReportExportButtons
-                disabled={exporting !== null || observationsQuery.isPending}
-                onExport={(format) => {
-                  void handleExport(format);
-                }}
+                disabled={exporting !== null || plansQuery.isPending}
+                onExport={(format) => void handleExport(format)}
               />
             ) : null}
           </>
         }
-        description="Una bandeja de atención para distinguir lo que sigue vigente, lo que se acerca a su fecha límite y lo que ya requiere una decisión."
+        description="Bandeja de planes de acción para distinguir lo vigente, lo próximo a vencer y lo vencido. El estado de avance permanece visible por separado."
         eyebrow="Reportes"
         title="Vigentes y vencidas"
       />
 
       <ReportFilterBar
         draft={draft}
-        onApply={() => setFilters({ ...draft })}
+        onApply={() => applyFilters({ ...draft })}
         onChange={updateDraft}
         onReset={reset}
         options={optionsQuery.data}
@@ -174,26 +195,23 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
       ) : (
         <section className="grid gap-3 md:grid-cols-3">
           <ReportKpi
-            description="Observaciones abiertas que aún están dentro de su plazo."
+            description="Planes no vencidos, incluidos los concluidos."
             icon="total"
             label="Vigentes"
-            value={formatReportNumber(
-              Math.max(0, dashboard.summary.open - dashboard.summary.overdue),
-            )}
+            value={formatReportNumber(dashboard.summary.vigentes)}
           />
           <ReportKpi
-            description={`Vencen dentro de los próximos ${dashboard.dueSoonDays} días.`}
+            description={`Dentro de los próximos ${dashboard.dueSoonDays} días.`}
             icon="dueSoon"
             label="Próximas a vencer"
             value={formatReportNumber(dashboard.summary.dueSoon)}
           />
           <ReportKpi
-            description="Tienen fecha límite vencida o estado de vencimiento."
-            href="/observaciones?filter.overdue=true"
+            description="Planes no concluidos con fecha efectiva pasada."
             icon="overdue"
-            label="Vencidas"
+            label="Vencidos"
             tone="danger"
-            value={formatReportNumber(dashboard.summary.overdue)}
+            value={formatReportNumber(dashboard.summary.vencidos)}
           />
         </section>
       )}
@@ -207,40 +225,44 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
             [
               ["current", "Vigentes", CheckCircle2],
               ["dueSoon", "Próximas a vencer", Clock3],
-              ["overdue", "Vencidas", TriangleAlert],
+              ["overdue", "Vencidos", TriangleAlert],
             ] as const
           ).map(([key, label, Icon]) => (
             <button
-              className={cn(
-                "flex items-center gap-3 border px-4 py-3 text-left transition",
-                view === key
-                  ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)]"
-                  : "border-[var(--border)] bg-[var(--surface)] text-[var(--foreground-soft)] hover:border-[var(--primary)]",
-              )}
+              className={`flex items-center gap-3 border px-4 py-3 text-left transition ${view === key ? "border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)]" : "border-[var(--border)] bg-[var(--surface)] text-[var(--foreground-soft)] hover:border-[var(--primary)]"}`}
               key={key}
-              onClick={() => setView(key)}
+              onClick={() => {
+                const nextFilters: ReportFilters =
+                  key === "overdue"
+                    ? {
+                        ...filters,
+                        deadlineStatus: "VENCIDO",
+                        dueSoon: undefined,
+                      }
+                    : key === "dueSoon"
+                      ? { ...filters, deadlineStatus: "VIGENTE", dueSoon: true }
+                      : {
+                          ...filters,
+                          deadlineStatus: "VIGENTE",
+                          dueSoon: undefined,
+                        };
+                applyFilters(nextFilters);
+              }}
               type="button"
             >
               <Icon className="h-4 w-4" />
               <span className="text-sm font-semibold">{label}</span>
-              <ArrowUpRight className="ml-auto h-3.5 w-3.5" />
+              <ArrowRight className="ml-auto h-3.5 w-3.5" />
             </button>
           ))}
         </div>
         <div className="mt-5">
-          {observationsQuery.isError ? (
-            <ReportError
-              onRetry={() => {
-                void observationsQuery.refetch();
-              }}
-            />
-          ) : observationsQuery.isPending ? (
-            <ReportLoading label="Cargando observaciones de la bandeja…" />
+          {plansQuery.isError ? (
+            <ReportError onRetry={() => void plansQuery.refetch()} />
+          ) : plansQuery.isPending ? (
+            <ReportLoading label="Cargando planes de acción de la bandeja…" />
           ) : (
-            <AttentionTable
-              rows={observationsQuery.data?.data ?? []}
-              view={view}
-            />
+            <AttentionTable rows={plansQuery.data?.data ?? []} view={view} />
           )}
         </div>
       </ReportPanel>
@@ -252,27 +274,34 @@ function AttentionTable({
   rows,
   view,
 }: {
-  rows: ReportObservationRow[];
+  rows: ReportActionPlanRow[];
   view: AttentionView;
 }) {
-  return rows.length === 0 ? (
-    <div className="border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-4 py-10 text-center text-sm text-[var(--foreground-soft)]">
-      No hay observaciones en esta bandeja con los filtros actuales.
-    </div>
-  ) : (
+  if (!rows.length) {
+    return (
+      <div className="border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-4 py-10 text-center text-sm text-[var(--foreground-soft)]">
+        No hay planes de acción en esta bandeja con los filtros actuales.
+      </div>
+    );
+  }
+  return (
     <div className="-mx-2 overflow-x-auto px-2">
-      <table className="min-w-full border-collapse text-left text-sm">
+      <table className="min-w-[950px] border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-[var(--border-strong)]">
             {[
               "Atención",
-              "Observación",
+              "Informe / observación",
+              "Plan",
               "Área",
-              "Responsable",
-              "Riesgo",
-              "Fecha límite",
-              "Estado",
-              "Avance",
+              "Ejecutor",
+              "Estado de avance",
+              "Avance oficial",
+              "Avance reportado",
+              "Fecha original",
+              "Fecha actual",
+              "Estado de plazo",
+              "Reprogramado",
             ].map((label) => (
               <th
                 className="px-3 py-3 text-[10px] font-semibold tracking-[0.15em] whitespace-nowrap text-[var(--muted)] uppercase"
@@ -286,97 +315,69 @@ function AttentionTable({
         <tbody>
           {rows.map((row) => (
             <tr
-              className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-soft)]"
-              key={row.id}
+              className="border-b border-[var(--border)] align-top last:border-0 hover:bg-[var(--surface-soft)]"
+              key={row.actionPlanId}
             >
-              <td className="px-3 py-3 align-top">
-                <AttentionBadge row={row} view={view} />
-              </td>
-              <td className="min-w-[18rem] px-3 py-3 align-top">
-                <Link
-                  className="font-semibold text-[var(--foreground)] hover:text-[var(--accent)] hover:underline"
-                  href={`/observaciones/${row.id}`}
-                >
-                  {row.code}
-                </Link>
-                <p className="mt-1 text-xs leading-5 text-[var(--foreground-soft)]">
-                  {row.title}
-                </p>
-              </td>
-              <td className="px-3 py-3 align-top whitespace-nowrap text-[var(--foreground-soft)]">
-                {row.area.name}
-              </td>
-              <td className="px-3 py-3 align-top whitespace-nowrap text-[var(--foreground-soft)]">
-                {row.responsibleUser?.name ?? "Sin asignar"}
-              </td>
-              <td className="px-3 py-3 align-top whitespace-nowrap">
+              <td className="px-3 py-3">
                 <span
-                  className={`inline-flex border px-2.5 py-1 text-xs font-semibold ${getRiskLevelClasses()}`}
-                  style={getRiskLevelStyle(row.riskLevel.colorToken)}
+                  className={`inline-flex border px-2.5 py-1 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap uppercase ${row.deadlineStatus === "VENCIDO" ? "border-rose-200 bg-rose-50 text-rose-700" : view === "dueSoon" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}
                 >
-                  {row.riskLevel.name}
+                  {row.deadlineStatus === "VENCIDO"
+                    ? "Prioridad"
+                    : view === "dueSoon"
+                      ? "Próximo"
+                      : "En plazo"}
                 </span>
               </td>
+              <td className="min-w-[17rem] px-3 py-3">
+                <Link
+                  className="font-semibold text-[var(--foreground)] hover:text-[var(--accent)] hover:underline"
+                  href={row.href}
+                >
+                  {row.observation.code}
+                </Link>
+                <p className="mt-1 text-xs leading-5 text-[var(--foreground-soft)]">
+                  {row.observation.title}
+                </p>
+              </td>
+              <td className="max-w-[18rem] px-3 py-3 text-[var(--foreground-soft)]">
+                {row.title}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.area.name}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.executor?.name ?? "Sin asignar"}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.officialProgress.label}
+              </td>
+              <td className="px-3 py-3 font-semibold whitespace-nowrap text-[var(--foreground)]">
+                {row.officialProgress.percent}%
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.reportedProgressPercent !== null
+                  ? `${row.reportedProgressPercent}%`
+                  : "—"}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {formatReportDate(row.originalDueDate)}
+              </td>
               <td
-                className={cn(
-                  "px-3 py-3 align-top whitespace-nowrap",
-                  row.isOverdue
-                    ? "font-semibold text-[var(--accent)]"
-                    : "text-[var(--foreground-soft)]",
-                )}
+                className={`px-3 py-3 font-semibold whitespace-nowrap ${row.deadlineStatus === "VENCIDO" ? "text-[var(--accent)]" : "text-[var(--foreground-soft)]"}`}
               >
-                {formatReportDate(row.dueDate)}
+                {formatReportDate(row.effectiveDueDate)}
               </td>
-              <td className="px-3 py-3 align-top whitespace-nowrap text-[var(--foreground-soft)]">
-                {row.effectiveStatus.name}
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.deadlineStatus === "VENCIDO" ? "Vencido" : "Vigente"}
               </td>
-              <td className="min-w-[8rem] px-3 py-3 align-top">
-                <div className="space-y-1.5">
-                  <div className="h-2 overflow-hidden bg-[var(--surface-muted)]">
-                    <div
-                      className="h-full bg-[var(--primary)]"
-                      style={{ width: `${row.progressPercent}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-semibold text-[var(--foreground-soft)]">
-                    {row.progressPercent}%
-                  </span>
-                </div>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.reprogrammed ? "Sí" : "No"}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
-  );
-}
-
-function AttentionBadge({
-  row,
-  view,
-}: {
-  row: ReportObservationRow;
-  view: AttentionView;
-}) {
-  const summary = row.actionSummary;
-  const label =
-    view === "overdue"
-      ? "Prioridad"
-      : summary?.count
-        ? `${summary.count} pendientes`
-        : "En plazo";
-  return (
-    <span
-      className={cn(
-        "inline-flex border px-2.5 py-1 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap uppercase",
-        row.isOverdue || view === "overdue"
-          ? "border-rose-200 bg-rose-50 text-rose-700"
-          : summary?.count
-            ? "border-amber-200 bg-amber-50 text-amber-800"
-            : "border-emerald-200 bg-emerald-50 text-emerald-700",
-      )}
-    >
-      {label}
-    </span>
   );
 }

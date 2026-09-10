@@ -1,7 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
+
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -12,6 +14,7 @@ import {
 
 import { QUERY_KEYS } from "@/lib/constants";
 import { observationService } from "@/services/observation-service";
+import { remediationService } from "@/services/remediation-service";
 import type { ObservationActionItem } from "@/types";
 import { cn } from "@/utils";
 
@@ -24,6 +27,18 @@ export function ObservationActionPanel({
     queryFn: () => observationService.getObservationActionItems(observationId),
     queryKey: QUERY_KEYS.observationActionItems(observationId),
     staleTime: 30_000,
+  });
+  const plansQuery = useQuery({
+    enabled: Boolean(
+      (actionQuery.data ?? []).some(
+        (item) => item.actionType === "REQUEST_EXTENSION",
+      ),
+    ),
+    queryFn: () =>
+      remediationService.listActionPlans(
+        `?filter.observationId=${encodeURIComponent(observationId)}&perPage=100`,
+      ),
+    queryKey: ["action-plans", "extension-action", observationId],
   });
   const items = actionQuery.data ?? [];
   const critical = items.some((item) => item.severity === "CRITICAL");
@@ -113,7 +128,13 @@ export function ObservationActionPanel({
         {!actionQuery.isPending && !actionQuery.isError && items.length > 0 ? (
           <div className="grid gap-3 md:grid-cols-2">
             {items.map((item) => (
-              <ActionItemCard item={item} key={item.code} />
+              <ActionItemCard
+                item={item}
+                key={item.code}
+                observationId={observationId}
+                plans={plansQuery.data?.data ?? []}
+                plansLoading={plansQuery.isPending}
+              />
             ))}
           </div>
         ) : null}
@@ -122,7 +143,25 @@ export function ObservationActionPanel({
   );
 }
 
-function ActionItemCard({ item }: { item: ObservationActionItem }) {
+function ActionItemCard({
+  item,
+  observationId,
+  plans,
+  plansLoading,
+}: {
+  item: ObservationActionItem;
+  observationId: string;
+  plans: Array<{
+    area: { name: string };
+    currentDueDate: string;
+    description: string;
+    id: string;
+    responsibleUser: { name: string };
+    statusLabel: string;
+  }>;
+  plansLoading: boolean;
+}) {
+  const [showPlanSelector, setShowPlanSelector] = useState(false);
   const severityClass =
     item.severity === "CRITICAL"
       ? "border-rose-200 bg-rose-50/70"
@@ -142,12 +181,7 @@ function ActionItemCard({ item }: { item: ObservationActionItem }) {
         ? CircleAlert
         : CheckCircle2;
   return (
-    <article
-      className={cn(
-        "flex min-h-[10rem] flex-col justify-between gap-4 border p-4",
-        severityClass,
-      )}
-    >
+    <article className={cn("flex flex-col gap-3 border p-4", severityClass)}>
       <div className="flex items-start gap-3">
         <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", iconClass)} />
         <div>
@@ -161,7 +195,86 @@ function ActionItemCard({ item }: { item: ObservationActionItem }) {
           ) : null}
         </div>
       </div>
-      {item.actionUrl ? (
+      {item.actionType === "REQUEST_EXTENSION" ? (
+        plansLoading ? (
+          <span className="text-xs text-[var(--muted)]">
+            Revisando planes elegibles…
+          </span>
+        ) : plans.length === 1 ? (
+          <Link
+            className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-[var(--primary)] hover:underline"
+            href={`/planes-accion/${plans[0]!.id}?extension=1#plazo`}
+          >
+            Solicitar ampliación <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        ) : plans.length > 1 ? (
+          <>
+            <button
+              className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-[var(--primary)] hover:underline"
+              onClick={() => setShowPlanSelector(true)}
+              type="button"
+            >
+              Seleccionar plan <ArrowUpRight className="h-3.5 w-3.5" />
+            </button>
+            {showPlanSelector ? (
+              <div
+                aria-label="Seleccione el plan de acción"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/40 p-4"
+                role="dialog"
+              >
+                <div className="max-h-[80vh] w-full max-w-2xl overflow-auto rounded-2xl bg-white p-6 shadow-2xl">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h4 className="text-lg font-semibold text-stone-950">
+                        Seleccione el plan de acción
+                      </h4>
+                      <p className="mt-1 text-sm text-stone-500">
+                        La ampliación se solicita para un plan específico.
+                      </p>
+                    </div>
+                    <button
+                      className="text-sm text-stone-500 underline"
+                      onClick={() => setShowPlanSelector(false)}
+                      type="button"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                  <div className="mt-5 space-y-3">
+                    {plans.map((plan) => (
+                      <Link
+                        className="block rounded-xl border border-stone-200 p-4 hover:border-amber-400 hover:bg-amber-50/50"
+                        href={`/planes-accion/${plan.id}?extension=1#plazo`}
+                        key={plan.id}
+                        onClick={() => setShowPlanSelector(false)}
+                      >
+                        <p className="font-semibold text-stone-950">
+                          {plan.description}
+                        </p>
+                        <p className="mt-2 text-xs text-stone-600">
+                          {plan.area.name} · {plan.responsibleUser.name} · vence{" "}
+                          {new Date(plan.currentDueDate).toLocaleDateString(
+                            "es-BO",
+                            { timeZone: "UTC" },
+                          )}{" "}
+                          · {plan.statusLabel}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <Link
+            className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-[var(--primary)] hover:underline"
+            href={`/observaciones/${observationId}?tab=plans`}
+          >
+            Agregar plan de acción <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        )
+      ) : item.actionUrl ? (
         <Link
           className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-[var(--primary)] hover:underline"
           href={item.actionUrl}

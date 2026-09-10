@@ -33,19 +33,30 @@ const emptyForm = {
 
 export function RemediationApprovalPanel({
   area,
+  canAssignExecutor,
+  canCreate,
+  canEdit,
+  canSubmit,
   observationId,
   onChanged,
   plan,
   users,
 }: {
   area: { id: string; name: string };
+  canAssignExecutor: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canSubmit: boolean;
   observationId: string;
   onChanged: () => Promise<unknown>;
   plan: RemediationPlanDetail | null;
   users: ObservationUserSummary[];
 }) {
   const editable = !plan || ["DRAFT", "RETURNED"].includes(plan.status);
-  const [editing, setEditing] = useState(!plan);
+  const canEditCurrent =
+    editable && (plan ? canEdit || canAssignExecutor : canCreate);
+  const assignmentOnly = Boolean(plan && canAssignExecutor && !canEdit);
+  const [editing, setEditing] = useState(!plan && canCreate);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(() =>
     plan
@@ -59,20 +70,24 @@ export function RemediationApprovalPanel({
   );
   const save = useMutation({
     mutationFn: () =>
-      plan
+      plan && assignmentOnly
         ? remediationService.updateRemediationPlan(plan.id, {
-            additionalComments: form.additionalComments || null,
-            mitigationText: form.mitigationText || null,
             ownerUserId: form.ownerUserId || null,
-            strategyText: form.strategyText,
           })
-        : remediationService.createRemediationPlan(observationId, {
-            additionalComments: form.additionalComments || null,
-            areaId: area.id,
-            mitigationText: form.mitigationText || null,
-            ownerUserId: form.ownerUserId || null,
-            strategyText: form.strategyText,
-          }),
+        : plan
+          ? remediationService.updateRemediationPlan(plan.id, {
+              additionalComments: form.additionalComments || null,
+              mitigationText: form.mitigationText || null,
+              ownerUserId: form.ownerUserId || null,
+              strategyText: form.strategyText,
+            })
+          : remediationService.createRemediationPlan(observationId, {
+              additionalComments: form.additionalComments || null,
+              areaId: area.id,
+              mitigationText: form.mitigationText || null,
+              ownerUserId: form.ownerUserId || null,
+              strategyText: form.strategyText,
+            }),
     onError: (cause) => setError(getApiErrorMessage(cause)),
     onSuccess: async () => {
       setError(null);
@@ -99,11 +114,10 @@ export function RemediationApprovalPanel({
           <ShieldCheck className="mt-0.5 h-5 w-5 text-[var(--primary)]" />
           <div>
             <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-              Plan de remediación del área
+              Plan de acción recomendado
             </p>
             <p className="mt-1 text-sm text-[var(--foreground-soft)]">
-              Define la estrategia que Auditoría aprobará antes de ejecutar sus
-              planes de acción.
+              Define la recomendación que Auditoría enviará para su gestión.
             </p>
           </div>
         </div>
@@ -111,7 +125,7 @@ export function RemediationApprovalPanel({
           {plan ? (
             <span className="nibol-badge">{statusLabels[plan.status]}</span>
           ) : null}
-          {editable && !editing ? (
+          {canEditCurrent && !editing ? (
             <button
               className="nibol-btn-secondary px-3 py-2 text-xs"
               onClick={() => setEditing(true)}
@@ -123,7 +137,7 @@ export function RemediationApprovalPanel({
         </div>
       </div>
 
-      {editing ? (
+      {editing && canEditCurrent ? (
         <form
           className="mt-5 grid gap-4 md:grid-cols-2"
           onSubmit={(event) => {
@@ -132,11 +146,12 @@ export function RemediationApprovalPanel({
           }}
         >
           <label className="grid gap-2 text-sm font-semibold md:col-span-2">
-            Estrategia de remediación
+            Plan de acción recomendado
             <textarea
               className="nibol-field min-h-28 resize-y"
               minLength={10}
               required
+              disabled={assignmentOnly}
               value={form.strategyText}
               onChange={(event) =>
                 setForm((current) => ({
@@ -150,6 +165,7 @@ export function RemediationApprovalPanel({
             Medidas de mitigación
             <textarea
               className="nibol-field min-h-24 resize-y"
+              disabled={assignmentOnly}
               value={form.mitigationText}
               onChange={(event) =>
                 setForm((current) => ({
@@ -183,6 +199,7 @@ export function RemediationApprovalPanel({
             Comentarios adicionales
             <textarea
               className="nibol-field min-h-20 resize-y"
+              disabled={assignmentOnly}
               value={form.additionalComments}
               onChange={(event) =>
                 setForm((current) => ({
@@ -227,7 +244,7 @@ export function RemediationApprovalPanel({
             </p>
           </div>
           <div className="flex flex-col items-stretch gap-2 sm:min-w-52">
-            {editable ? (
+            {canSubmit && editable ? (
               <button
                 className="nibol-btn-primary justify-center px-4 py-2.5 text-sm"
                 disabled={submit.isPending}
@@ -254,6 +271,11 @@ export function RemediationApprovalPanel({
       {error ? (
         <p className="mt-4 border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-800">
           {error}
+        </p>
+      ) : null}
+      {!plan && !canCreate ? (
+        <p className="mt-4 text-sm text-[var(--muted)]">
+          Auditoría aún no ha creado el plan recomendado para esta área.
         </p>
       ) : null}
     </div>

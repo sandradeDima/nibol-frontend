@@ -47,7 +47,7 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-stone-500">Avance aprobado</p>
+                <p className="text-xs text-stone-500">Avance oficial</p>
                 <div className="mt-2 flex items-center gap-2">
                   <div className="h-1.5 w-28 rounded-full bg-stone-200">
                     <div
@@ -63,21 +63,36 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
               <div>
                 <p className="flex items-center gap-1 text-xs text-stone-500">
                   <CalendarDays className="h-3.5 w-3.5" />
-                  Fecha actual
+                  Fecha efectiva
                 </p>
                 <p className="mt-1 font-semibold">
-                  {formatRemediationDate(plan.currentDueDate)}
+                  {formatRemediationDate(plan.effectiveDueDate)}
                 </p>
-                <span
-                  className={cn(
-                    "mt-2 inline-flex border px-2 py-1 text-xs font-semibold",
-                    getActionPlanStatusClasses(
-                      plan.isOverdue ? "OVERDUE" : plan.status,
-                    ),
-                  )}
-                >
-                  {plan.isOverdue ? "Vencido" : plan.statusLabel}
-                </span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span
+                    className={cn(
+                      "inline-flex border px-2 py-1 text-xs font-semibold",
+                      getActionPlanStatusClasses(plan.status),
+                    )}
+                  >
+                    {plan.statusLabel}
+                  </span>
+                  <span
+                    className={cn(
+                      "inline-flex border px-2 py-1 text-xs font-semibold",
+                      plan.deadlineStatus === "VENCIDO"
+                        ? "border-rose-200 bg-rose-50 text-rose-800"
+                        : "border-emerald-200 bg-emerald-50 text-emerald-800",
+                    )}
+                  >
+                    {plan.deadlineStatus === "VENCIDO" ? "Vencido" : "Vigente"}
+                  </span>
+                </div>
+                {plan.reprogrammed ? (
+                  <p className="mt-1 text-xs font-medium text-amber-700">
+                    Reprogramado
+                  </p>
+                ) : null}
               </div>
               <ChevronRight className="h-5 w-5 text-stone-400" />
             </Link>

@@ -3,24 +3,28 @@
 import { useMemo, useState } from "react";
 
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   BarChart3,
+  CheckCircle2,
   FileBarChart,
   FileSearch,
   Gauge,
   ShieldAlert,
-  Sparkles,
-  TableProperties,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
-import { QUERY_KEYS } from "@/lib/constants";
-import { configurationService } from "@/services/configuration-service";
-import { reportService, triggerDownload } from "@/services/report-service";
-import type { ReportFilters } from "@/types";
 import {
+  buildReportQuery,
+  parseReportFilters,
+  reportService,
+  triggerDownload,
+} from "@/services/report-service";
+import type { ReportActionPlanRow, ReportFilters } from "@/types";
+import {
+  formatReportDate,
   formatReportNumber,
   formatReportPercent,
   getReportDateRange,
@@ -34,7 +38,6 @@ import {
   ReportLoading,
   ReportPanel,
   ReportShortcut,
-  ReportTrend,
 } from "./report-ui";
 
 type ReportsDashboardProps = {
@@ -47,22 +50,40 @@ const DEFAULT_FILTERS: ReportFilters = {
   ...getReportDateRange(12),
 };
 
+const withFilter = (
+  filters: ReportFilters,
+  key: keyof ReportFilters,
+  value: string | boolean,
+) => `/reportes${buildReportQuery({ ...filters, [key]: value })}`;
+
 export function ReportsDashboard({
   canExport,
   canViewAudit,
 }: ReportsDashboardProps) {
-  const [draft, setDraft] = useState<ReportFilters>(DEFAULT_FILTERS);
-  const [filters, setFilters] = useState<ReportFilters>(DEFAULT_FILTERS);
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.toString();
+  const urlFilters = useMemo(
+    () => parseReportFilters(new URLSearchParams(searchQuery)),
+    [searchQuery],
+  );
+  const initialFilters = useMemo(
+    () => ({ ...DEFAULT_FILTERS, ...urlFilters }),
+    [urlFilters],
+  );
+  const [draft, setDraft] = useState<ReportFilters>(initialFilters);
+  const filters = initialFilters;
   const [exportError, setExportError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
   const optionsQuery = useQuery({
-    queryFn: configurationService.getBootstrap,
-    queryKey: QUERY_KEYS.configurationBootstrap,
+    queryFn: reportService.getOptions,
+    queryKey: ["reports", "options"],
     staleTime: 60_000,
   });
   const dashboardQuery = useQuery({
     queryFn: () => reportService.getDashboard(filters),
-    queryKey: [...QUERY_KEYS.reportDashboard, filters],
+    queryKey: ["reports", "dashboard", filters],
     staleTime: 30_000,
   });
 
@@ -72,18 +93,20 @@ export function ReportsDashboard({
   ) => {
     setDraft((current) => {
       const next = { ...current } as Record<string, unknown>;
-      if (value === undefined || value === "") {
-        delete next[key];
-      } else {
-        next[key] = value;
-      }
+      if (value === undefined || value === "") delete next[key];
+      else next[key] = value;
       return next as ReportFilters;
     });
   };
 
+  const applyFilters = (next: ReportFilters) => {
+    setDraft(next);
+    router.replace(`${pathname}${buildReportQuery(next)}`);
+  };
+
   const resetFilters = () => {
     setDraft(DEFAULT_FILTERS);
-    setFilters(DEFAULT_FILTERS);
+    applyFilters(DEFAULT_FILTERS);
   };
 
   const handleExport = async (format: "excel" | "pdf") => {
@@ -92,12 +115,12 @@ export function ReportsDashboard({
     setExportError(null);
     try {
       const blob = await reportService.downloadReport(filters, format, {
-        reportName: "Dashboard de reportes NIBOL",
-        type: "OBSERVATIONS",
+        reportName: "Planes de acción NIBOL",
+        type: "ACTION_PLANS",
       });
       triggerDownload(
         blob,
-        `reporte-nibol-${format === "excel" ? "operativo.xls" : "operativo.pdf"}`,
+        `planes-de-accion-${format === "excel" ? "nibol.xls" : "nibol.pdf"}`,
       );
     } catch {
       setExportError(
@@ -109,13 +132,16 @@ export function ReportsDashboard({
   };
 
   const data = dashboardQuery.data;
-  const filterLabel = useMemo(() => {
-    if (!filters.dateFrom && !filters.dateTo) return "Corte actual";
-    return `${filters.dateFrom ?? "Inicio"} – ${filters.dateTo ?? "Hoy"}`;
-  }, [filters.dateFrom, filters.dateTo]);
+  const filterLabel = useMemo(
+    () =>
+      filters.dateFrom || filters.dateTo
+        ? `${filters.dateFrom ?? "Inicio"} – ${filters.dateTo ?? "Hoy"}`
+        : "Corte actual",
+    [filters.dateFrom, filters.dateTo],
+  );
 
   return (
-    <main className="space-y-6">
+    <main className="min-w-0 space-y-6">
       <PageHeader
         actions={
           <>
@@ -142,24 +168,23 @@ export function ReportsDashboard({
             {canExport ? (
               <ReportExportButtons
                 disabled={exporting !== null}
-                onExport={(format) => {
-                  void handleExport(format);
-                }}
+                onExport={(format) => void handleExport(format)}
               />
             ) : null}
           </>
         }
-        description="Lectura ejecutiva y operativa del cumplimiento, los vencimientos y la capacidad de respuesta por área."
+        description="Indicadores y seguimiento de planes de acción. El estado de avance y el estado de plazo son dimensiones independientes."
         eyebrow="Control y seguimiento"
         title="Reportes"
       />
 
       <ReportFilterBar
         draft={draft}
-        onApply={() => setFilters({ ...draft })}
+        onApply={() => applyFilters({ ...draft })}
         onChange={updateDraft}
         onReset={resetFilters}
         options={optionsQuery.data}
+        showProgress
       />
 
       {exportError ? (
@@ -170,8 +195,8 @@ export function ReportsDashboard({
       {optionsQuery.isError || dashboardQuery.isError ? (
         <ReportError
           onRetry={() => {
-            void dashboardQuery.refetch();
             void optionsQuery.refetch();
+            void dashboardQuery.refetch();
           }}
         />
       ) : dashboardQuery.isPending || !data ? (
@@ -180,241 +205,321 @@ export function ReportsDashboard({
         <>
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <ReportKpi
-              description={`${filterLabel}. Cierre dentro de plazo.`}
-              icon="compliance"
-              label="Cumplimiento"
-              tone="accent"
-              value={formatReportPercent(data.summary.compliancePercent)}
-            />
-            <ReportKpi
-              description="Total de observaciones visibles para su alcance."
-              href="/observaciones"
+              description={`${filterLabel}. Planes incluidos en el alcance.`}
+              href="/reportes"
               icon="total"
-              label="Total"
+              label="Total de planes"
+              tone="accent"
               value={formatReportNumber(data.summary.total)}
             />
             <ReportKpi
-              description="Observaciones todavía abiertas o pendientes."
-              href="/observaciones?filter.attention=HAS_PENDING"
+              description="Planes sin avance oficial aprobado."
+              href={withFilter(filters, "progressStatus", "NOT_STARTED")}
               icon="open"
-              label="Abiertas"
-              value={formatReportNumber(data.summary.open)}
+              label="No iniciado"
+              value={formatReportNumber(data.summary.noIniciado)}
             />
             <ReportKpi
-              description="Requieren decisión o intervención prioritaria."
-              href="/observaciones?filter.overdue=true"
-              icon="overdue"
-              label="Vencidas"
-              tone="danger"
-              value={formatReportNumber(data.summary.overdue)}
-            />
-            <ReportKpi
-              description={`Vencen dentro de los próximos ${data.dueSoonDays} días.`}
-              href="/observaciones?filter.dueSoon=true"
-              icon="dueSoon"
-              label="Próximas a vencer"
-              value={formatReportNumber(data.summary.dueSoon)}
-            />
-            <ReportKpi
-              description="Observaciones actualmente en atención activa."
+              description="Planes con ejecución iniciada."
+              href={withFilter(filters, "progressStatus", "STARTED")}
               icon="inProcess"
-              label="En proceso"
-              value={formatReportNumber(data.summary.inProcess)}
+              label="Iniciado"
+              value={formatReportNumber(data.summary.iniciado)}
             />
             <ReportKpi
-              description="Observaciones con estado final registrado."
+              description="Planes con avance oficial del 60%."
+              href={withFilter(filters, "progressStatus", "WITH_PROGRESS")}
+              icon="progress"
+              label="Con avance"
+              value={formatReportNumber(data.summary.conAvance)}
+            />
+            <ReportKpi
+              description="Planes con cierre oficial al 100%."
+              href={withFilter(filters, "progressStatus", "CONCLUDED")}
               icon="closed"
-              label="Cerradas"
-              value={formatReportNumber(data.summary.closed)}
+              label="Concluido"
+              value={formatReportNumber(data.summary.concluido)}
             />
             <ReportKpi
-              description="Promedio desde el registro hasta el cierre."
-              icon="resolution"
-              label="Resolución promedio"
-              value={`${formatReportNumber(data.summary.averageResolutionDays)} días`}
+              description="No vencidos; incluye concluidos no atrasados."
+              href={withFilter(filters, "deadlineStatus", "VIGENTE")}
+              icon="dueSoon"
+              label="Vigentes"
+              value={formatReportNumber(data.summary.vigentes)}
+            />
+            <ReportKpi
+              description="Planes no concluidos cuya fecha efectiva ya pasó."
+              href={withFilter(filters, "deadlineStatus", "VENCIDO")}
+              icon="overdue"
+              label="Vencidos"
+              tone="danger"
+              value={formatReportNumber(data.summary.vencidos)}
+            />
+            <ReportKpi
+              description="Tienen una ampliación aprobada y fecha efectiva distinta."
+              href={withFilter(filters, "reprogrammed", true)}
+              icon="reprogrammed"
+              label="Reprogramados"
+              value={formatReportNumber(data.summary.reprogramados)}
             />
           </section>
 
-          <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <section className="grid min-w-0 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
             <ReportPanel
-              description="Lectura automática de los puntos que merecen atención en el corte actual."
-              title="Hallazgos del corte"
-            >
-              <div className="space-y-3">
-                {data.insights.length > 0 ? (
-                  data.insights.map((insight) => (
-                    <div
-                      className="flex items-start gap-3 border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3"
-                      key={insight}
-                    >
-                      <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
-                      <p className="text-sm leading-6 text-[var(--foreground-soft)]">
-                        {insight}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-[var(--foreground-soft)]">
-                    No hay observaciones suficientes para sugerir un foco.
-                  </p>
-                )}
-              </div>
-            </ReportPanel>
-            <ReportPanel
-              description="Los filtros y el alcance aplicado a este resumen."
-              title="Corte consultado"
+              description="La fecha efectiva se toma de la ampliación aprobada cuando existe."
+              title="Lectura del corte"
             >
               <ReportFilterSummary filters={filters} />
-              <div className="mt-4 flex items-center gap-2 text-xs text-[var(--muted)]">
-                <TableProperties className="h-4 w-4" />
-                Actualizado{" "}
-                {new Intl.DateTimeFormat("es-BO", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                }).format(new Date(data.generatedAt))}
+              <div className="mt-4 space-y-2 text-sm text-[var(--foreground-soft)]">
+                {data.insights.map((insight) => (
+                  <p key={insight}>{insight}</p>
+                ))}
+                {!data.insights.length ? (
+                  <p>No hay planes dentro del corte.</p>
+                ) : null}
+              </div>
+            </ReportPanel>
+            <ReportPanel
+              description="Cierres registrados dentro de la fecha efectiva del plan."
+              title="Cumplimiento del corte"
+            >
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-4xl font-semibold text-[var(--foreground)]">
+                    {formatReportPercent(data.summary.compliancePercent)}
+                  </p>
+                  <p className="mt-2 text-sm text-[var(--foreground-soft)]">
+                    Planes concluidos dentro de plazo
+                  </p>
+                </div>
+                <CheckCircle2 className="h-10 w-10 text-[var(--success)]" />
               </div>
             </ReportPanel>
           </section>
 
-          <section className="grid gap-6 xl:grid-cols-2">
+          <section className="grid min-w-0 gap-6 xl:grid-cols-2">
             <ReportPanel
-              description="Distribución del universo según el nivel de riesgo configurado."
+              description="Clasificación oficial del plan; no se reemplaza por el avance reportado."
+              title="Distribución por estado de avance"
+            >
+              <ReportBarList items={data.charts.progressDistribution} />
+            </ReportPanel>
+            <ReportPanel
+              description="Vigente o vencido según la fecha actual efectiva."
+              title="Distribución por estado de plazo"
+            >
+              <ReportBarList items={data.charts.deadlineDistribution} />
+            </ReportPanel>
+            <ReportPanel
+              description="Catálogo dinámico de niveles de riesgo."
               title="Distribución por riesgo"
             >
               <ReportDonut items={data.charts.riskDistribution} />
             </ReportPanel>
             <ReportPanel
-              description="Estado operativo, con vencidas separadas como prioridad."
-              title="Distribución por estado"
+              description="Indicador independiente del estado y del vencimiento."
+              title="Reprogramación"
             >
-              <ReportBarList items={data.charts.statusDistribution} />
+              <ReportBarList items={data.charts.reprogrammedDistribution} />
             </ReportPanel>
             <ReportPanel
-              description="Vigentes, próximas a vencer y vencidas en el mismo corte."
-              title="Vigentes versus vencidas"
+              description="Carga de planes por área responsable."
+              title="Planes por área"
             >
-              <ReportBarList items={data.charts.currentVsOverdue} />
+              <ReportBarList items={data.charts.areaDistribution} />
             </ReportPanel>
             <ReportPanel
-              description="Tendencia mensual de registros y cierres del período."
-              title="Tendencia mensual"
+              description="Carga de planes por dueño del proceso."
+              title="Planes por dueño del proceso"
             >
-              <ReportTrend points={data.charts.trend} />
+              <ReportBarList items={data.charts.processOwnerDistribution} />
+            </ReportPanel>
+            <ReportPanel
+              className="xl:col-span-2"
+              description="Carga asignada a cada ejecutor."
+              title="Planes por ejecutor"
+            >
+              <ReportBarList items={data.charts.executorDistribution} />
             </ReportPanel>
           </section>
 
           <ReportPanel
-            description="Comparación de carga, vencimientos, cierres y tiempo medio de resolución."
-            title="Desempeño por área"
+            description={`${data.rows.length} plan${data.rows.length === 1 ? "" : "es"} dentro del mismo alcance de los indicadores.`}
+            title="Planes de acción"
           >
-            {data.areaSummary.length === 0 ? (
-              <div className="border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-4 py-10 text-center text-sm text-[var(--foreground-soft)]">
-                No hay áreas con observaciones en el período.
-              </div>
-            ) : (
-              <div className="-mx-2 overflow-x-auto px-2">
-                <table className="min-w-full border-collapse text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-[var(--border-strong)]">
-                      {[
-                        "Área",
-                        "Total",
-                        "Abiertas",
-                        "En proceso",
-                        "Vencidas",
-                        "Cerradas",
-                        "Cumplimiento",
-                        "Resolución",
-                      ].map((label) => (
-                        <th
-                          className="px-3 py-3 text-[10px] font-semibold tracking-[0.15em] whitespace-nowrap text-[var(--muted)] uppercase"
-                          key={label}
-                        >
-                          {label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.areaSummary.map((area) => (
-                      <tr
-                        className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-soft)]"
-                        key={area.area.id}
-                      >
-                        <td className="px-3 py-3 font-semibold text-[var(--foreground)]">
-                          <Link
-                            className="hover:text-[var(--accent)] hover:underline"
-                            href={area.href}
-                          >
-                            {area.area.name}
-                          </Link>
-                        </td>
-                        <td className="px-3 py-3 text-[var(--foreground-soft)]">
-                          {formatReportNumber(area.total)}
-                        </td>
-                        <td className="px-3 py-3 text-[var(--foreground-soft)]">
-                          {formatReportNumber(area.open)}
-                        </td>
-                        <td className="px-3 py-3 text-[var(--foreground-soft)]">
-                          {formatReportNumber(area.inProcess)}
-                        </td>
-                        <td className="px-3 py-3 font-semibold text-[var(--accent)]">
-                          {formatReportNumber(area.overdue)}
-                        </td>
-                        <td className="px-3 py-3 text-[var(--foreground-soft)]">
-                          {formatReportNumber(area.closed)}
-                        </td>
-                        <td className="px-3 py-3 font-semibold text-[var(--foreground)]">
-                          {formatReportPercent(area.compliancePercent)}
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
-                          {formatReportNumber(area.averageResolutionDays)} días
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <ActionPlanTable rows={data.rows} />
           </ReportPanel>
 
-          <section className="grid gap-3 md:grid-cols-3">
-            <ReportShortcut
-              description="Elija un tipo de reporte y descargue el resultado en Excel o PDF."
-              href="/reportes/generador"
-              icon={BarChart3}
-              label="Generador de reportes"
-            />
-            <ReportShortcut
-              description="Vea primero lo que está vigente, próximo a vencer o vencido."
-              href="/reportes/vigentes-vencidas"
-              icon={ShieldAlert}
-              label="Vigentes y vencidas"
-            />
-            {canViewAudit ? (
+          <ReportPanel
+            description="Accesos rápidos a los flujos relacionados."
+            title="Siguientes acciones"
+          >
+            <section className="grid gap-3 md:grid-cols-3">
               <ReportShortcut
-                description="Consulte la trazabilidad con lenguaje de negocio y filtros de auditoría."
-                href="/reportes/auditoria"
-                icon={FileSearch}
-                label="Reportes de auditoría"
+                description="Elija columnas y descargue el resultado filtrado."
+                href="/reportes/generador"
+                icon={BarChart3}
+                label="Generar reporte"
               />
-            ) : null}
-          </section>
-
+              <ReportShortcut
+                description="Revise por separado los planes vigentes y vencidos."
+                href="/reportes/vigentes-vencidas"
+                icon={ShieldAlert}
+                label="Vigentes y vencidas"
+              />
+              {canViewAudit ? (
+                <ReportShortcut
+                  description="Consulte la trazabilidad del ciclo de control."
+                  href="/reportes/auditoria"
+                  icon={FileSearch}
+                  label="Reportes de auditoría"
+                />
+              ) : null}
+            </section>
+          </ReportPanel>
           <div className="flex items-center justify-between gap-3 border-t border-[var(--border)] pt-2 text-xs text-[var(--muted)]">
             <span>
-              El cumplimiento se calcula con cierres registrados dentro de su
-              fecha límite.
+              Los filtros se conservan en la URL y se aplican al mismo tiempo a
+              KPIs, gráficos, filas y exportaciones.
             </span>
             <Link
               className="inline-flex items-center gap-1 font-semibold text-[var(--primary)] hover:underline"
-              href="/observaciones"
+              href="/planes-accion"
             >
-              Abrir observaciones <ArrowRight className="h-3.5 w-3.5" />
+              Abrir planes <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </>
       )}
     </main>
+  );
+}
+
+function statusClasses(key: ReportActionPlanRow["officialProgress"]["key"]) {
+  return {
+    CONCLUDED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    NOT_STARTED: "border-stone-200 bg-stone-100 text-stone-700",
+    STARTED: "border-sky-200 bg-sky-50 text-sky-700",
+    WITH_PROGRESS: "border-violet-200 bg-violet-50 text-violet-700",
+  }[key];
+}
+
+function ActionPlanTable({ rows }: { rows: ReportActionPlanRow[] }) {
+  if (!rows.length) {
+    return (
+      <div className="border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-4 py-10 text-center text-sm text-[var(--foreground-soft)]">
+        No se encontraron planes de acción con los filtros actuales. Limpie los
+        filtros para volver al universo completo.
+      </div>
+    );
+  }
+  return (
+    <div className="-mx-2 overflow-x-auto px-2">
+      <table className="min-w-[1060px] border-collapse text-left text-sm">
+        <thead>
+          <tr className="border-b border-[var(--border-strong)]">
+            {[
+              "Informe / observación",
+              "Plan",
+              "Área",
+              "Nivel de riesgo",
+              "Dueño del proceso",
+              "Ejecutor",
+              "Estado de avance",
+              "Avance oficial",
+              "Avance reportado",
+              "Fecha original",
+              "Fecha actual",
+              "Estado de plazo",
+              "Reprogramado",
+              "Acción",
+            ].map((label) => (
+              <th
+                className="px-3 py-3 text-[10px] font-semibold tracking-[0.15em] whitespace-nowrap text-[var(--muted)] uppercase"
+                key={label}
+              >
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr
+              className="border-b border-[var(--border)] align-top last:border-0 hover:bg-[var(--surface-soft)]"
+              key={row.actionPlanId}
+            >
+              <td className="min-w-[17rem] px-3 py-3">
+                <Link
+                  className="font-semibold text-[var(--foreground)] hover:text-[var(--accent)] hover:underline"
+                  href={row.href}
+                >
+                  {row.observation.code}
+                </Link>
+                <p className="mt-1 text-xs leading-5 text-[var(--foreground-soft)]">
+                  {row.observation.title}
+                </p>
+              </td>
+              <td className="max-w-[20rem] px-3 py-3 text-[var(--foreground-soft)]">
+                {row.title}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.area.name}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.riskLevel.name}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.processOwner?.name ?? "Sin asignar"}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.executor?.name ?? "Sin asignar"}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap">
+                <span
+                  className={`inline-flex border px-2.5 py-1 text-xs font-semibold ${statusClasses(row.officialProgress.key)}`}
+                >
+                  {row.officialProgress.label}
+                </span>
+              </td>
+              <td className="px-3 py-3 font-semibold whitespace-nowrap text-[var(--foreground)]">
+                {row.officialProgress.percent}%
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.reportedProgressPercent !== null
+                  ? `${row.reportedProgressPercent}%`
+                  : "—"}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {formatReportDate(row.originalDueDate)}
+              </td>
+              <td
+                className={`px-3 py-3 font-semibold whitespace-nowrap ${row.deadlineStatus === "VENCIDO" ? "text-[var(--accent)]" : "text-[var(--foreground-soft)]"}`}
+              >
+                {formatReportDate(row.effectiveDueDate)}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap">
+                <span
+                  className={`inline-flex border px-2.5 py-1 text-xs font-semibold ${row.deadlineStatus === "VENCIDO" ? "border-rose-200 bg-rose-50 text-rose-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}
+                >
+                  {row.deadlineStatus === "VENCIDO" ? "Vencido" : "Vigente"}
+                </span>
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.reprogrammed ? "Sí" : "No"}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap">
+                <Link
+                  className="inline-flex items-center gap-1 font-semibold text-[var(--primary)] hover:underline"
+                  href={row.href}
+                >
+                  Ver plan <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

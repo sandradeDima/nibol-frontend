@@ -50,7 +50,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
   OBSERVATION_UPDATED: "Observacion actualizada",
   OVERDUE_DETECTED: "Vencimiento detectado",
   PLAN_APPROVED: "Plan aprobado",
-  PLAN_CREATED: "Plan de remediacion creado",
+  PLAN_CREATED: "Plan de acción recomendado creado",
   PLAN_RETURNED: "Plan devuelto para ajustes",
   PLAN_REJECTED: "Plan rechazado",
   PLAN_SENT_TO_AUDIT: "Plan enviado a auditoria",

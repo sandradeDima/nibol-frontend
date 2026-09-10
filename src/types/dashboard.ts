@@ -1,7 +1,12 @@
 export type DashboardScope = "auditoria" | "area";
 
 export type DashboardViewerProfile =
-  "ADMIN" | "SYSTEMS" | "AUDIT" | "MANAGEMENT" | "EXECUTOR" | "GENERAL";
+  | "ADMIN"
+  | "SYSTEMS"
+  | "AUDIT"
+  | "MANAGEMENT"
+  | "EXECUTOR"
+  | "GENERAL";
 
 export interface DashboardDistributionItem {
   colorToken?: string | null;
@@ -69,7 +74,9 @@ export interface DashboardObservationRow {
 
 export interface DashboardActionPlanRow {
   area: DashboardAreaSummary;
+  deadlineStatus: "VIGENTE" | "VENCIDO";
   dueDate: string;
+  effectiveDueDate: string;
   href: string;
   id: string;
   isOverdue: boolean;
@@ -78,11 +85,36 @@ export interface DashboardActionPlanRow {
     id: string;
     title: string;
   };
+  officialProgressCode: "NI" | "I" | "CA" | "CO";
+  officialProgressPercent: number;
   progressPercent: number;
+  reprogrammed: boolean;
   responsibleUser: DashboardUserSummary | null;
   status: DashboardStatusSummary;
   title: string;
   updatedAt: string;
+}
+
+export interface DashboardActionPlanReporting {
+  charts: {
+    byArea: DashboardDistributionItem[];
+    byDeadline: DashboardDistributionItem[];
+    byExecutor: DashboardDistributionItem[];
+    byProcessOwner: DashboardDistributionItem[];
+    byProgress: DashboardDistributionItem[];
+    byReprogrammed: DashboardDistributionItem[];
+    byRisk: DashboardDistributionItem[];
+  };
+  summary: {
+    conAvance: number;
+    concluido: number;
+    iniciado: number;
+    noIniciado: number;
+    reprogramados: number;
+    total: number;
+    vencidos: number;
+    vigentes: number;
+  };
 }
 
 export interface DashboardReviewQueueRow {
@@ -107,6 +139,7 @@ export interface DashboardActivityRow {
 }
 
 export interface AuditDashboardData {
+  actionPlanReporting: DashboardActionPlanReporting;
   charts: {
     currentVsOverdue: DashboardDistributionItem[];
     monthlyTrend: DashboardTrendPoint[];
@@ -141,6 +174,7 @@ export interface AuditDashboardData {
 }
 
 export interface AreaDashboardData {
+  actionPlanReporting: DashboardActionPlanReporting;
   charts: {
     currentVsOverdue: DashboardDistributionItem[];
     observationsByArea: DashboardDistributionItem[];

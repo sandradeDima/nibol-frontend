@@ -3,7 +3,7 @@ import { requirePermission } from "@/lib/server-auth";
 import { ExtensionRequestTable } from "@/modules/extension-requests/extension-request-table";
 
 export default async function ExtensionRequestsPage() {
-  await requirePermission("extension_requests.view");
+  await requirePermission("deadline_extensions.view");
 
   return (
     <main className="space-y-6">

@@ -1,4 +1,5 @@
 import { apiClient } from "@/services/api-client";
+import { APP_CONFIG } from "@/lib/constants";
 import type {
   ApiSuccessResponse,
   PaginatedApiSuccessResponse,
@@ -48,7 +49,9 @@ export const workflowRuntimeService = {
   ) {
     const response = await apiClient.post<
       ApiSuccessResponse<WorkflowTaskDetail>
-    >(`/workflow-tasks/${taskId}/${action}`, input);
+    >(`/workflow-tasks/${taskId}/${action}`, input, {
+      timeout: APP_CONFIG.mutationTimeoutMs,
+    });
     return response.data.data;
   },
 

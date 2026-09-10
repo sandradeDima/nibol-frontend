@@ -22,11 +22,12 @@ export const getActionPlanStatusClasses = (
         : "border-stone-200 bg-stone-50 text-stone-700";
 export const formatRemediationDate = (value: string | null) =>
   value
-    ? new Intl.DateTimeFormat("es-BO", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }).format(new Date(value))
+      ? new Intl.DateTimeFormat("es-BO", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          timeZone: "UTC",
+        }).format(new Date(value))
     : "—";
 export const getDeadlineIndicator = (value: string) => {
   const days = Math.ceil((new Date(value).getTime() - Date.now()) / 86_400_000);

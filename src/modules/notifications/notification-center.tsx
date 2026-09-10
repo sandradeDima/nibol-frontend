@@ -1,6 +1,11 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
+import {
+  useDeferredValue,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Filter, Inbox, LoaderCircle } from "lucide-react";
@@ -22,6 +27,7 @@ import { notificationService } from "@/services/notification-service";
 import { getApiErrorMessage } from "@/utils";
 
 const panelClassName = "nibol-panel p-6";
+const emptySubscribe = () => () => {};
 
 export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
   const queryClient = useQueryClient();
@@ -37,6 +43,11 @@ export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
   >("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const isHydrated = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
   const deferredSearch = useDeferredValue(search);
 
   const notificationListQuery = useQuery({
@@ -54,6 +65,7 @@ export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
         type: typeFilter === "all" ? undefined : typeFilter,
         unreadOnly: activeTab === "unread",
       }),
+    enabled: isHydrated,
     queryKey: [
       ...QUERY_KEYS.notifications,
       "list",
@@ -76,6 +88,7 @@ export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
         page: 1,
         perPage: 1,
       }),
+    enabled: isHydrated,
     queryKey: [...QUERY_KEYS.notifications, "total"],
     staleTime: 30_000,
   });
@@ -87,6 +100,7 @@ export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
         perPage: 1,
         unreadOnly: true,
       }),
+    enabled: isHydrated,
     queryKey: [...QUERY_KEYS.notifications, "unread"],
     staleTime: 15_000,
   });
@@ -135,8 +149,12 @@ export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
     });
   }, [activeTab, notificationListQuery.data?.data]);
   const pagination = notificationListQuery.data?.pagination;
-  const totalNotifications = totalQuery.data?.pagination.total ?? 0;
-  const unreadNotifications = unreadQuery.data?.pagination.total ?? 0;
+  const totalNotifications = isHydrated
+    ? (totalQuery.data?.pagination.total ?? 0)
+    : 0;
+  const unreadNotifications = isHydrated
+    ? (unreadQuery.data?.pagination.total ?? 0)
+    : 0;
   const actionError =
     (markAllReadMutation.error &&
       getApiErrorMessage(markAllReadMutation.error)) ||

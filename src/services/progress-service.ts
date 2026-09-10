@@ -1,4 +1,5 @@
 import { apiClient } from "@/services/api-client";
+import { APP_CONFIG } from "@/lib/constants";
 import type {
   ApiSuccessResponse,
   CreateObservationCommentInput,
@@ -51,8 +52,8 @@ export const progressService = {
   },
   async reviewProgressEvaluation(
     id: string,
-    action: "approve" | "return" | "reject",
-    input: ReviewProgressEvaluationInput = {},
+    action: "approve" | "return",
+    input: ReviewProgressEvaluationInput,
   ) {
     const response = await apiClient.post<
       ApiSuccessResponse<ProgressEvaluationItem>
@@ -73,7 +74,10 @@ export const progressService = {
     if (observationAreaId) body.append("observationAreaId", observationAreaId);
     const response = await apiClient.post<
       ApiSuccessResponse<EvidenceFileItem[]>
-    >(path, body);
+    >(path, body, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: APP_CONFIG.uploadTimeoutMs,
+    });
     return response.data.data;
   },
   async uploadObservationEvidence(
@@ -114,6 +118,17 @@ export const progressService = {
     const response = await apiClient.post<ApiSuccessResponse<EvidenceFileItem>>(
       `/evidences/${id}/submit-review`,
       {},
+    );
+    return response.data.data;
+  },
+  async reviewEvidence(
+    id: string,
+    action: "approve" | "return",
+    comment: string | null = null,
+  ) {
+    const response = await apiClient.post<ApiSuccessResponse<EvidenceFileItem>>(
+      `/evidences/${id}/${action}-review`,
+      { comment },
     );
     return response.data.data;
   },

@@ -6,10 +6,7 @@ import { getServerAuthorization } from "@/lib/server-auth";
 
 export default async function AutomaticNotificationsPage() {
   const authorization = await getServerAuthorization();
-  const canAccess = Boolean(
-    authorization?.isAdmin ||
-    authorization?.roles.some((role) => /^(sistemas?|systems?)$/i.test(role)),
-  );
+  const canAccess = Boolean(authorization?.dataScope === "ALL");
   if (!canAccess) redirect("/forbidden?missing=automatic_jobs.view");
 
   return (

@@ -5,7 +5,7 @@ import { PendingApprovalsWorkspace } from "@/modules/extension-requests/pending-
 export default async function PendingApprovalsPage() {
   const authorization = await requireAnyPermission([
     "observations.view",
-    "extension_requests.view",
+    "deadline_extensions.view",
   ]);
 
   return (
@@ -18,7 +18,7 @@ export default async function PendingApprovalsPage() {
 
       <PendingApprovalsWorkspace
         canViewExtensions={authorization.permissions.includes(
-          "extension_requests.view",
+          "deadline_extensions.view",
         )}
         canViewProgress={authorization.permissions.includes(
           "observations.view",

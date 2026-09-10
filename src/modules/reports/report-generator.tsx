@@ -15,8 +15,6 @@ import {
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
-import { QUERY_KEYS } from "@/lib/constants";
-import { configurationService } from "@/services/configuration-service";
 import { reportService, triggerDownload } from "@/services/report-service";
 import type { ReportFilters, ReportPreviewData, ReportType } from "@/types";
 import {
@@ -53,7 +51,7 @@ const TYPE_ICONS = [
 export function ReportGenerator({ canExport }: ReportGeneratorProps) {
   const [draft, setDraft] = useState<ReportFilters>(DEFAULT_FILTERS);
   const [reportName, setReportName] = useState("Reporte operativo NIBOL");
-  const [type, setType] = useState<ReportType>("OBSERVATIONS");
+  const [type, setType] = useState<ReportType>("ACTION_PLANS");
   const [submitted, setSubmitted] = useState<{
     filters: ReportFilters;
     reportName: string;
@@ -62,8 +60,8 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const optionsQuery = useQuery({
-    queryFn: configurationService.getBootstrap,
-    queryKey: QUERY_KEYS.configurationBootstrap,
+    queryFn: reportService.getOptions,
+    queryKey: ["reports", "options"],
     staleTime: 60_000,
   });
   const previewMutation = useMutation<

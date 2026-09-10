@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, RotateCcw, Send, X } from "lucide-react";
+import { ArrowLeft, Check, RotateCcw, Send } from "lucide-react";
 import Link from "next/link";
 
 import { extensionRequestService } from "@/services/extension-request-service";
@@ -26,16 +26,10 @@ export function ExtensionRequestDetail({ requestId }: { requestId: string }) {
   };
   const action = useMutation({
     mutationFn: async (
-      kind:
-        | "submit"
-        | "managerApprove"
-        | "managerReject"
-        | "auditApprove"
-        | "auditReject"
-        | "cancel",
+      kind: "submit" | "managerApprove" | "managerReject" | "cancel",
     ) => {
       const comment = kind.endsWith("Reject")
-        ? (window.prompt("Motivo del rechazo") ?? "Rechazado")
+        ? "Rechazado"
         : undefined;
       if (kind === "submit")
         return extensionRequestService.sendToManager(requestId);
@@ -43,10 +37,6 @@ export function ExtensionRequestDetail({ requestId }: { requestId: string }) {
         return extensionRequestService.managerApprove(requestId);
       if (kind === "managerReject")
         return extensionRequestService.managerReject(requestId, { comment });
-      if (kind === "auditApprove")
-        return extensionRequestService.auditApprove(requestId);
-      if (kind === "auditReject")
-        return extensionRequestService.auditReject(requestId, { comment });
       return extensionRequestService.cancel(requestId);
     },
     onError: (cause) => setError(getApiErrorMessage(cause)),
@@ -153,20 +143,9 @@ export function ExtensionRequestDetail({ requestId }: { requestId: string }) {
                 (request.managerReviewedAt ? "Revisado" : "Pendiente")}
             </p>
           </div>
-          <div className="rounded-xl border border-stone-200 p-4">
-            <p className="text-xs tracking-wider text-stone-500 uppercase">
-              Auditoría
-            </p>
-            <p className="mt-2 text-sm">
-              {request.auditComment ??
-                (request.auditReviewedAt ? "Revisado" : "Pendiente")}
-            </p>
-          </div>
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
-          {["DRAFT", "MANAGER_REJECTED", "AUDIT_REJECTED"].includes(
-            request.status,
-          ) ? (
+          {request.status === "DRAFT" ? (
             <button
               className="nibol-btn-primary px-4 py-2 text-sm"
               onClick={() => action.mutate("submit")}
@@ -192,26 +171,6 @@ export function ExtensionRequestDetail({ requestId }: { requestId: string }) {
                 type="button"
               >
                 <RotateCcw className="h-4 w-4" />
-                Rechazar
-              </button>
-            </>
-          ) : null}
-          {request.status === "SENT_TO_AUDIT" ? (
-            <>
-              <button
-                className="nibol-btn-primary px-4 py-2 text-sm"
-                onClick={() => action.mutate("auditApprove")}
-                type="button"
-              >
-                <Check className="h-4 w-4" />
-                Aprobar como Auditoría
-              </button>
-              <button
-                className="nibol-btn-secondary px-4 py-2 text-sm"
-                onClick={() => action.mutate("auditReject")}
-                type="button"
-              >
-                <X className="h-4 w-4" />
                 Rechazar
               </button>
             </>

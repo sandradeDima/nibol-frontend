@@ -8,7 +8,9 @@ export const userCreateSchema = z.object({
   password: z
     .string()
     .min(8, "La contrasena debe tener al menos 8 caracteres."),
-  roleIds: z.array(z.string()).min(1, "Seleccione al menos un rol."),
+  roleIds: z
+    .array(z.string())
+    .length(1, "Cada usuario debe tener exactamente un rol."),
 });
 
 export const userUpdateSchema = userCreateSchema

@@ -2,8 +2,9 @@
 
 import { useId, useMemo, useState } from "react";
 
-import { Check, Search, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 
+import { SearchFieldFrame } from "@/components/ui/search-field";
 import { cn } from "@/utils";
 
 type RiskOption = {
@@ -62,39 +63,38 @@ export function RiskSearchMultiSelect({
   };
 
   return (
-    <div className="relative">
-      <div
+    <div className="relative z-20">
+      <SearchFieldFrame
         className={cn(
-          "flex min-h-12 flex-wrap items-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2 transition focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/15",
+          "h-auto min-h-12 items-stretch",
           disabled && "cursor-not-allowed bg-stone-100 opacity-70",
         )}
       >
-        {selectedRisks.map((risk) => (
-          <span
-            className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900"
-            key={risk.id}
-          >
-            <span className="truncate">{risk.name}</span>
-            <button
-              aria-label={`Quitar riesgo ${risk.name}`}
-              className="rounded-full p-0.5 text-amber-700 transition hover:bg-amber-100 hover:text-amber-950"
-              disabled={disabled}
-              onClick={() => toggleRisk(risk.id)}
-              type="button"
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 px-3 py-2">
+          {selectedRisks.map((risk) => (
+            <span
+              className="inline-flex max-w-full items-center gap-1.5 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900"
+              key={risk.id}
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </span>
-        ))}
-        <div className="relative min-w-[12rem] flex-1">
-          <Search className="pointer-events-none absolute top-2.5 left-0 h-4 w-4 text-stone-400" />
+              <span className="truncate">{risk.name}</span>
+              <button
+                aria-label={`Quitar riesgo ${risk.name}`}
+                className="rounded-full p-0.5 text-amber-700 transition hover:bg-amber-100 hover:text-amber-950"
+                disabled={disabled}
+                onClick={() => toggleRisk(risk.id)}
+                type="button"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          ))}
           <input
             aria-autocomplete="list"
             aria-controls={listboxId}
             aria-expanded={open}
             aria-label="Buscar riesgos asociados"
             autoComplete="off"
-            className="w-full border-0 bg-transparent py-1 pl-6 text-sm text-stone-900 outline-none placeholder:text-stone-400"
+            className="min-w-[9rem] flex-1 border-0 bg-transparent py-1 text-sm text-stone-900 outline-none placeholder:text-stone-400"
             disabled={disabled}
             id={id}
             onBlur={() => window.setTimeout(() => setOpen(false), 120)}
@@ -113,10 +113,10 @@ export function RiskSearchMultiSelect({
             value={query}
           />
         </div>
-      </div>
+      </SearchFieldFrame>
       {open ? (
         <div
-          className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-xl border border-stone-200 bg-white p-1 shadow-xl"
+          className="absolute top-full left-0 z-50 mt-2 max-h-72 min-w-full overflow-y-auto rounded-xl border border-stone-200 bg-white p-1 shadow-xl"
           id={listboxId}
           role="listbox"
         >

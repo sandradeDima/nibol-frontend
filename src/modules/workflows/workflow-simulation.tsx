@@ -309,6 +309,8 @@ function WorkflowSimulationWorkspace({
   const [scenarioName, setScenarioName] = useState("Escenario de simulación");
   const [context, setContext] = useState<SimulationContextState>({
     areaId: null,
+    allPlansValidated: null,
+    areaPlanRequired: null,
     currentNodeKey: null,
     daysOverdue: null,
     dueDate: null,
@@ -597,7 +599,7 @@ function WorkflowSimulationWorkspace({
                 value={context.evidenceCount ?? ""}
               />
             </Field>
-            <Field label="Estado del plan de remediación">
+            <Field label="Estado del plan de acción recomendado">
               <input
                 className={inputClass}
                 onChange={(event) =>
@@ -690,6 +692,32 @@ function WorkflowSimulationWorkspace({
             />
             Evidencia presente
           </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex items-center gap-3 text-sm text-[var(--foreground-soft)]">
+              <input
+                aria-label="Requiere plan de acción del área"
+                checked={context.areaPlanRequired ?? false}
+                className="h-4 w-4 accent-[var(--primary)]"
+                onChange={(event) =>
+                  updateContext("areaPlanRequired", event.target.checked)
+                }
+                type="checkbox"
+              />
+              Requiere plan de acción del área
+            </label>
+            <label className="flex items-center gap-3 text-sm text-[var(--foreground-soft)]">
+              <input
+                aria-label="Todos los planes están validados"
+                checked={context.allPlansValidated ?? false}
+                className="h-4 w-4 accent-[var(--primary)]"
+                onChange={(event) =>
+                  updateContext("allPlansValidated", event.target.checked)
+                }
+                type="checkbox"
+              />
+              Todos los planes están validados
+            </label>
+          </div>
           <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--border)] pt-5">
             <p className="flex items-center gap-2 text-xs text-[var(--muted)]">
               <ShieldCheck className="h-4 w-4 text-[var(--primary)]" /> Contexto

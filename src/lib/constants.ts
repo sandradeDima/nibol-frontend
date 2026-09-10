@@ -57,6 +57,8 @@ export const APP_CONFIG = {
   serverApiBaseUrl,
   serverAuthBaseUrl,
   apiTimeoutMs: 10000,
+  mutationTimeoutMs: 30000,
+  uploadTimeoutMs: 120000,
 } as const;
 
 export const DEFAULT_PAGINATION = {

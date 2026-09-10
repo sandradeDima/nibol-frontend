@@ -25,10 +25,20 @@ const emptyForm = {
 };
 
 export function RemediationWorkspace({
+  canAssignRecommendedExecutor,
+  canCreateRecommended,
   canEditActionPlans,
+  canEditRecommended,
+  canSubmitRecommended,
+  canViewRecommended,
   observationId,
 }: {
+  canAssignRecommendedExecutor: boolean;
+  canCreateRecommended: boolean;
   canEditActionPlans: boolean;
+  canEditRecommended: boolean;
+  canSubmitRecommended: boolean;
+  canViewRecommended: boolean;
   observationId: string;
 }) {
   const queryClient = useQueryClient();
@@ -52,6 +62,7 @@ export function RemediationWorkspace({
     queryKey: ["action-plans", observationId],
   });
   const remediationPlans = useQuery({
+    enabled: canViewRecommended,
     queryFn: () => remediationService.listRemediationPlans(observationId),
     queryKey: [QUERY_KEYS.remediationPlans, observationId],
   });
@@ -116,17 +127,19 @@ export function RemediationWorkspace({
             forma independiente.
           </p>
         </div>
-        <button
-          className="nibol-btn-primary px-4 py-2.5 text-sm"
-          onClick={() => setShowForm((value) => !value)}
-          type="button"
-        >
-          <Plus className="h-4 w-4" />
-          Agregar plan de acción
-        </button>
+        {canEditActionPlans ? (
+          <button
+            className="nibol-btn-primary px-4 py-2.5 text-sm"
+            onClick={() => setShowForm((value) => !value)}
+            type="button"
+          >
+            <Plus className="h-4 w-4" />
+            Agregar plan de acción
+          </button>
+        ) : null}
       </div>
 
-      {showForm && data ? (
+      {showForm && canEditActionPlans && data ? (
         <form
           className="mt-6 grid gap-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-5 md:grid-cols-2"
           onSubmit={(event) => {
@@ -197,12 +210,10 @@ export function RemediationWorkspace({
               required
               type="date"
               value={form.dueDate}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  dueDate: event.target.value,
-                }))
-              }
+              onChange={(event) => {
+                const dueDate = event.currentTarget.value;
+                setForm((current) => ({ ...current, dueDate }));
+              }}
             />
           </label>
           <div className="flex items-end justify-end gap-2">
@@ -251,11 +262,15 @@ export function RemediationWorkspace({
                   {areaPlans.length === 1 ? "plan" : "planes"}
                 </span>
               </div>
-              {remediationPlans.isPending ? (
+              {canViewRecommended && remediationPlans.isPending ? (
                 <div className="mb-4 h-28 animate-pulse bg-[var(--surface-muted)]" />
-              ) : (
+              ) : canViewRecommended ? (
                 <RemediationApprovalPanel
                   area={area.area}
+                  canAssignExecutor={canAssignRecommendedExecutor}
+                  canCreate={canCreateRecommended}
+                  canEdit={canEditRecommended}
+                  canSubmit={canSubmitRecommended}
                   key={`${area.id}-${remediationPlans.data?.find((plan) => plan.area.id === area.area.id)?.updatedAt ?? "new"}`}
                   observationId={observationId}
                   onChanged={refreshRemediationPlans}
@@ -266,7 +281,7 @@ export function RemediationWorkspace({
                   }
                   users={options.data?.users ?? []}
                 />
-              )}
+              ) : null}
               {areaPlans.length ? (
                 <div className="grid gap-3 lg:grid-cols-2">
                   {areaPlans.map((plan) =>

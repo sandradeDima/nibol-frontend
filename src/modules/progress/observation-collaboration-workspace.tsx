@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { FilePicker } from "@/components/ui/file-picker";
 import { QUERY_KEYS } from "@/lib/constants";
 import { apiClient } from "@/services/api-client";
 import { progressService } from "@/services/progress-service";
@@ -23,18 +24,13 @@ import type {
   EvidenceFileItem,
   ProgressEvaluationType,
 } from "@/types";
-import { getApiErrorMessage } from "@/utils";
+import { getApiErrorMessage, getUploadErrorMessage } from "@/utils";
+import { getProgressStatusLabel } from "./presentation";
 
-const statusOptions: Array<{ label: string; value: ActionPlanStatus }> = [
-  { label: "No iniciado", value: "NOT_STARTED" },
-  { label: "Iniciado", value: "STARTED" },
-  { label: "Con avance", value: "WITH_PROGRESS" },
-  { label: "Concluido", value: "CONCLUDED" },
-];
 const contextLabels: Record<EvidenceFileItem["context"], string> = {
   ACTION_PLAN: "Plan de acción",
   CLOSURE: "Cierre",
-  FINDING: "Hallazgo",
+  FINDING: "Documentos de respaldo y evidencias",
   PROGRESS_EVALUATION: "Evaluación",
 };
 const evidenceReviewLabels: Record<EvidenceFileItem["reviewStatus"], string> = {
@@ -46,21 +42,34 @@ const evidenceReviewLabels: Record<EvidenceFileItem["reviewStatus"], string> = {
 };
 
 export function ObservationCollaborationWorkspace({
+  activeEvidenceId,
+  canReviewEvidence,
+  canReviewProgress,
+  canSubmitProgress,
+  canUploadEvidence,
   observationId,
+  section = "all",
 }: {
+  activeEvidenceId?: string | null;
+  canReviewEvidence: boolean;
+  canReviewProgress: boolean;
+  canSubmitProgress: boolean;
+  canUploadEvidence: boolean;
   observationId: string;
+  section?: "all" | "plans" | "evidence" | "history";
 }) {
+  const showPlans = section === "all" || section === "plans";
+  const showEvidence = section === "all" || section === "evidence";
+  const showHistory = section === "all" || section === "history";
   const queryClient = useQueryClient();
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [evaluation, setEvaluation] = useState<{
-    actionPlanStatus: ActionPlanStatus;
     comment: string;
-    progressPercent: number;
+    reportedProgressPercent: number;
     type: ProgressEvaluationType;
   }>({
-    actionPlanStatus: "STARTED",
     comment: "",
-    progressPercent: 0,
+    reportedProgressPercent: 0,
     type: "ADVANCE",
   });
   const [comment, setComment] = useState("");
@@ -122,12 +131,11 @@ export function ObservationCollaborationWorkspace({
       }
       return created;
     },
-    onError: (cause) => setError(getApiErrorMessage(cause)),
+    onError: (cause) => setError(getUploadErrorMessage(cause, evaluationFiles)),
     onSuccess: async () => {
       setEvaluation({
-        actionPlanStatus: "STARTED",
         comment: "",
-        progressPercent: 0,
+        reportedProgressPercent: 0,
         type: "ADVANCE",
       });
       setEvaluationFiles([]);
@@ -147,20 +155,19 @@ export function ObservationCollaborationWorkspace({
     mutationFn: ({
       action,
       id,
+      officialStatus,
     }: {
-      action: "approve" | "return" | "reject";
+      action: "approve" | "return";
       id: string;
+      officialStatus: ActionPlanStatus;
     }) =>
-      progressService.reviewProgressEvaluation(
-        id,
-        action,
-        action === "approve"
-          ? {}
-          : {
-              comment:
-                window.prompt("Comentario de revisión") ?? "Revisión requerida",
-            },
-      ),
+      progressService.reviewProgressEvaluation(id, action, {
+        comment:
+          action === "approve"
+            ? null
+            : "Revisión requerida",
+        officialStatus,
+      }),
     onError: (cause) => setError(getApiErrorMessage(cause)),
     onSuccess: async () => {
       setError(null);
@@ -187,7 +194,7 @@ export function ObservationCollaborationWorkspace({
         evidenceContext,
       );
     },
-    onError: (cause) => setError(getApiErrorMessage(cause)),
+    onError: (cause) => setError(getUploadErrorMessage(cause, files)),
     onSuccess: async () => {
       setFiles([]);
       await refresh();
@@ -195,6 +202,25 @@ export function ObservationCollaborationWorkspace({
   });
   const submitEvidence = useMutation({
     mutationFn: (id: string) => progressService.submitEvidenceForReview(id),
+    onError: (cause) => setError(getApiErrorMessage(cause)),
+    onSuccess: async () => {
+      setError(null);
+      await refresh();
+    },
+  });
+  const reviewEvidence = useMutation({
+    mutationFn: ({
+      action,
+      id,
+    }: {
+      action: "approve" | "return";
+      id: string;
+    }) =>
+      progressService.reviewEvidence(
+        id,
+        action,
+        action === "return" ? "" : null,
+      ),
     onError: (cause) => setError(getApiErrorMessage(cause)),
     onSuccess: async () => {
       setError(null);
@@ -226,18 +252,38 @@ export function ObservationCollaborationWorkspace({
     [evidence.data],
   );
 
+  useEffect(() => {
+    if (section !== "evidence" || !activeEvidenceId || !evidence.data) return;
+    document
+      .getElementById(`evidence-${activeEvidenceId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [activeEvidenceId, evidence.data, section]);
+
   return (
     <section className="nibol-panel p-6">
       <div>
         <p className="text-xs font-semibold tracking-[0.2em] text-amber-700 uppercase">
-          Seguimiento independiente
+          {showPlans && showEvidence
+            ? "Seguimiento independiente"
+            : showPlans
+              ? "Planes y avances"
+              : showEvidence
+                ? "Evidencias y documentos"
+                : "Historial y comentarios"}
         </p>
         <h3 className="mt-2 text-2xl font-semibold text-stone-950">
-          Evaluaciones, evidencia y comentarios
+          {showPlans && showEvidence
+            ? "Evaluaciones, evidencia y comentarios"
+            : showPlans
+              ? "Evaluaciones y avances por plan"
+              : showEvidence
+                ? "Documentos de respaldo y evidencias"
+                : "Comentarios del equipo"}
         </h3>
         <p className="mt-1 text-sm text-stone-500">
-          Cada avance pertenece a un único plan de acción; el progreso de la
-          observación se agrega solo desde evaluaciones aprobadas.
+          {showHistory
+            ? "Conserve aquí las conversaciones y la trazabilidad de la observación."
+            : "Cada avance pertenece a un único plan de acción; el progreso de la observación se agrega solo desde evaluaciones aprobadas."}
         </p>
       </div>
       {error ? (
@@ -249,294 +295,322 @@ export function ObservationCollaborationWorkspace({
           {error}
         </p>
       ) : null}
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1.25fr]">
-        <form
-          className="rounded-2xl border border-stone-200 bg-stone-50 p-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            createEvaluation.mutate();
-          }}
-        >
-          <h4 className="font-semibold text-stone-950">Registrar avance</h4>
-          <div className="mt-4 space-y-4">
-            <label className="space-y-2 text-sm font-semibold">
-              Plan de acción
-              <select
-                className="nibol-field"
-                required
-                value={selectedPlanId}
-                onChange={(event) => setSelectedPlanId(event.target.value)}
-              >
-                <option value="">Seleccione el plan</option>
-                {plans.data?.data.map((plan) => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.area.name} · {plan.description}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {selectedPlanId ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-stone-700">
-                {
-                  plans.data?.data.find((plan) => plan.id === selectedPlanId)
-                    ?.observation.displayCode
-                }
-                <br />
-                Área:{" "}
-                {
-                  plans.data?.data.find((plan) => plan.id === selectedPlanId)
-                    ?.area.name
-                }
-                <br />
-                Ejecutor:{" "}
-                {
-                  plans.data?.data.find((plan) => plan.id === selectedPlanId)
-                    ?.responsibleUser.name
-                }
-              </div>
-            ) : null}
-            <div className="grid grid-cols-2 gap-3">
-              <label className="space-y-2 text-sm font-semibold">
-                Avance %
-                <input
-                  className="nibol-field"
-                  max={100}
-                  min={0}
-                  required
-                  type="number"
-                  value={evaluation.progressPercent}
-                  onChange={(event) =>
-                    setEvaluation((current) => ({
-                      ...current,
-                      progressPercent: Number(event.target.value),
-                    }))
-                  }
-                />
-              </label>
-              <label className="space-y-2 text-sm font-semibold">
-                Estado
-                <select
-                  className="nibol-field"
-                  value={evaluation.actionPlanStatus}
-                  onChange={(event) =>
-                    setEvaluation((current) => ({
-                      ...current,
-                      actionPlanStatus: event.target.value as ActionPlanStatus,
-                    }))
-                  }
-                >
-                  {statusOptions.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <label className="space-y-2 text-sm font-semibold">
-              Tipo
-              <select
-                className="nibol-field"
-                value={evaluation.type}
-                onChange={(event) =>
-                  setEvaluation((current) => ({
-                    ...current,
-                    type: event.target.value as ProgressEvaluationType,
-                  }))
-                }
-              >
-                <option value="ADVANCE">Avance</option>
-                <option value="CORRECTION">Corrección</option>
-                <option value="FINALIZATION">Finalización</option>
-              </select>
-            </label>
-            <label className="space-y-2 text-sm font-semibold">
-              Comentario
-              <textarea
-                className="nibol-field min-h-24 resize-y py-3"
-                required
-                value={evaluation.comment}
-                onChange={(event) =>
-                  setEvaluation((current) => ({
-                    ...current,
-                    comment: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="space-y-2 text-sm font-semibold">
-              Evidencia de la evaluación
-              <input
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                className="nibol-field py-2"
-                multiple
-                type="file"
-                onChange={(event) =>
-                  setEvaluationFiles(Array.from(event.target.files ?? []))
-                }
-              />
-              <span className="block text-xs font-normal text-stone-500">
-                Los archivos quedarán vinculados únicamente a esta evaluación.
-              </span>
-            </label>
-            <button
-              className="nibol-btn-primary w-full justify-center px-4 py-2.5 text-sm"
-              disabled={createEvaluation.isPending}
-              type="submit"
+      {showPlans ? (
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1.25fr]">
+          {canSubmitProgress ? (
+            <form
+              className="rounded-2xl border border-stone-200 bg-stone-50 p-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                createEvaluation.mutate();
+              }}
             >
-              <ShieldCheck className="h-4 w-4" />
-              Guardar evaluación
-            </button>
-          </div>
-        </form>
-        <div>
-          <h4 className="font-semibold text-stone-950">Historial por plan</h4>
-          <div className="mt-4 space-y-3">
-            {evaluations.data?.data.length ? (
-              evaluations.data.data.map((item) => (
-                <article
-                  className="rounded-2xl border border-stone-200 p-5"
-                  key={item.id}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">
-                        {item.actionPlan.area.name} · Plan de acción
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold">
-                        {item.progressPercent}%
-                      </p>
-                      <p className="mt-1 text-sm text-stone-600">
-                        {item.submittedByUser.name} ·{" "}
-                        {new Date(item.submittedAt).toLocaleDateString("es-BO")}
-                      </p>
-                    </div>
-                    <span className="nibol-badge">
-                      {item.reviewStatus.replaceAll("_", " ")}
-                    </span>
+              <h4 className="font-semibold text-stone-950">Registrar avance</h4>
+              <div className="mt-4 space-y-4">
+                <label className="space-y-2 text-sm font-semibold">
+                  Plan de acción
+                  <select
+                    className="nibol-field"
+                    required
+                    value={selectedPlanId}
+                    onChange={(event) => setSelectedPlanId(event.target.value)}
+                  >
+                    <option value="">Seleccione el plan</option>
+                    {plans.data?.data.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.area.name} · {plan.description}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {selectedPlanId ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-stone-700">
+                    {
+                      plans.data?.data.find(
+                        (plan) => plan.id === selectedPlanId,
+                      )?.observation.displayCode
+                    }
+                    <br />
+                    Área:{" "}
+                    {
+                      plans.data?.data.find(
+                        (plan) => plan.id === selectedPlanId,
+                      )?.area.name
+                    }
+                    <br />
+                    Ejecutor:{" "}
+                    {
+                      plans.data?.data.find(
+                        (plan) => plan.id === selectedPlanId,
+                      )?.responsibleUser.name
+                    }
                   </div>
-                  <p className="mt-4 text-sm leading-6 text-stone-700">
-                    {item.comment}
-                  </p>
-                  {item.reviewComment ? (
-                    <p className="mt-3 rounded-lg bg-stone-50 p-3 text-sm text-stone-600">
-                      Auditoría: {item.reviewComment}
+                ) : null}
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="space-y-2 text-sm font-semibold">
+                    Avance %
+                    <input
+                      className="nibol-field"
+                      max={100}
+                      min={0}
+                      required
+                      type="number"
+                      value={evaluation.reportedProgressPercent}
+                      onChange={(event) =>
+                        setEvaluation((current) => ({
+                          ...current,
+                          reportedProgressPercent: Number(event.target.value),
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+                <label className="space-y-2 text-sm font-semibold">
+                  Tipo de actualización
+                  <select
+                    className="nibol-field"
+                    value={evaluation.type}
+                    onChange={(event) =>
+                      setEvaluation((current) => ({
+                        ...current,
+                        type: event.target.value as ProgressEvaluationType,
+                      }))
+                    }
+                  >
+                    <option value="ADVANCE">Avance</option>
+                    <option value="FINALIZATION">Finalización</option>
+                  </select>
+                </label>
+                <label className="space-y-2 text-sm font-semibold">
+                  Comentario
+                  <textarea
+                    className="nibol-field min-h-24 resize-y py-3"
+                    required
+                    value={evaluation.comment}
+                    onChange={(event) =>
+                      setEvaluation((current) => ({
+                        ...current,
+                        comment: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <div className="space-y-2 text-sm font-semibold">
+                  Evidencia de la evaluación
+                  <FilePicker
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                    files={evaluationFiles}
+                    id="progress-evaluation-evidence"
+                    onChange={setEvaluationFiles}
+                    onRemove={(file) =>
+                      setEvaluationFiles((current) =>
+                        current.filter((candidate) => candidate !== file),
+                      )
+                    }
+                  />
+                  <span className="block text-xs font-normal text-stone-500">
+                    Los archivos quedarán vinculados únicamente a esta
+                    evaluación.
+                  </span>
+                </div>
+                <button
+                  className="nibol-btn-primary w-full justify-center px-4 py-2.5 text-sm"
+                  disabled={createEvaluation.isPending}
+                  type="submit"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Guardar evaluación
+                </button>
+              </div>
+            </form>
+          ) : null}
+          <div>
+            <h4 className="font-semibold text-stone-950">Historial por plan</h4>
+            <div className="mt-4 space-y-3">
+              {evaluations.data?.data.length ? (
+                evaluations.data.data.map((item) => (
+                  <article
+                    className="rounded-2xl border border-stone-200 p-5"
+                    key={item.id}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">
+                          {item.actionPlan.area.name} · Plan de acción
+                        </p>
+                        <p className="mt-2 text-2xl font-semibold">
+                          {item.reportedProgressPercent ?? 0}% reportado
+                        </p>
+                        <p className="mt-1 text-sm text-stone-600">
+                          {item.submittedByUser.name} ·{" "}
+                          {new Date(item.submittedAt).toLocaleDateString(
+                            "es-BO",
+                          )}
+                        </p>
+                      </div>
+                      <span className="nibol-badge">
+                        {getProgressStatusLabel(item.reviewStatus)}
+                      </span>
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-stone-700">
+                      {item.comment}
                     </p>
-                  ) : null}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {["DRAFT", "RETURNED"].includes(item.reviewStatus) ? (
-                      <button
-                        className="nibol-btn-secondary px-3 py-2 text-xs"
-                        onClick={() => submit.mutate(item.id)}
-                        type="button"
-                      >
-                        <Send className="h-3.5 w-3.5" />
-                        Enviar a Auditoría
-                      </button>
+                    {item.reviewComment ? (
+                      <p className="mt-3 rounded-lg bg-stone-50 p-3 text-sm text-stone-600">
+                        Auditoría: {item.reviewComment}
+                      </p>
                     ) : null}
-                    {item.reviewStatus === "SENT_TO_AUDIT" ? (
-                      <>
-                        <button
-                          className="nibol-btn-primary px-3 py-2 text-xs"
-                          disabled={review.isPending}
-                          onClick={() =>
-                            review.mutate({ action: "approve", id: item.id })
-                          }
-                          type="button"
-                        >
-                          <Check className="h-3.5 w-3.5" />
-                          Aprobar
-                        </button>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {canSubmitProgress &&
+                      ["DRAFT", "RETURNED"].includes(item.reviewStatus) ? (
                         <button
                           className="nibol-btn-secondary px-3 py-2 text-xs"
-                          onClick={() =>
-                            review.mutate({ action: "return", id: item.id })
-                          }
+                          onClick={() => submit.mutate(item.id)}
                           type="button"
                         >
-                          Devolver
+                          <Send className="h-3.5 w-3.5" />
+                          Enviar a Auditoría
                         </button>
-                        <button
-                          className="nibol-btn-secondary px-3 py-2 text-xs text-rose-700"
-                          onClick={() =>
-                            review.mutate({ action: "reject", id: item.id })
-                          }
-                          type="button"
-                        >
-                          Rechazar
-                        </button>
-                      </>
-                    ) : null}
-                  </div>
-                </article>
-              ))
-            ) : (
-              <div className="rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-500">
-                Todavía no hay evaluaciones registradas.
-              </div>
-            )}
+                      ) : null}
+                      {item.reviewStatus === "SENT_TO_AUDIT" &&
+                      canReviewProgress ? (
+                        <>
+                          <button
+                            className="nibol-btn-primary px-3 py-2 text-xs"
+                            disabled={review.isPending}
+                            onClick={() =>
+                              review.mutate({
+                                action: "approve",
+                                id: item.id,
+                                officialStatus: item.officialStatus,
+                              })
+                            }
+                            type="button"
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                            Aprobar
+                          </button>
+                          <button
+                            className="nibol-btn-secondary px-3 py-2 text-xs"
+                            onClick={() =>
+                              review.mutate({
+                                action: "return",
+                                id: item.id,
+                                officialStatus: item.officialStatus,
+                              })
+                            }
+                            type="button"
+                          >
+                            Devolver
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-500">
+                  Todavía no hay evaluaciones registradas.
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="mt-8 grid gap-6 xl:grid-cols-2">
-        <section>
-          <h4 className="flex items-center gap-2 font-semibold">
-            <FileUp className="h-4 w-4 text-amber-700" />
-            Evidencia por contexto
-          </h4>
-          <form
-            className="mt-4 flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 sm:flex-row"
-            onSubmit={(event) => {
-              event.preventDefault();
-              upload.mutate();
-            }}
-          >
-            <select
-              className="nibol-field sm:max-w-44"
-              value={evidenceContext}
-              onChange={(event) =>
-                setEvidenceContext(
-                  event.target.value as EvidenceFileItem["context"],
-                )
-              }
-            >
-              {Object.entries(contextLabels)
-                .filter(([value]) => value !== "PROGRESS_EVALUATION")
-                .map(([value, label]) => (
-                  <option key={value} value={value}>
+      ) : null}
+      {showEvidence ? (
+        <div className="mt-8">
+          <section>
+            <h4 className="flex items-center gap-2 font-semibold">
+              <FileUp className="h-4 w-4 text-amber-700" />
+              Documentos de respaldo y evidencias
+            </h4>
+            {canUploadEvidence ? (
+              <form
+                className="mt-4 flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 sm:flex-row"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  upload.mutate();
+                }}
+              >
+                <select
+                  className="nibol-field sm:max-w-44"
+                  value={evidenceContext}
+                  onChange={(event) =>
+                    setEvidenceContext(
+                      event.target.value as EvidenceFileItem["context"],
+                    )
+                  }
+                >
+                  {Object.entries(contextLabels)
+                    .filter(([value]) => value !== "PROGRESS_EVALUATION")
+                    .map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                </select>
+                {evidenceContext === "ACTION_PLAN" ? (
+                  <select
+                    className="nibol-field sm:max-w-64"
+                    required
+                    value={selectedPlanId}
+                    onChange={(event) => setSelectedPlanId(event.target.value)}
+                  >
+                    <option value="">Seleccione el plan</option>
+                    {plans.data?.data.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.area.name} · {plan.description}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+                <FilePicker
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                  files={files}
+                  id="observation-evidence"
+                  onChange={(selected) =>
+                    setFiles((current) => [
+                      ...current,
+                      ...selected.filter(
+                        (file) =>
+                          !current.some(
+                            (existing) =>
+                              existing.name === file.name &&
+                              existing.size === file.size &&
+                              existing.lastModified === file.lastModified,
+                          ),
+                      ),
+                    ])
+                  }
+                  onRemove={(file) =>
+                    setFiles((current) =>
+                      current.filter((candidate) => candidate !== file),
+                    )
+                  }
+                  required
+                />
+                <button
+                  className="nibol-btn-primary px-4 py-2 text-sm"
+                  disabled={upload.isPending}
+                  type="submit"
+                >
+                  Subir
+                </button>
+              </form>
+            ) : null}
+            <div className="mt-4 space-y-4">
+              {Object.entries(contextLabels).map(([context, label]) => (
+                <div key={context}>
+                  <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
                     {label}
-                  </option>
-                ))}
-            </select>
-            <input
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-              className="nibol-field py-2"
-              multiple
-              required
-              type="file"
-              onChange={(event) =>
-                setFiles(Array.from(event.target.files ?? []))
-              }
-            />
-            <button
-              className="nibol-btn-primary px-4 py-2 text-sm"
-              disabled={upload.isPending}
-              type="submit"
-            >
-              Subir
-            </button>
-          </form>
-          <div className="mt-4 space-y-4">
-            {Object.entries(contextLabels).map(([context, label]) => (
-              <div key={context}>
-                <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
-                  {label}
-                </p>
-                <div className="mt-2 space-y-2">
-                  {groupedEvidence[context as EvidenceFileItem["context"]].map(
-                    (file) => (
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {groupedEvidence[
+                      context as EvidenceFileItem["context"]
+                    ].map((file) => (
                       <article
-                        className="border border-stone-200 bg-white p-3"
+                        className={`border bg-white p-3 ${activeEvidenceId === file.id ? "border-amber-500 ring-2 ring-amber-200" : "border-stone-200"}`}
+                        id={`evidence-${file.id}`}
                         key={file.id}
                       >
                         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -551,9 +625,19 @@ export function ObservationCollaborationWorkspace({
                               {Math.ceil(file.sizeBytes / 1024)} KB ·{" "}
                               {evidenceReviewLabels[file.reviewStatus]}
                             </p>
+                            <p className="mt-1 text-xs text-stone-500">
+                              Cargado por{" "}
+                              {file.uploadedByUser?.name ?? "Usuario"} ·{" "}
+                              {new Date(file.createdAt).toLocaleString("es-BO")}
+                            </p>
                             {file.observationArea ? (
                               <p className="mt-1 text-xs font-medium text-amber-800">
                                 Área: {file.observationArea.name}
+                              </p>
+                            ) : null}
+                            {file.actionPlanTitle ? (
+                              <p className="mt-1 text-xs font-medium text-stone-600">
+                                Plan: {file.actionPlanTitle}
                               </p>
                             ) : null}
                             {file.reviewComment ? (
@@ -563,7 +647,8 @@ export function ObservationCollaborationWorkspace({
                             ) : null}
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
-                            {["DRAFT", "RETURNED"].includes(
+                            {canUploadEvidence &&
+                            ["DRAFT", "RETURNED"].includes(
                               file.reviewStatus,
                             ) ? (
                               <button
@@ -575,6 +660,39 @@ export function ObservationCollaborationWorkspace({
                                 <Send className="h-3.5 w-3.5" />
                                 Enviar a revisión
                               </button>
+                            ) : null}
+                            {canReviewEvidence &&
+                            file.reviewStatus === "PENDING" &&
+                            !file.workflowInstanceId ? (
+                              <>
+                                <button
+                                  className="nibol-btn-primary px-3 py-2 text-xs"
+                                  disabled={reviewEvidence.isPending}
+                                  onClick={() =>
+                                    reviewEvidence.mutate({
+                                      action: "approve",
+                                      id: file.id,
+                                    })
+                                  }
+                                  type="button"
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                  Aprobar
+                                </button>
+                                <button
+                                  className="nibol-btn-secondary px-3 py-2 text-xs"
+                                  disabled={reviewEvidence.isPending}
+                                  onClick={() =>
+                                    reviewEvidence.mutate({
+                                      action: "return",
+                                      id: file.id,
+                                    })
+                                  }
+                                  type="button"
+                                >
+                                  Devolver
+                                </button>
+                              </>
                             ) : null}
                             {file.workflowInstanceId ? (
                               <Link
@@ -588,14 +706,16 @@ export function ObservationCollaborationWorkspace({
                           </div>
                         </div>
                       </article>
-                    ),
-                  )}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
-        <section>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
+      {showHistory ? (
+        <section className="mt-8">
           <h4 className="flex items-center gap-2 font-semibold">
             <MessageSquare className="h-4 w-4 text-amber-700" />
             Comentarios
@@ -642,7 +762,7 @@ export function ObservationCollaborationWorkspace({
             ))}
           </div>
         </section>
-      </div>
+      ) : null}
     </section>
   );
 }

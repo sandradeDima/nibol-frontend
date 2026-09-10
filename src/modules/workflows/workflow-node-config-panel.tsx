@@ -22,6 +22,7 @@ import type {
   SlaNodeConfiguration,
   StageNodeConfiguration,
   StartNodeConfiguration,
+  SubflowNodeConfiguration,
   WorkflowAssignmentStrategy,
   WorkflowConditionField,
   WorkflowConditionOperator,
@@ -75,6 +76,8 @@ const CONDITION_FIELDS: WorkflowConditionField[] = [
   "daysOverdue",
   "hasEvidence",
   "evidenceCount",
+  "areaPlanRequired",
+  "allPlansValidated",
   "remediationPlanStatus",
   "requestType",
   "requestedExtensionDays",
@@ -726,6 +729,37 @@ function StartFields({
           onChange={(value) => onChange("activationNote", value || null)}
           value={configuration.activationNote}
         />
+      </Field>
+    </Section>
+  );
+}
+
+function SubflowFields({
+  configuration,
+  disabled,
+  onChange,
+  options,
+}: {
+  configuration: SubflowNodeConfiguration;
+  disabled: boolean;
+  onChange: (key: string, value: unknown) => void;
+  options: WorkflowDesignerOptions | undefined;
+}) {
+  return (
+    <Section title="Flujo referenciado">
+      <Field label="Proceso" required>
+        <SelectInput
+          disabled={disabled}
+          onChange={(value) => onChange("referencedProcessType", value)}
+          value={configuration.referencedProcessType}
+        >
+          <option value="">Seleccione un proceso</option>
+          {options?.processes.map((process) => (
+            <option key={process.key} value={process.key}>
+              {process.name}
+            </option>
+          ))}
+        </SelectInput>
       </Field>
     </Section>
   );
@@ -1443,6 +1477,14 @@ function ConfigurationBody({
       ) : null}
       {configuration.nodeType === "APPROVAL" ? (
         <ApprovalFields
+          configuration={configuration}
+          disabled={disabled}
+          onChange={onChange}
+          options={options}
+        />
+      ) : null}
+      {configuration.nodeType === "SUBFLOW" ? (
+        <SubflowFields
           configuration={configuration}
           disabled={disabled}
           onChange={onChange}

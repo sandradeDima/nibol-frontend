@@ -8,6 +8,7 @@ import type {
   SlaNodeConfiguration,
   StageNodeConfiguration,
   StartNodeConfiguration,
+  SubflowNodeConfiguration,
   WorkflowAssignmentStrategy,
   WorkflowConditionField,
   WorkflowConditionOperator,
@@ -26,6 +27,7 @@ export const NODE_TYPE_LABELS: Record<WorkflowDesignerNodeType, string> = {
   SLA: "SLA",
   STAGE: "Etapa",
   START: "Inicio",
+  SUBFLOW: "Subflujo",
 };
 
 export const NODE_TYPE_DEFAULT_NAMES: Record<WorkflowDesignerNodeType, string> =
@@ -39,6 +41,7 @@ export const NODE_TYPE_DEFAULT_NAMES: Record<WorkflowDesignerNodeType, string> =
     SLA: "Control de SLA",
     STAGE: "Nueva etapa",
     START: "Inicio",
+    SUBFLOW: "Nuevo subflujo",
   };
 
 export const ASSIGNMENT_STRATEGY_LABELS: Record<
@@ -60,11 +63,13 @@ export const CONDITION_FIELD_LABELS: Record<WorkflowConditionField, string> = {
   daysOverdue: "Días vencidos",
   dueDate: "Fecha límite",
   evidenceCount: "Cantidad de evidencias",
+  allPlansValidated: "Todos los planes están validados",
+  areaPlanRequired: "Requiere plan de acción del área",
   hasEvidence: "Evidencia presente",
   observationStatus: "Estado de observación",
   previousDecision: "Decisión anterior",
   processType: "Tipo de proceso",
-  remediationPlanStatus: "Estado del plan de remediación",
+  remediationPlanStatus: "Estado del plan de acción recomendado",
   requestType: "Tipo de solicitud",
   requestedExtensionDays: "Días de ampliación solicitados",
   responsibleUserId: "Usuario responsable",
@@ -98,6 +103,7 @@ export const PALETTE_ITEMS: Array<{
   { description: "Punto de entrada del proceso.", nodeType: "START" },
   { description: "Trabajo operativo con responsable.", nodeType: "STAGE" },
   { description: "Decisión de una persona o rol.", nodeType: "APPROVAL" },
+  { description: "Invoca otro flujo publicado.", nodeType: "SUBFLOW" },
   { description: "Salida de rechazo o corrección.", nodeType: "REJECTION" },
   { description: "Evalúa reglas controladas.", nodeType: "CONDITION" },
   { description: "Control de tiempos del flujo.", nodeType: "SLA" },
@@ -178,6 +184,12 @@ export const createDefaultNodeConfiguration = (
         stateAfterRejection: null,
         userId: null,
       } satisfies ApprovalNodeConfiguration;
+    case "SUBFLOW":
+      return {
+        ...base,
+        nodeType,
+        referencedProcessType: "",
+      } satisfies SubflowNodeConfiguration;
     case "REJECTION":
       return {
         ...base,
@@ -289,6 +301,8 @@ export const getNodeMetadata = (
       return configuration.behavior.replaceAll("_", " ").toLowerCase();
     case "START":
       return configuration.triggerProcess;
+    case "SUBFLOW":
+      return configuration.referencedProcessType || "Sin proceso referenciado";
   }
 };
 
@@ -309,6 +323,13 @@ export const validateConfiguration = (
     configuration.processType !== processType
   ) {
     errors.push("El proceso debe coincidir con el workflow.");
+  }
+
+  if (
+    configuration.nodeType === "SUBFLOW" &&
+    !configuration.referencedProcessType.trim()
+  ) {
+    errors.push("Seleccione el proceso del subflujo.");
   }
 
   if (isAssignmentConfiguration(configuration)) {

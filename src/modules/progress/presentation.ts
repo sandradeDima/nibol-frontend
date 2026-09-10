@@ -50,9 +50,7 @@ export const getProgressTypeLabel = (type: ProgressEvaluationType) => {
     case "ADVANCE":
       return "Avance";
     case "FINALIZATION":
-      return "Finalizacion";
-    case "CORRECTION":
-      return "Correccion";
+      return "Finalización";
   }
 };
 
@@ -68,8 +66,6 @@ export const getProgressStatusLabel = (
       return "Aprobado";
     case "RETURNED":
       return "Devuelto";
-    case "REJECTED":
-      return "Rechazado";
   }
 };
 
@@ -81,8 +77,6 @@ export const getProgressStatusClasses = (
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
     case "RETURNED":
       return "border-amber-200 bg-amber-50 text-amber-700";
-    case "REJECTED":
-      return "border-rose-200 bg-rose-50 text-rose-700";
     case "SENT_TO_AUDIT":
       return "border-sky-200 bg-sky-50 text-sky-700";
     case "DRAFT":
@@ -95,8 +89,6 @@ export const getProgressTypeClasses = (type: ProgressEvaluationType) => {
   switch (type) {
     case "FINALIZATION":
       return "border-[color:var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)]";
-    case "CORRECTION":
-      return "border-amber-200 bg-amber-50 text-amber-700";
     case "ADVANCE":
     default:
       return "border-stone-200 bg-white text-stone-700";
@@ -131,8 +123,6 @@ export const getReviewActionLabel = (action: ProgressReviewAction) => {
   switch (action) {
     case "APPROVED":
       return "Aprobado";
-    case "REJECTED":
-      return "Rechazado";
     case "RETURNED":
       return "Devuelto";
     case "SENT":

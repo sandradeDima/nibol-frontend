@@ -1,5 +1,8 @@
 export type WorkflowDefinitionStatus =
-  "DRAFT" | "PUBLISHED" | "INACTIVE" | "ARCHIVED";
+  | "DRAFT"
+  | "PUBLISHED"
+  | "INACTIVE"
+  | "ARCHIVED";
 
 export type WorkflowVersionStatus = WorkflowDefinitionStatus;
 
@@ -180,6 +183,7 @@ export type WorkflowDesignerNodeType =
   | "START"
   | "STAGE"
   | "APPROVAL"
+  | "SUBFLOW"
   | "REJECTION"
   | "CONDITION"
   | "SLA"
@@ -207,6 +211,8 @@ export type WorkflowConditionField =
   | "daysOverdue"
   | "hasEvidence"
   | "evidenceCount"
+  | "areaPlanRequired"
+  | "allPlansValidated"
   | "remediationPlanStatus"
   | "requestType"
   | "requestedExtensionDays"
@@ -229,7 +235,11 @@ export type WorkflowConditionOperator =
   | "DUE_WITHIN";
 
 export type WorkflowConditionValue =
-  string | number | boolean | Array<string | number | boolean> | null;
+  | string
+  | number
+  | boolean
+  | Array<string | number | boolean>
+  | null;
 
 export type WorkflowConditionRule = {
   field: WorkflowConditionField;
@@ -244,7 +254,10 @@ export type WorkflowSlaInline = {
   escalationAreaId?: string | null;
   escalationEnabled: boolean;
   escalationMode?:
-    "NOTIFY_ONLY" | "ADD_VISIBILITY" | "REASSIGN" | "ALTERNATE_ROUTE";
+    | "NOTIFY_ONLY"
+    | "ADD_VISIBILITY"
+    | "REASSIGN"
+    | "ALTERNATE_ROUTE";
   escalationRoleId?: string | null;
   escalationStrategy?: "SUPERVISOR" | "AREA_MANAGER" | "FIXED_USER" | "ROLE";
   escalationThreshold: number | null;
@@ -310,6 +323,11 @@ export type ApprovalNodeConfiguration =
     userId: string | null;
   };
 
+export type SubflowNodeConfiguration =
+  WorkflowNodeConfigurationBase<"SUBFLOW"> & {
+    referencedProcessType: string;
+  };
+
 export type RejectionNodeConfiguration =
   WorkflowNodeConfigurationBase<"REJECTION"> & {
     behavior: "FINAL" | "RETURN_TO_STAGE" | "REQUEST_CORRECTION" | "KEEP_STATE";
@@ -330,7 +348,11 @@ export type ConditionNodeConfiguration =
 
 export type SlaNodeConfiguration = WorkflowNodeConfigurationBase<"SLA"> & {
   actionOnBreach:
-    "NOTIFY" | "ESCALATE" | "REASSIGN" | "MARK_OVERDUE" | "ALTERNATE_ROUTE";
+    | "NOTIFY"
+    | "ESCALATE"
+    | "REASSIGN"
+    | "MARK_OVERDUE"
+    | "ALTERNATE_ROUTE";
   duration: number;
   escalationThreshold: number | null;
   reminderThreshold: number | null;
@@ -372,7 +394,12 @@ export type NotificationNodeConfiguration =
 export type EndNodeConfiguration = WorkflowNodeConfigurationBase<"END"> & {
   completionMessage: string | null;
   finalResult:
-    "APPROVED" | "REJECTED" | "CLOSED" | "RETURNED" | "CANCELLED" | "EXPIRED";
+    | "APPROVED"
+    | "REJECTED"
+    | "CLOSED"
+    | "RETURNED"
+    | "CANCELLED"
+    | "EXPIRED";
   finalWorkflowStatus: string;
   notifyParticipants: boolean;
   relatedRecordTargetState: string | null;
@@ -382,6 +409,7 @@ export type WorkflowDesignerNodeConfiguration =
   | StartNodeConfiguration
   | StageNodeConfiguration
   | ApprovalNodeConfiguration
+  | SubflowNodeConfiguration
   | RejectionNodeConfiguration
   | ConditionNodeConfiguration
   | SlaNodeConfiguration
@@ -458,6 +486,7 @@ export interface WorkflowDesignerOptions {
     requiresValue: boolean;
   }>;
   notificationTemplates: Array<{ key: string; name: string }>;
+  processes: Array<{ key: string; name: string }>;
   roles: Array<{ description: string | null; id: string; name: string }>;
   users: WorkflowUserSummary[];
 }
@@ -530,6 +559,8 @@ export interface WorkflowSimulationContext {
   daysOverdue?: number | null;
   dueDate?: string | null;
   evidenceCount?: number | null;
+  areaPlanRequired?: boolean | null;
+  allPlansValidated?: boolean | null;
   hasEvidence?: boolean | null;
   observationStatus?: string | null;
   previousDecision?: string | null;

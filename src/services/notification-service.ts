@@ -5,6 +5,11 @@ import type {
   NotificationListResult,
   AppNotification,
   AutomaticNotificationRule,
+  DeadlineReminderConfig,
+  DeadlineReminderPolicy,
+  DeadlineReminderPreview,
+  DeadlineReminderRole,
+  DeadlineReminderRunSummary,
   ListNotificationsParams,
   PaginatedApiSuccessResponse,
   ScheduledJobExecution,
@@ -105,6 +110,52 @@ export const notificationService = {
       ApiSuccessResponse<AutomaticNotificationRule[]>
     >("/automatic-jobs/rules");
     return response.data.data;
+  },
+
+  async getDeadlineReminderConfig(): Promise<DeadlineReminderConfig> {
+    const response = await apiClient.get<
+      ApiSuccessResponse<DeadlineReminderConfig>
+    >("/automatic-jobs/deadline-reminders/config");
+    return response.data.data;
+  },
+
+  async updateDeadlineReminderPolicy(
+    role: DeadlineReminderRole,
+    input: Omit<DeadlineReminderPolicy, "createdAt" | "role">,
+  ): Promise<DeadlineReminderPolicy> {
+    const response = await apiClient.patch<
+      ApiSuccessResponse<DeadlineReminderPolicy>
+    >(`/automatic-jobs/deadline-reminders/policies/${role}`, input);
+    return response.data.data;
+  },
+
+  async previewDeadlineReminders(input: {
+    cutoffDateKey?: string;
+    role: DeadlineReminderRole;
+  }): Promise<DeadlineReminderPreview> {
+    const response = await apiClient.post<
+      ApiSuccessResponse<DeadlineReminderPreview>
+    >("/automatic-jobs/deadline-reminders/preview", input);
+    return response.data.data;
+  },
+
+  async runDeadlineReminders(input: {
+    cutoffDateKey?: string;
+    role?: DeadlineReminderRole;
+  }): Promise<DeadlineReminderRunSummary> {
+    const response = await apiClient.post<
+      ApiSuccessResponse<DeadlineReminderRunSummary>
+    >("/automatic-jobs/deadline-reminders/run", input);
+    return response.data.data;
+  },
+
+  async listDeadlineReminderExecutions(
+    params: { page?: number; perPage?: number } = {},
+  ) {
+    const response = await apiClient.get<
+      PaginatedApiSuccessResponse<ScheduledJobExecution[]>
+    >("/automatic-jobs/deadline-reminders/executions", { params });
+    return { data: response.data.data, pagination: response.data.pagination };
   },
 
   async updateAutomaticRule(

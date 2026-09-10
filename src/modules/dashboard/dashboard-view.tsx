@@ -2,7 +2,6 @@ import type { CSSProperties, ReactNode } from "react";
 
 import Link from "next/link";
 import {
-  AlertTriangle,
   BadgeCheck,
   CalendarClock,
   ClipboardList,
@@ -48,23 +47,6 @@ const formatDateTime = (value: string): string => {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
-};
-
-const startOfDay = (value: Date): Date => {
-  return new Date(value.getFullYear(), value.getMonth(), value.getDate());
-};
-
-const addDays = (value: Date, days: number): Date => {
-  const next = new Date(value);
-  next.setDate(next.getDate() + days);
-  return next;
-};
-
-const formatDateFilter = (value: Date): string => {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 };
 
 const getSegmentColor = (item: DashboardDistributionItem): string => {
@@ -541,7 +523,7 @@ function TableShell({
   title: string;
 }) {
   return (
-    <DashboardSurface className="space-y-4 px-0 py-0">
+    <DashboardSurface className="min-w-0 space-y-4 px-0 py-0">
       <div className="px-5 pt-5">
         <DashboardPanelHeader description={description} title={title} />
       </div>
@@ -658,8 +640,11 @@ function ActionPlansTable({ rows }: { rows: DashboardActionPlanRow[] }) {
             <th className="px-5 py-3">Plan de acción</th>
             <th className="px-5 py-3">Observación</th>
             <th className="px-5 py-3">Ejecutor</th>
-            <th className="px-5 py-3">Fecha límite</th>
-            <th className="px-5 py-3">Estado</th>
+            <th className="px-5 py-3">Avance oficial</th>
+            <th className="px-5 py-3">Fecha efectiva</th>
+            <th className="px-5 py-3">Estado de avance</th>
+            <th className="px-5 py-3">Estado de plazo</th>
+            <th className="px-5 py-3">Reprogramado</th>
           </tr>
         </thead>
         <tbody>
@@ -694,11 +679,12 @@ function ActionPlansTable({ rows }: { rows: DashboardActionPlanRow[] }) {
               <td className="px-5 py-4 text-sm text-[var(--foreground-soft)]">
                 {row.responsibleUser?.name ?? "Sin responsable"}
               </td>
-              <td className="px-5 py-4 text-sm">
-                <span
-                  className={cn(row.isOverdue && "font-semibold text-rose-700")}
-                >
-                  {formatObservationDate(row.dueDate)}
+              <td className="px-5 py-4 text-sm font-semibold">
+                {row.officialProgressPercent}%
+              </td>
+              <td className="px-5 py-4">
+                <span className="font-semibold">
+                  {formatObservationDate(row.effectiveDueDate)}
                 </span>
               </td>
               <td className="px-5 py-4">
@@ -710,6 +696,21 @@ function ActionPlansTable({ rows }: { rows: DashboardActionPlanRow[] }) {
                 >
                   {row.status.name}
                 </span>
+              </td>
+              <td className="px-5 py-4">
+                <span
+                  className={cn(
+                    "inline-flex items-center border px-3 py-1 text-xs font-semibold tracking-[0.14em] uppercase",
+                    row.deadlineStatus === "VENCIDO"
+                      ? "border-rose-200 bg-rose-50 text-rose-800"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-800",
+                  )}
+                >
+                  {row.deadlineStatus === "VENCIDO" ? "Vencido" : "Vigente"}
+                </span>
+              </td>
+              <td className="px-5 py-4 text-sm text-[var(--foreground-soft)]">
+                {row.reprogrammed ? "Sí" : "No"}
               </td>
             </tr>
           ))}
@@ -841,120 +842,58 @@ function ActivityTable({ rows }: { rows: DashboardActivityRow[] }) {
   );
 }
 
-const buildAuditMetricCards = (
-  data: AuditDashboardData,
-  referenceDate: Date,
+const buildActionPlanMetricCards = (
+  reporting: AuditDashboardData["actionPlanReporting"],
 ) => {
-  const dueThreshold = addDays(
-    startOfDay(referenceDate),
-    data.reminderDaysBeforeDue,
-  );
-
   return [
     {
-      description:
-        "Observaciones registradas dentro del universo corporativo visible.",
-      href: "/observaciones",
+      description: "Planes de acción dentro del alcance visible.",
       icon: <ClipboardList className="h-5 w-5" />,
-      label: "Total observaciones",
-      value: String(data.summary.totalObservations),
+      label: "Total de planes",
+      value: String(reporting.summary.total),
     },
     {
-      description:
-        "Observaciones activas que aún no se encuentran en estado final.",
-      href: "/observaciones",
+      description: "Planes sin avance oficial aprobado.",
       icon: <FolderKanban className="h-5 w-5" />,
-      label: "Abiertas",
-      value: String(data.summary.openObservations),
+      label: "No iniciados",
+      value: String(reporting.summary.noIniciado),
     },
     {
-      description:
-        "Observaciones fuera de plazo según fecha límite y estado vigente.",
-      href: "/observaciones?filter.overdue=true",
-      icon: <AlertTriangle className="h-5 w-5" />,
-      label: "Vencidas",
-      tone: "danger" as const,
-      value: String(data.summary.overdueObservations),
-    },
-    {
-      description: `Observaciones que vencerán dentro de ${data.reminderDaysBeforeDue} días.`,
-      href: `/observaciones?filter.dueDateFrom=${formatDateFilter(startOfDay(referenceDate))}&filter.dueDateTo=${formatDateFilter(dueThreshold)}`,
-      icon: <CalendarClock className="h-5 w-5" />,
-      label: "Próximas a vencer",
-      value: String(data.summary.upcomingObservations),
-    },
-    {
-      description:
-        "Solicitudes de revisión pendientes entre avances y ampliaciones.",
-      href: "/aprobaciones/pendientes",
-      icon: <BadgeCheck className="h-5 w-5" />,
-      label: "Pendientes de revisión",
-      value: String(data.summary.pendingReviews),
-    },
-    {
-      description:
-        "Promedio de avance declarado sobre las observaciones visibles.",
-      href: "/avances-evidencias",
-      icon: <Gauge className="h-5 w-5" />,
-      label: "Avance promedio",
-      value: `${data.summary.averageProgress}%`,
-    },
-  ];
-};
-
-const buildAreaMetricCards = (data: AreaDashboardData, referenceDate: Date) => {
-  const dueThreshold = addDays(
-    startOfDay(referenceDate),
-    data.reminderDaysBeforeDue,
-  );
-
-  return [
-    {
-      description:
-        "Observaciones asociadas directamente a su usuario o carga operativa.",
-      href: "/observaciones",
-      icon: <ClipboardList className="h-5 w-5" />,
-      label: "Mis observaciones asignadas",
-      value: String(data.summary.assignedObservations),
-    },
-    {
-      description:
-        "Observaciones bajo el alcance de su área o sus responsabilidades actuales.",
-      href: "/observaciones",
-      icon: <FolderKanban className="h-5 w-5" />,
-      label: "Observaciones de mi área",
-      value: String(data.summary.areaObservations),
-    },
-    {
-      description:
-        "Planes de acción aún activos dentro del cronograma operativo visible.",
-      href: "/cronograma",
+      description: "Planes con ejecución oficial iniciada.",
       icon: <GitPullRequestArrow className="h-5 w-5" />,
-      label: "Planes pendientes",
-      value: String(data.summary.pendingActionPlans),
+      label: "Iniciados",
+      value: String(reporting.summary.iniciado),
     },
     {
-      description: "Planes de acción que ya superaron su fecha vigente.",
-      href: "/cronograma?filter.overdue=true",
-      icon: <ShieldAlert className="h-5 w-5" />,
-      label: "Planes vencidos",
-      tone: "danger" as const,
-      value: String(data.summary.overdueActionPlans),
-    },
-    {
-      description: `Planes de acción que vencerán dentro de ${data.reminderDaysBeforeDue} días.`,
-      href: `/cronograma?filter.dueDateFrom=${formatDateFilter(startOfDay(referenceDate))}&filter.dueDateTo=${formatDateFilter(dueThreshold)}`,
-      icon: <CalendarClock className="h-5 w-5" />,
-      label: "Planes próximos",
-      value: String(data.summary.upcomingActionPlans),
-    },
-    {
-      description:
-        "Promedio de avance consolidado sobre las observaciones visibles.",
-      href: "/avances-evidencias",
+      description: "Planes con avance oficial del 60%.",
       icon: <Gauge className="h-5 w-5" />,
-      label: "Avance promedio",
-      value: `${data.summary.averageProgress}%`,
+      label: "Con avance",
+      value: String(reporting.summary.conAvance),
+    },
+    {
+      description: "Planes con cierre oficial al 100%.",
+      icon: <BadgeCheck className="h-5 w-5" />,
+      label: "Concluidos",
+      value: String(reporting.summary.concluido),
+    },
+    {
+      description: "Planes no vencidos según la fecha efectiva.",
+      icon: <CalendarClock className="h-5 w-5" />,
+      label: "Vigentes",
+      value: String(reporting.summary.vigentes),
+    },
+    {
+      description: "Planes no concluidos con fecha efectiva pasada.",
+      icon: <ShieldAlert className="h-5 w-5" />,
+      label: "Vencidos",
+      tone: "danger" as const,
+      value: String(reporting.summary.vencidos),
+    },
+    {
+      description: "Planes con una ampliación de plazo aprobada.",
+      icon: <CalendarClock className="h-5 w-5" />,
+      label: "Reprogramados",
+      value: String(reporting.summary.reprogramados),
     },
   ];
 };
@@ -964,6 +903,18 @@ const buildSecondaryMetrics = (
 ) => {
   if (data.scope === "auditoria") {
     return [
+      {
+        description: "Observaciones registradas en el alcance de Auditoría.",
+        href: "/observaciones",
+        label: "Total observaciones",
+        value: String(data.summary.totalObservations),
+      },
+      {
+        description: "Observaciones activas que aún no están en estado final.",
+        href: "/observaciones",
+        label: "Observaciones abiertas",
+        value: String(data.summary.openObservations),
+      },
       {
         description:
           "Observaciones en estado final dentro del periodo consultado.",
@@ -988,6 +939,18 @@ const buildSecondaryMetrics = (
 
   return [
     {
+      description: "Observaciones dentro del alcance del usuario.",
+      href: "/observaciones",
+      label: "Observaciones de mi alcance",
+      value: String(data.summary.areaObservations),
+    },
+    {
+      description: "Planes no concluidos dentro del cronograma visible.",
+      href: "/cronograma",
+      label: "Planes pendientes",
+      value: String(data.summary.pendingActionPlans),
+    },
+    {
       description:
         "Avances devueltos por Auditoría que requieren ajuste o corrección.",
       href: "/avances-evidencias?filter.status=RETURNED",
@@ -1005,11 +968,7 @@ const buildSecondaryMetrics = (
 };
 
 export function DashboardView({ data }: DashboardViewProps) {
-  const referenceDate = new Date(data.generatedAt);
-  const metricCards =
-    data.scope === "auditoria"
-      ? buildAuditMetricCards(data, referenceDate)
-      : buildAreaMetricCards(data, referenceDate);
+  const metricCards = buildActionPlanMetricCards(data.actionPlanReporting);
   const secondaryMetrics = buildSecondaryMetrics(data);
 
   return (
@@ -1047,24 +1006,39 @@ export function DashboardView({ data }: DashboardViewProps) {
 
       <section className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-4">
         <DistributionPanel
-          description="Distribución actual de observaciones por criticidad."
-          items={data.charts.observationsByRisk}
-          title="Observaciones por nivel de riesgo"
+          description="Catálogo de riesgo aplicado a cada plan visible."
+          items={data.actionPlanReporting.charts.byRisk}
+          title="Planes por nivel de riesgo"
         />
         <DistributionPanel
-          description="Estados registrados según la clasificación vigente de cada observación."
-          items={data.charts.observationsByStatus}
-          title="Observaciones por estado"
+          description="Clasificación oficial de Auditoría: NI, I, CA y CO."
+          items={data.actionPlanReporting.charts.byProgress}
+          title="Planes por estado de avance"
         />
         <SplitSummaryPanel
-          description="Comparativo entre observaciones vigentes y observaciones fuera de plazo."
-          items={data.charts.currentVsOverdue}
-          title="Vigentes vs. vencidas"
+          description="La fecha efectiva aprobada mantiene vigente el día del vencimiento."
+          items={data.actionPlanReporting.charts.byDeadline}
+          title="Planes vigentes vs. vencidos"
         />
         <DistributionPanel
-          description="Carga distribuida por área o gerencia principal de la observación."
-          items={data.charts.observationsByArea}
-          title="Observaciones por área"
+          description="Indicador independiente del estado y del vencimiento."
+          items={data.actionPlanReporting.charts.byReprogrammed}
+          title="Planes reprogramados"
+        />
+        <DistributionPanel
+          description="Carga de planes por área o gerencia."
+          items={data.actionPlanReporting.charts.byArea}
+          title="Planes por área"
+        />
+        <DistributionPanel
+          description="Carga de planes por dueño del proceso."
+          items={data.actionPlanReporting.charts.byProcessOwner}
+          title="Planes por dueño del proceso"
+        />
+        <DistributionPanel
+          description="Carga de planes asignados a cada ejecutor."
+          items={data.actionPlanReporting.charts.byExecutor}
+          title="Planes por ejecutor"
         />
       </section>
 

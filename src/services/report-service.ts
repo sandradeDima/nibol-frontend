@@ -5,9 +5,10 @@ import type {
   AuditReportOptions,
   AuditReportQuery,
   PaginatedApiSuccessResponse,
+  ReportActionPlanRow,
   ReportDashboardData,
   ReportFilters,
-  ReportObservationRow,
+  ReportOptions,
   ReportPreviewData,
   ReportType,
 } from "@/types";
@@ -15,6 +16,59 @@ import type {
 const appendValue = (params: URLSearchParams, key: string, value: unknown) => {
   if (value === undefined || value === null || value === "") return;
   params.set(key, String(value));
+};
+
+type SearchParamsLike = { get(name: string): string | null };
+
+export const parseReportFilters = (
+  searchParams: SearchParamsLike,
+): ReportFilters => {
+  const filters: Record<string, unknown> = {};
+  const read = (key: string) => searchParams.get(`filter.${key}`);
+  const stringKeys = [
+    "areaId",
+    "auditReportId",
+    "dateFrom",
+    "dateTo",
+    "deadlineStatus",
+    "executorId",
+    "processOwnerId",
+    "progressStatus",
+    "responsibleUserId",
+    "riskLevelId",
+    "search",
+    "statusId",
+  ];
+  stringKeys.forEach((key) => {
+    const value = read(key);
+    if (value) filters[key] = value;
+  });
+  [
+    "dueSoon",
+    "activeOnly",
+    "hasEvidence",
+    "hasExtension",
+    "hasPlan",
+    "overdue",
+    "reprogrammed",
+  ].forEach((key) => {
+    const value = read(key);
+    if (value === "true" || value === "false") filters[key] = value === "true";
+  });
+  ["dueSoonDays", "progressMin", "progressMax"].forEach((key) => {
+    const value = read(key);
+    if (value && Number.isFinite(Number(value))) filters[key] = Number(value);
+  });
+  const periodField = searchParams.get("periodField");
+  if (
+    periodField === "createdAt" ||
+    periodField === "currentDueDate" ||
+    periodField === "originalDueDate" ||
+    periodField === "reportDate"
+  ) {
+    filters.periodField = periodField;
+  }
+  return filters as ReportFilters;
 };
 
 export const buildReportQuery = (
@@ -98,6 +152,14 @@ export const reportService = {
     return response.data.data;
   },
 
+  async getOptions(): Promise<ReportOptions> {
+    const response =
+      await apiClient.get<ApiSuccessResponse<ReportOptions>>(
+        "/reports/options",
+      );
+    return response.data.data;
+  },
+
   async getPreview(
     filters: ReportFilters,
     options?: { reportName?: string; type?: ReportType },
@@ -108,19 +170,19 @@ export const reportService = {
     return response.data.data;
   },
 
-  async listObservations(
+  async listActionPlans(
     filters: ReportFilters,
     page = 1,
     perPage = 20,
   ): Promise<{
-    data: ReportObservationRow[];
+    data: ReportActionPlanRow[];
     pagination: PaginatedApiSuccessResponse<
-      ReportObservationRow[]
+      ReportActionPlanRow[]
     >["pagination"];
   }> {
     const response = await apiClient.get<
-      PaginatedApiSuccessResponse<ReportObservationRow[]>
-    >(`/reports/observations${buildReportQuery(filters, { page, perPage })}`);
+      PaginatedApiSuccessResponse<ReportActionPlanRow[]>
+    >(`/reports/action-plans${buildReportQuery(filters, { page, perPage })}`);
     return { data: response.data.data, pagination: response.data.pagination };
   },
 };

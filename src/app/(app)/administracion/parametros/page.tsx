@@ -9,6 +9,7 @@ export default async function ParametrosPage() {
       canCreate={authorization.permissions.includes("system_parameters.create")}
       canDelete={authorization.permissions.includes("system_parameters.delete")}
       canEdit={authorization.permissions.includes("system_parameters.edit")}
+      canManageReminders={authorization.dataScope === "ALL"}
     />
   );
 }

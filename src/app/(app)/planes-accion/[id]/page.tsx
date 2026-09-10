@@ -17,17 +17,24 @@ export default async function ActionPlanPage({
       <ActionPlanDetailView
         actionPlanId={id}
         canEdit={authorization.permissions.includes("action_plans.edit")}
-        canManageExtensions={authorization.permissions.includes(
-          "extension_requests.edit",
+        canManageExtensions={
+          authorization.permissions.includes("deadline_extensions.approve") ||
+          authorization.permissions.includes("deadline_extensions.reject")
+        }
+        canRequestExtension={authorization.permissions.includes(
+          "deadline_extensions.request",
         )}
         canViewExtensions={authorization.permissions.includes(
-          "extension_requests.view",
+          "deadline_extensions.view",
         )}
         canReviewProgress={
           authorization.isAdmin ||
-          (authorization.permissions.includes("progress_evaluations.review") &&
-            authorization.permissions.includes("progress_evaluations.approve"))
+          (authorization.permissions.includes("action_plans.evaluate") &&
+            authorization.permissions.includes("action_plans.approve"))
         }
+        canUploadEvidence={authorization.permissions.includes(
+          "evidence.create",
+        )}
         initialEditing={edit === "1"}
       />
     </main>

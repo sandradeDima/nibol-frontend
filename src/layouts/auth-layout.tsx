@@ -34,7 +34,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               </h1>
               <p className="mt-5 max-w-xl text-base leading-8 text-[var(--foreground-soft)]">
                 Plataforma interna para seguimiento de hallazgos, riesgos y
-                planes de remediacion con una interfaz alineada a la identidad
+                planes de acción con una interfaz alineada a la identidad
                 visual de NIBOL.
               </p>
             </div>

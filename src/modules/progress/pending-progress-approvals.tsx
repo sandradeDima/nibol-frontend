@@ -1,10 +1,11 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, RotateCcw, X } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
 import Link from "next/link";
 
 import { progressService } from "@/services/progress-service";
+import type { ActionPlanStatus } from "@/types";
 
 export function PendingProgressApprovals() {
   const queryClient = useQueryClient();
@@ -19,18 +20,20 @@ export function PendingProgressApprovals() {
     mutationFn: ({
       action,
       id,
+      officialStatus,
     }: {
-      action: "approve" | "return" | "reject";
+      action: "approve" | "return";
       id: string;
+      officialStatus: ActionPlanStatus;
     }) =>
       progressService.reviewProgressEvaluation(
         id,
         action,
         action === "approve"
-          ? {}
-          : {
-              comment:
-                window.prompt("Comentario de revisión") ?? "Revisión requerida",
+          ? { officialStatus }
+            : {
+              comment: "Revisión requerida",
+              officialStatus,
             },
       ),
     onSuccess: async () =>
@@ -58,7 +61,9 @@ export function PendingProgressApprovals() {
                 {item.actionPlan.area.name} · {item.submittedByUser.name}
               </p>
             </div>
-            <p className="text-2xl font-semibold">{item.progressPercent}%</p>
+            <p className="text-2xl font-semibold">
+              {item.reportedProgressPercent ?? 0}%
+            </p>
           </div>
           <p className="mt-4 text-sm leading-6 text-stone-700">
             {item.comment}
@@ -66,7 +71,13 @@ export function PendingProgressApprovals() {
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               className="nibol-btn-primary px-3 py-2 text-xs"
-              onClick={() => review.mutate({ action: "approve", id: item.id })}
+              onClick={() =>
+                review.mutate({
+                  action: "approve",
+                  id: item.id,
+                  officialStatus: item.officialStatus,
+                })
+              }
               type="button"
             >
               <Check className="h-3.5 w-3.5" />
@@ -74,19 +85,17 @@ export function PendingProgressApprovals() {
             </button>
             <button
               className="nibol-btn-secondary px-3 py-2 text-xs"
-              onClick={() => review.mutate({ action: "return", id: item.id })}
+              onClick={() =>
+                review.mutate({
+                  action: "return",
+                  id: item.id,
+                  officialStatus: item.officialStatus,
+                })
+              }
               type="button"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Devolver
-            </button>
-            <button
-              className="nibol-btn-secondary px-3 py-2 text-xs text-rose-700"
-              onClick={() => review.mutate({ action: "reject", id: item.id })}
-              type="button"
-            >
-              <X className="h-3.5 w-3.5" />
-              Rechazar
             </button>
           </div>
         </article>

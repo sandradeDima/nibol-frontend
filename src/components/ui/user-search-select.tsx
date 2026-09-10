@@ -2,8 +2,9 @@
 
 import { useId, useMemo, useState } from "react";
 
-import { Check, Search } from "lucide-react";
+import { Check } from "lucide-react";
 
+import { SearchFieldFrame } from "@/components/ui/search-field";
 import { cn } from "@/utils";
 
 type UserOption = {
@@ -55,34 +56,35 @@ export function UserSearchSelect({
       : "";
 
   return (
-    <div className="relative">
-      <Search className="pointer-events-none absolute top-3.5 left-3 z-10 h-4 w-4 text-stone-400" />
-      <input
-        aria-autocomplete="list"
-        aria-controls={listboxId}
-        aria-expanded={open}
-        autoComplete="off"
-        className="nibol-field pl-10"
-        disabled={disabled}
-        id={id}
-        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-        onChange={(event) => {
-          setQuery(event.target.value);
-          if (value) onChange("");
-          setOpen(true);
-        }}
-        onFocus={() => {
-          setQuery("");
-          setOpen(true);
-        }}
-        placeholder={placeholder}
-        role="combobox"
-        type="search"
-        value={inputValue}
-      />
+    <div className={cn("relative", open ? "z-50" : "z-20")}>
+      <SearchFieldFrame>
+        <input
+          aria-autocomplete="list"
+          aria-controls={listboxId}
+          aria-expanded={open}
+          autoComplete="off"
+          className="h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-sm outline-none placeholder:text-stone-400"
+          disabled={disabled}
+          id={id}
+          onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            if (value) onChange("");
+            setOpen(true);
+          }}
+          onFocus={() => {
+            setQuery("");
+            setOpen(true);
+          }}
+          placeholder={placeholder}
+          role="combobox"
+          type="search"
+          value={inputValue}
+        />
+      </SearchFieldFrame>
       {open ? (
         <div
-          className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-xl border border-stone-200 bg-white p-1 shadow-xl"
+          className="absolute top-full left-0 z-50 mt-2 max-h-72 min-w-full overflow-y-auto rounded-xl border border-stone-200 bg-white p-1 shadow-xl"
           role="listbox"
           id={listboxId}
         >

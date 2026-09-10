@@ -28,15 +28,12 @@ export const observationFormSchema = z.object({
     .min(1, "Ingrese la recomendación de Auditoría.")
     .max(5_000),
   auditReportId: z.string().min(1, "Seleccione un informe."),
-  auditorUserId: z.string().min(1, "Seleccione al auditor responsable."),
+  auditorUserId: z.string(),
   category: optionalText,
+  commitmentDate: z.string().optional(),
   currentStage: optionalText,
   description: z.string().trim().min(1, "Describa la observación.").max(10_000),
   mainObservationId: z.string().min(1, "Seleccione la observación principal."),
-  observationNumber: z.coerce
-    .number()
-    .int()
-    .positive("Ingrese un número válido."),
   process: optionalText,
   riskIds: z
     .array(z.string())

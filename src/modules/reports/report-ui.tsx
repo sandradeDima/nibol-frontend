@@ -13,7 +13,6 @@ import {
   Filter,
   ListFilter,
   RotateCcw,
-  Search,
   ShieldCheck,
   Sparkles,
   TimerReset,
@@ -23,11 +22,13 @@ import {
 
 import type {
   AuditReportTemplate,
-  ConfigurationBootstrap,
   ReportChartItem,
   ReportFilters,
+  ReportOptions,
   ReportType,
 } from "@/types";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { UserSearchSelect } from "@/components/ui/user-search-select";
 import { getRiskLevelColor } from "@/modules/observations/presentation";
 import { cn } from "@/utils";
 
@@ -153,6 +154,7 @@ export const formatReportDate = (
   return new Intl.DateTimeFormat("es-BO", {
     day: "2-digit",
     month: "short",
+    timeZone: "UTC",
     year: "numeric",
   }).format(date);
 };
@@ -172,7 +174,7 @@ type ReportFilterBarProps = {
     value: string | number | boolean | undefined,
   ) => void;
   onReset: () => void;
-  options?: ConfigurationBootstrap;
+  options?: ReportOptions;
   showProgress?: boolean;
 };
 
@@ -201,8 +203,8 @@ export function ReportFilterBar({
               Filtros del reporte
             </p>
             <p className="text-xs leading-5 text-[var(--muted)]">
-              Combine período, área, riesgo y responsables para leer el mismo
-              corte operativo.
+              El mismo alcance alimenta los indicadores, gráficos, filas y
+              exportaciones.
             </p>
           </div>
         </div>
@@ -242,7 +244,7 @@ export function ReportFilterBar({
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <label className="space-y-2">
           <span className="report-field-label">Período de análisis</span>
           <select
@@ -256,6 +258,8 @@ export function ReportFilterBar({
             value={draft.periodField ?? "createdAt"}
           >
             <option value="createdAt">Fecha de registro</option>
+            <option value="reportDate">Fecha del informe</option>
+            <option value="originalDueDate">Fecha original del plan</option>
             <option value="currentDueDate">Fecha límite actual</option>
           </select>
         </label>
@@ -281,6 +285,20 @@ export function ReportFilterBar({
             value={draft.dateTo ?? ""}
           />
         </label>
+        <label className="min-w-0 space-y-2">
+          <span className="report-field-label">Informe</span>
+          <SearchableSelect
+            onChange={(value) => onChange("auditReportId", value || undefined)}
+            options={
+              options?.auditReports.map((report) => ({
+                id: report.id,
+                label: report.label,
+              })) ?? []
+            }
+            placeholder="Todos los informes"
+            value={draft.auditReportId ?? ""}
+          />
+        </label>
         <label className="space-y-2">
           <span className="report-field-label">Área</span>
           <select
@@ -299,7 +317,7 @@ export function ReportFilterBar({
           </select>
         </label>
         <label className="space-y-2">
-          <span className="report-field-label">Riesgo</span>
+          <span className="report-field-label">Nivel de riesgo</span>
           <select
             className="nibol-field h-11 text-sm"
             onChange={(event) =>
@@ -316,52 +334,109 @@ export function ReportFilterBar({
           </select>
         </label>
         <label className="space-y-2">
-          <span className="report-field-label">Estado</span>
+          <span className="report-field-label">Estado de avance</span>
           <select
             className="nibol-field h-11 text-sm"
             onChange={(event) =>
-              onChange("statusId", event.target.value || undefined)
+              onChange("progressStatus", event.target.value || undefined)
             }
-            value={draft.statusId ?? ""}
+            value={draft.progressStatus ?? ""}
           >
             <option value="">Todos los estados</option>
-            {options?.statuses.map((status) => (
-              <option key={status.id} value={status.id}>
-                {status.name}
+            {options?.progressStatuses.map((status) => (
+              <option key={status.key} value={status.key}>
+                {status.label}
               </option>
             ))}
+          </select>
+        </label>
+        <label className="min-w-0 space-y-2">
+          <span className="report-field-label">Dueño del proceso</span>
+          <UserSearchSelect
+            id="report-process-owner"
+            onChange={(value) => onChange("processOwnerId", value || undefined)}
+            placeholder="Todos los dueños"
+            users={options?.processOwners ?? []}
+            value={draft.processOwnerId ?? ""}
+          />
+        </label>
+        <label className="min-w-0 space-y-2">
+          <span className="report-field-label">Ejecutor</span>
+          <UserSearchSelect
+            id="report-executor"
+            onChange={(value) => onChange("executorId", value || undefined)}
+            placeholder="Todos los ejecutores"
+            users={options?.executors ?? []}
+            value={draft.executorId ?? ""}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="report-field-label">Estado de plazo</span>
+          <select
+            className="nibol-field h-11 text-sm"
+            onChange={(event) =>
+              onChange("deadlineStatus", event.target.value || undefined)
+            }
+            value={draft.deadlineStatus ?? ""}
+          >
+            <option value="">Todos los plazos</option>
+            <option value="VIGENTE">Vigente</option>
+            <option value="VENCIDO">Vencido</option>
           </select>
         </label>
         <label className="space-y-2">
-          <span className="report-field-label">Responsable</span>
+          <span className="report-field-label">Reprogramado</span>
           <select
             className="nibol-field h-11 text-sm"
             onChange={(event) =>
-              onChange("responsibleUserId", event.target.value || undefined)
+              onChange(
+                "reprogrammed",
+                event.target.value === ""
+                  ? undefined
+                  : event.target.value === "true",
+              )
             }
-            value={draft.responsibleUserId ?? ""}
+            value={
+              draft.reprogrammed === undefined ? "" : String(draft.reprogrammed)
+            }
           >
-            <option value="">Todos los responsables</option>
-            {options?.users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
+            <option value="">Todos</option>
+            <option value="true">Sí</option>
+            <option value="false">No</option>
           </select>
         </label>
-        <label className="relative space-y-2">
+        <label className="relative min-w-0 space-y-2">
           <span className="report-field-label">Buscar</span>
-          <Search className="pointer-events-none absolute top-[2.55rem] left-3 h-4 w-4 text-[var(--muted)]" />
           <input
-            className="nibol-field h-11 pl-9 text-sm"
+            aria-label="Buscar por informe, observación, plan o usuario"
+            className="nibol-field h-11 text-sm"
             onChange={(event) =>
               onChange("search", event.target.value || undefined)
             }
-            placeholder="Código, título o área"
+            placeholder="Informe, plan, área o usuario"
             type="search"
             value={draft.search ?? ""}
           />
         </label>
+        {showProgress ? (
+          <label className="space-y-2">
+            <span className="report-field-label">Avance mínimo</span>
+            <input
+              className="nibol-field h-11 text-sm"
+              max={100}
+              min={0}
+              onChange={(event) =>
+                onChange(
+                  "progressMin",
+                  event.target.value ? Number(event.target.value) : undefined,
+                )
+              }
+              placeholder="Ej. 20"
+              type="number"
+              value={draft.progressMin ?? ""}
+            />
+          </label>
+        ) : null}
         {showProgress ? (
           <label className="space-y-2">
             <span className="report-field-label">Avance máximo</span>
@@ -387,17 +462,6 @@ export function ReportFilterBar({
         <div className="flex flex-wrap gap-3">
           <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-[var(--foreground-soft)]">
             <input
-              checked={draft.overdue === true}
-              className="h-4 w-4 accent-[var(--primary)]"
-              onChange={(event) =>
-                onChange("overdue", event.target.checked ? true : undefined)
-              }
-              type="checkbox"
-            />
-            Solo vencidas
-          </label>
-          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-[var(--foreground-soft)]">
-            <input
               checked={draft.dueSoon === true}
               className="h-4 w-4 accent-[var(--primary)]"
               onChange={(event) =>
@@ -405,8 +469,11 @@ export function ReportFilterBar({
               }
               type="checkbox"
             />
-            Solo próximas a vencer
+            Solo próximos a vencer
           </label>
+          <span className="text-xs leading-6 text-[var(--muted)]">
+            Vencido se calcula con la fecha efectiva aprobada.
+          </span>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -465,6 +532,8 @@ const KPI_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   dueSoon: Clock3,
   inProcess: TimerReset,
   closed: CheckCircle2,
+  progress: CheckCircle2,
+  reprogrammed: CalendarDays,
   resolution: TimerReset,
   risk: TriangleAlert,
   total: ListFilter,
@@ -544,7 +613,7 @@ export function ReportKpi({
             tone === "accent" ? "text-white" : "text-[var(--primary)]",
           )}
         >
-          Ver observaciones{" "}
+          Ver detalle{" "}
           <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </span>
       ) : null}
@@ -757,6 +826,18 @@ export function ReportTrend({
 }
 
 export function ReportFilterSummary({ filters }: { filters: ReportFilters }) {
+  const progressLabels = {
+    CONCLUDED: "Concluido",
+    NOT_STARTED: "No iniciado",
+    STARTED: "Iniciado",
+    WITH_PROGRESS: "Con avance",
+  } as const;
+  const periodLabels = {
+    createdAt: "Fecha de registro",
+    currentDueDate: "Fecha límite efectiva",
+    originalDueDate: "Fecha límite original",
+    reportDate: "Fecha del informe",
+  } as const;
   const entries = [
     [
       "Periodo",
@@ -764,22 +845,27 @@ export function ReportFilterSummary({ filters }: { filters: ReportFilters }) {
         ? `${filters.dateFrom ?? "Inicio"} – ${filters.dateTo ?? "Hoy"}`
         : "Actual",
     ],
+    ["Fecha", periodLabels[filters.periodField ?? "createdAt"]],
     [
-      "Fecha",
-      filters.periodField === "currentDueDate"
-        ? "Fecha límite actual"
-        : "Registro",
+      "Dueño del proceso",
+      filters.processOwnerId ? "Dueño seleccionado" : "Todos",
     ],
     ["Área", filters.areaId ? "Área seleccionada" : "Todas"],
     ["Riesgo", filters.riskLevelId ? "Nivel seleccionado" : "Todos"],
     [
-      "Vencimiento",
-      filters.overdue
-        ? "Solo vencidas"
-        : filters.dueSoon
-          ? "Próximas a vencer"
-          : "Todos",
+      "Estado de avance",
+      filters.progressStatus ? progressLabels[filters.progressStatus] : "Todos",
     ],
+    ["Estado de plazo", filters.deadlineStatus ?? "Todos"],
+    [
+      "Reprogramado",
+      filters.reprogrammed === undefined
+        ? "Todos"
+        : filters.reprogrammed
+          ? "Sí"
+          : "No",
+    ],
+    ["Ejecutor", filters.executorId ? "Ejecutor seleccionado" : "Todos"],
   ];
   return (
     <div className="grid gap-2 sm:grid-cols-2">
@@ -904,7 +990,7 @@ export function ReportLoading({
 
 export function ReportError({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="nibol-panel flex flex-col items-start gap-4 border-l-4 border-l-[var(--accent)] px-5 py-6">
+    <div className="nibol-panel flex flex-col items-start gap-4 border-[color-mix(in_srgb,var(--accent)_32%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_4%,var(--surface))] px-5 py-6">
       <div>
         <p className="font-semibold text-[var(--foreground)]">
           No fue posible cargar el reporte.

@@ -12,7 +12,7 @@ export interface ObservationAreaSummary {
 
 export interface ObservationRiskLevel {
   colorToken: string | null;
-  defaultDeadlineDays: number | null;
+  maxRemediationDays: number | null;
   id: string;
   key: string;
   name: string;
@@ -83,6 +83,7 @@ export interface ObservationTableRow {
   progressPercent: number;
   risks: Array<{ id: string; name: string }>;
   riskLevel: ObservationRiskLevel;
+  sentAt: string | null;
   status: ObservationStatus;
   title: string;
   updatedAt: string;
@@ -90,7 +91,7 @@ export interface ObservationTableRow {
 
 export interface ObservationDetail extends ObservationTableRow {
   auditRecommendation: string;
-  auditorUser: ObservationUserSummary;
+  auditorUser: ObservationUserSummary | null;
   category: string | null;
   currentStage: string | null;
   description: string;
@@ -134,10 +135,10 @@ export interface CreateObservationInput {
   auditReportId: string;
   auditorUserId: string;
   category?: string | null;
+  commitmentDate?: string;
   currentStage?: string | null;
   description: string;
   mainObservationId: string;
-  observationNumber: number;
   process?: string | null;
   riskIds: string[];
   riskLevelId: string;

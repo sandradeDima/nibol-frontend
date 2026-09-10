@@ -8,6 +8,7 @@ import { Pencil, Trash2 } from "lucide-react";
 
 import { DataTable, type DataTableConfig } from "@/components/data-table";
 import { PageHeader } from "@/components/ui/page-header";
+import { DeadlineReminderSettings } from "@/modules/notifications/automatic-notification-admin";
 import {
   systemParameterFormSchema,
   type SystemParameterFormValues,
@@ -36,6 +37,7 @@ type SystemParametersPageProps = {
   canCreate: boolean;
   canDelete: boolean;
   canEdit: boolean;
+  canManageReminders: boolean;
 };
 
 const parameterGroupOptions = [
@@ -167,6 +169,7 @@ export function SystemParametersPage({
   canCreate,
   canDelete,
   canEdit,
+  canManageReminders,
 }: SystemParametersPageProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -273,6 +276,8 @@ export function SystemParametersPage({
           eyebrow="Configuracion NIBOL"
           title="Parametros generales"
         />
+
+        {canManageReminders ? <DeadlineReminderSettings canManage /> : null}
 
         <DataTable config={tableConfig} endpoint="/system-parameters" />
       </main>

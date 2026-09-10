@@ -4,6 +4,7 @@ import type {
   CreateExtensionRequestInput,
   ExtensionRequestDetail,
   ExtensionRequestTableRow,
+  ExtensionClassification,
   PaginatedApiSuccessResponse,
   ReviewExtensionRequestInput,
   UpdateExtensionRequestInput,
@@ -18,19 +19,20 @@ const post = async (path: string, input: object = {}) =>
   ).data.data;
 
 export const extensionRequestService = {
-  auditApprove: (id: string, input: ReviewExtensionRequestInput = {}) =>
-    post(`/extension-requests/${id}/audit-approve`, input),
-  auditReject: (id: string, input: ReviewExtensionRequestInput) =>
-    post(`/extension-requests/${id}/audit-reject`, input),
   cancel: (id: string) => post(`/extension-requests/${id}/cancel`),
   createForActionPlan: (id: string, input: CreateExtensionRequestInput) =>
     post(`/action-plans/${id}/extension-requests`, input),
-  createForObservation: (id: string, input: CreateExtensionRequestInput) =>
-    post(`/observations/${id}/extension-requests`, input),
   async getById(id: string) {
     return (
       await apiClient.get<ApiSuccessResponse<ExtensionRequestDetail>>(
         `/extension-requests/${id}`,
+      )
+    ).data.data;
+  },
+  async listClassifications() {
+    return (
+      await apiClient.get<ApiSuccessResponse<ExtensionClassification[]>>(
+        "/deadline-extension-classifications",
       )
     ).data.data;
   },

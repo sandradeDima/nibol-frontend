@@ -1,7 +1,10 @@
 import type { ObservationUserSummary } from "./observations";
 
 export type ActionPlanStatus =
-  "NOT_STARTED" | "STARTED" | "WITH_PROGRESS" | "CONCLUDED";
+  | "NOT_STARTED"
+  | "STARTED"
+  | "WITH_PROGRESS"
+  | "CONCLUDED";
 
 export interface ActionPlanEvidenceItem {
   context: "ACTION_PLAN";
@@ -21,14 +24,13 @@ export interface ActionPlanEvidenceItem {
 }
 
 export interface ActionPlanEvaluationSummary {
-  actionPlanStatus: ActionPlanStatus;
   comment: string;
+  evaluatedStatus: ActionPlanStatus | null;
   id: string;
-  progressPercent: number;
+  reportedProgressPercent: number | null;
   reviewedAt: string | null;
   reviewedByUser: ObservationUserSummary | null;
-  reviewStatus:
-    "DRAFT" | "SENT_TO_AUDIT" | "APPROVED" | "RETURNED" | "REJECTED";
+  reviewStatus: "DRAFT" | "SENT_TO_AUDIT" | "APPROVED" | "RETURNED";
   submittedAt: string;
   submittedByUser: ObservationUserSummary;
 }
@@ -39,7 +41,9 @@ export interface ActionPlanDetail {
   completedAt: string | null;
   createdAt: string;
   currentDueDate: string;
+  deadlineStatus: "VIGENTE" | "VENCIDO";
   description: string;
+  effectiveDueDate: string;
   evidence?: ActionPlanEvidenceItem[];
   evidenceCount: number;
   evaluations?: ActionPlanEvaluationSummary[];
@@ -57,6 +61,9 @@ export interface ActionPlanDetail {
   processOwner: ObservationUserSummary;
   progressEvaluationCount: number;
   progressPercent: number;
+  officialProgressCode: "NI" | "I" | "CA" | "CO";
+  officialProgressPercent: number;
+  reprogrammed: boolean;
   responsibleUser: ObservationUserSummary;
   sortOrder: number;
   status: ActionPlanStatus;
@@ -76,7 +83,11 @@ export type UpdateActionPlanPayload = Partial<ActionPlanPayload>;
 export type ActionPlanScheduleRow = ActionPlanDetail;
 
 export type RemediationPlanStatus =
-  "DRAFT" | "SENT_TO_AUDIT" | "APPROVED" | "RETURNED" | "CLOSED";
+  | "DRAFT"
+  | "SENT_TO_AUDIT"
+  | "APPROVED"
+  | "RETURNED"
+  | "CLOSED";
 
 export interface RemediationPlanDetail {
   additionalComments: string | null;

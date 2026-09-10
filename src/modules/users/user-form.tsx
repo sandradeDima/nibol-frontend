@@ -56,8 +56,7 @@ function RoleSelector({
           Asignacion de roles
         </p>
         <p className="text-xs text-stone-500">
-          Seleccione los roles que este usuario debe heredar dentro del entorno
-          administrativo.
+          Seleccione exactamente un rol para este usuario.
         </p>
       </div>
 
@@ -75,13 +74,10 @@ function RoleSelector({
                 className="mt-1 h-4 w-4 rounded border-stone-300 text-amber-700 focus:ring-amber-300"
                 disabled={disabled}
                 onChange={(event) => {
-                  const nextValues = event.target.checked
-                    ? [...roleIds, role.id]
-                    : roleIds.filter((value) => value !== role.id);
-
-                  onChange(nextValues);
+                  onChange(event.target.checked ? [role.id] : []);
                 }}
-                type="checkbox"
+                name="user-role"
+                type="radio"
               />
               <span className="space-y-1">
                 <span className="block text-sm font-semibold text-stone-900">

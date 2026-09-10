@@ -138,6 +138,7 @@ const NODE_ICONS: Record<WorkflowDesignerNodeType, typeof GitBranch> = {
   SLA: Clock3,
   STAGE: ListChecks,
   START: ArrowRight,
+  SUBFLOW: GitFork,
 };
 
 const PALETTE_ICON_TONE: Record<WorkflowDesignerNodeType, string> = {
@@ -150,6 +151,7 @@ const PALETTE_ICON_TONE: Record<WorkflowDesignerNodeType, string> = {
   SLA: "bg-[var(--surface-muted)] text-[var(--primary)]",
   STAGE: "bg-[var(--surface-muted)] text-[var(--foreground-soft)]",
   START: "bg-[var(--primary)] text-white",
+  SUBFLOW: "bg-[var(--primary-soft)] text-[var(--primary)]",
 };
 
 const getClientId = (prefix: string): string => {
@@ -200,9 +202,9 @@ const toSaveInput = (graph: DesignerGraph): WorkflowDesignerSaveInput => ({
         ? node.configurationJson.assignmentStrategy
         : (node.assignmentStrategy as WorkflowDesignerSaveInput["nodes"][number]["assignmentStrategy"]),
     configurationJson: node.configurationJson,
-    description: node.configurationJson.description,
+    description: node.description,
     id: node.id,
-    name: node.configurationJson.name,
+    name: node.name,
     nodeKey: node.nodeKey,
     positionX: node.positionX,
     positionY: node.positionY,

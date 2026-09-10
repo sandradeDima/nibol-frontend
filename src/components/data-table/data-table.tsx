@@ -152,7 +152,7 @@ const resolveActionSuccessMessage = <TRow,>(
   return action.successMessage ?? null;
 };
 
-const useFloatingMenuPosition = <TAnchor extends HTMLElement>(
+export const useFloatingMenuPosition = <TAnchor extends HTMLElement>(
   isOpen: boolean,
   anchorRef: RefObject<TAnchor | null>,
   menuRef: RefObject<HTMLDivElement | null>,

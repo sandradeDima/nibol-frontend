@@ -11,7 +11,7 @@ type ExtensionRequestDetailPageProps = {
 export default async function ExtensionRequestDetailPage({
   params,
 }: ExtensionRequestDetailPageProps) {
-  await requirePermission("extension_requests.view");
+  await requirePermission("deadline_extensions.view");
   const { id } = await params;
 
   return (

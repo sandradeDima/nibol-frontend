@@ -21,7 +21,7 @@ const PROCESS_OPTIONS = [
   ["", "Todos los procesos"],
   ["DEADLINE_EXTENSION", "Ampliación de plazo"],
   ["OBSERVATION_CLOSURE", "Cierre de observación"],
-  ["REMEDIATION_PLAN_APPROVAL", "Plan de remediación"],
+  ["REMEDIATION_PLAN_APPROVAL", "Plan de acción recomendado"],
   ["EVIDENCE_REVIEW", "Revisión de evidencias"],
   ["SPECIAL_REQUEST", "Solicitud especial"],
 ] as const;

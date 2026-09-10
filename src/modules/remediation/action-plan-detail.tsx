@@ -21,19 +21,22 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { ErrorState } from "@/components/ui/error-state";
+import { FilePicker } from "@/components/ui/file-picker";
 import { QUERY_KEYS } from "@/lib/constants";
 import { extensionRequestService } from "@/services/extension-request-service";
 import { observationService } from "@/services/observation-service";
 import { progressService } from "@/services/progress-service";
 import { remediationService } from "@/services/remediation-service";
 import type {
+  ActionPlanStatus,
   ActionPlanEvidenceItem,
   ExtensionRequestDetail,
   ProgressEvaluationItem,
 } from "@/types";
-import { cn, getApiErrorMessage } from "@/utils";
+import { cn, getApiErrorMessage, getUploadErrorMessage } from "@/utils";
 
 import {
   ActionPlanEditor,
@@ -42,6 +45,7 @@ import {
 import {
   formatRemediationDate,
   getActionPlanStatusClasses,
+  getActionPlanStatusLabel,
 } from "./presentation";
 import {
   formatFileSize,
@@ -54,13 +58,10 @@ import {
 
 const extensionStatusLabels: Record<ExtensionRequestDetail["status"], string> =
   {
-    AUDIT_APPROVED: "Aprobada por Auditoría",
-    AUDIT_REJECTED: "Rechazada por Auditoría",
     CANCELLED: "Cancelada",
     DRAFT: "Borrador",
     MANAGER_APPROVED: "Aprobada por Gerencia",
     MANAGER_REJECTED: "Rechazada por Gerencia",
-    SENT_TO_AUDIT: "Pendiente de Auditoría",
     SENT_TO_MANAGER: "Pendiente de Gerencia",
   };
 
@@ -87,7 +88,7 @@ const evidenceStatusClasses: Record<
 };
 
 const isPendingExtension = (status: ExtensionRequestDetail["status"]) =>
-  status === "SENT_TO_MANAGER" || status === "SENT_TO_AUDIT";
+  status === "SENT_TO_MANAGER";
 
 const getFileKind = (mimeType: string) => {
   if (mimeType.includes("pdf")) return "PDF";
@@ -145,18 +146,36 @@ function DocumentRow({
 }
 
 function ApprovalActions({
+  officialStatus,
   isPending,
   onAction,
 }: {
+  officialStatus: ActionPlanStatus;
   isPending: boolean;
-  onAction: (action: "approve" | "return" | "reject") => void;
+  onAction: (action: "approve" | "return", status: ActionPlanStatus) => void;
 }) {
+  const [status, setStatus] = useState<ActionPlanStatus>(officialStatus);
   return (
     <div className="flex flex-wrap gap-2">
+      <label className="grid gap-1 text-xs font-semibold text-stone-600">
+        Estado oficial
+        <select
+          className="nibol-field min-w-44 px-2 py-1.5 text-xs"
+          value={status}
+          onChange={(event) =>
+            setStatus(event.target.value as ActionPlanStatus)
+          }
+        >
+          <option value="NOT_STARTED">No iniciado</option>
+          <option value="STARTED">Iniciado</option>
+          <option value="WITH_PROGRESS">Con avance</option>
+          <option value="CONCLUDED">Concluido</option>
+        </select>
+      </label>
       <button
         className="nibol-btn-primary px-3 py-2 text-xs"
         disabled={isPending}
-        onClick={() => onAction("approve")}
+        onClick={() => onAction("approve", status)}
         type="button"
       >
         <Check className="h-3.5 w-3.5" />
@@ -165,20 +184,11 @@ function ApprovalActions({
       <button
         className="nibol-btn-secondary px-3 py-2 text-xs"
         disabled={isPending}
-        onClick={() => onAction("return")}
+        onClick={() => onAction("return", status)}
         type="button"
       >
         <RotateCcw className="h-3.5 w-3.5" />
         Devolver
-      </button>
-      <button
-        className="nibol-btn-secondary px-3 py-2 text-xs text-rose-700"
-        disabled={isPending}
-        onClick={() => onAction("reject")}
-        type="button"
-      >
-        <X className="h-3.5 w-3.5" />
-        Rechazar
       </button>
     </div>
   );
@@ -187,6 +197,8 @@ function ApprovalActions({
 export function ActionPlanDetailView({
   canEdit,
   canManageExtensions,
+  canRequestExtension,
+  canUploadEvidence,
   canViewExtensions,
   canReviewProgress,
   actionPlanId,
@@ -194,15 +206,25 @@ export function ActionPlanDetailView({
 }: {
   canEdit: boolean;
   canManageExtensions: boolean;
+  canRequestExtension: boolean;
+  canUploadEvidence: boolean;
   canViewExtensions: boolean;
   canReviewProgress: boolean;
   actionPlanId: string;
   initialEditing?: boolean;
 }) {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const [editing, setEditing] = useState(canEdit && initialEditing);
   const [error, setError] = useState<string | null>(null);
   const [comment, setComment] = useState("");
+  const [extensionOpen, setExtensionOpen] = useState(
+    searchParams.get("extension") === "1",
+  );
+  const [extensionClassification, setExtensionClassification] = useState("");
+  const [extensionDate, setExtensionDate] = useState("");
+  const [extensionReason, setExtensionReason] = useState("");
+  const [planFiles, setPlanFiles] = useState<File[]>([]);
   const planQuery = useQuery({
     queryFn: () => remediationService.getActionPlan(actionPlanId),
     queryKey: ["action-plan", actionPlanId],
@@ -240,6 +262,11 @@ export function ActionPlanDetailView({
       ),
     queryKey: ["extension-requests", "action-plan", actionPlanId],
   });
+  const classificationsQuery = useQuery({
+    enabled: Boolean(plan && canRequestExtension),
+    queryFn: extensionRequestService.listClassifications,
+    queryKey: ["deadline-extension-classifications"],
+  });
 
   const refresh = async () => {
     if (!plan) return;
@@ -268,16 +295,17 @@ export function ActionPlanDetailView({
     mutationFn: async ({
       action,
       id,
+      officialStatus,
     }: {
-      action: "approve" | "return" | "reject";
+      action: "approve" | "return";
       id: string;
+      officialStatus: ActionPlanStatus;
     }) => {
       const reviewComment =
-        action === "approve"
-          ? undefined
-          : (window.prompt("Comentario de revisión") ?? "Revisión requerida");
+        action === "approve" ? undefined : "Revisión requerida";
       return progressService.reviewProgressEvaluation(id, action, {
         comment: reviewComment,
+        officialStatus,
       });
     },
     onError: (cause) => setError(getApiErrorMessage(cause)),
@@ -291,19 +319,10 @@ export function ActionPlanDetailView({
       action,
       id,
     }: {
-      action:
-        "auditApprove" | "auditReject" | "managerApprove" | "managerReject";
+      action: "managerApprove" | "managerReject";
       id: string;
     }) => {
-      const reviewComment = action.endsWith("Reject")
-        ? (window.prompt("Motivo del rechazo") ?? "Rechazado")
-        : undefined;
-      if (action === "auditApprove")
-        return extensionRequestService.auditApprove(id);
-      if (action === "auditReject")
-        return extensionRequestService.auditReject(id, {
-          comment: reviewComment,
-        });
+      const reviewComment = action.endsWith("Reject") ? "Rechazado" : undefined;
       if (action === "managerApprove")
         return extensionRequestService.managerApprove(id);
       return extensionRequestService.managerReject(id, {
@@ -336,6 +355,45 @@ export function ActionPlanDetailView({
     mutationFn: (file: { downloadPath: string; originalName: string }) =>
       progressService.downloadEvidence(file),
     onError: (cause) => setError(getApiErrorMessage(cause)),
+  });
+  const uploadPlanEvidence = useMutation({
+    mutationFn: () =>
+      progressService.uploadEvidence(
+        `/action-plans/${actionPlanId}/evidence`,
+        planFiles,
+        "ACTION_PLAN",
+        "Evidencia cargada desde el plan de acción.",
+      ),
+    onError: (cause) => setError(getUploadErrorMessage(cause, planFiles)),
+    onSuccess: async () => {
+      setPlanFiles([]);
+      setError(null);
+      await refresh();
+    },
+  });
+  const requestExtension = useMutation({
+    mutationFn: async () => {
+      if (!extensionClassification || !extensionDate || !extensionReason.trim())
+        throw new Error("Complete la clasificación, fecha y justificación.");
+      const request = await extensionRequestService.createForActionPlan(
+        actionPlanId,
+        {
+          classificationCode: extensionClassification,
+          proposedDueDate: extensionDate,
+          reason: extensionReason.trim(),
+        },
+      );
+      return extensionRequestService.sendToManager(request.id);
+    },
+    onError: (cause) => setError(getApiErrorMessage(cause)),
+    onSuccess: async () => {
+      setExtensionOpen(false);
+      setExtensionClassification("");
+      setExtensionDate("");
+      setExtensionReason("");
+      setError(null);
+      await refresh();
+    },
   });
 
   const evaluations = evaluationsQuery.data?.data ?? [];
@@ -371,6 +429,19 @@ export function ActionPlanDetailView({
       </section>
     );
 
+  const selectedExtensionClass = classificationsQuery.data?.find(
+    (item) => item.code === extensionClassification,
+  );
+  const maxExtensionDate = selectedExtensionClass
+    ? (() => {
+        const date = new Date(plan.currentDueDate);
+        date.setUTCDate(
+          date.getUTCDate() + selectedExtensionClass.maxAdditionalDays,
+        );
+        return date.toISOString().slice(0, 10);
+      })()
+    : "";
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -403,12 +474,10 @@ export function ActionPlanDetailView({
           <span
             className={cn(
               "inline-flex border px-3 py-2 text-xs font-bold tracking-wide uppercase",
-              getActionPlanStatusClasses(
-                plan.isOverdue ? "OVERDUE" : plan.status,
-              ),
+              getActionPlanStatusClasses(plan.status),
             )}
           >
-            {plan.isOverdue ? "Vencido" : plan.statusLabel}
+            {plan.statusLabel}
           </span>
         </div>
       </div>
@@ -429,7 +498,7 @@ export function ActionPlanDetailView({
             </div>
             <div className="min-w-36 border border-white/15 bg-white/5 p-4">
               <p className="text-xs tracking-wider text-stone-400 uppercase">
-                Avance actual
+                Avance oficial
               </p>
               <p className="mt-1 text-3xl font-semibold">
                 {plan.progressPercent}%
@@ -458,8 +527,13 @@ export function ActionPlanDetailView({
           {[
             ["Ejecutor", plan.responsibleUser.name],
             ["Estado", plan.statusLabel],
+            [
+              "Estado de plazo",
+              plan.deadlineStatus === "VENCIDO" ? "Vencido" : "Vigente",
+            ],
             ["Fecha original", formatRemediationDate(plan.originalDueDate)],
-            ["Fecha actual", formatRemediationDate(plan.currentDueDate)],
+            ["Fecha efectiva", formatRemediationDate(plan.effectiveDueDate)],
+            ["Reprogramado", plan.reprogrammed ? "Sí" : "No"],
             ["Documentos", `${plan.evidenceCount} asociados`],
           ].map(([label, value]) => (
             <div className="bg-white p-5" key={label}>
@@ -533,7 +607,7 @@ export function ActionPlanDetailView({
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-2xl font-semibold text-stone-950">
-                          {item.progressPercent}%
+                          {item.reportedProgressPercent ?? 0}% reportado
                         </span>
                         <span
                           className={cn(
@@ -559,7 +633,8 @@ export function ActionPlanDetailView({
                     </div>
                     <div className="text-right text-xs text-stone-500">
                       <p className="font-semibold text-stone-700">
-                        {item.actionPlanStatus.replaceAll("_", " ")}
+                        Estado oficial:{" "}
+                        {getActionPlanStatusLabel(item.officialStatus)}
                       </p>
                       {item.reviewedAt ? (
                         <p className="mt-1">
@@ -571,7 +646,7 @@ export function ActionPlanDetailView({
                   <div className="mt-4 h-1.5 bg-stone-200">
                     <div
                       className="h-full bg-stone-950"
-                      style={{ width: `${item.progressPercent}%` }}
+                      style={{ width: `${item.reportedProgressPercent ?? 0}%` }}
                     />
                   </div>
                   <p className="mt-4 text-sm leading-7 whitespace-pre-wrap text-stone-700">
@@ -626,9 +701,14 @@ export function ActionPlanDetailView({
                     <div className="mt-5 border-t border-stone-200 pt-4">
                       {canReviewProgress ? (
                         <ApprovalActions
+                          officialStatus={item.officialStatus}
                           isPending={review.isPending}
-                          onAction={(action) =>
-                            review.mutate({ action, id: item.id })
+                          onAction={(action, officialStatus) =>
+                            review.mutate({
+                              action,
+                              id: item.id,
+                              officialStatus,
+                            })
                           }
                         />
                       ) : (
@@ -667,6 +747,43 @@ export function ActionPlanDetailView({
                 </p>
               </div>
             </div>
+            {canUploadEvidence ? (
+              <form
+                className="mt-5 border-t border-stone-200 pt-5"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  uploadPlanEvidence.mutate();
+                }}
+              >
+                <div className="grid gap-2 text-sm font-semibold">
+                  Cargar Evidencia
+                  <FilePicker
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                    files={planFiles}
+                    id="action-plan-evidence"
+                    onChange={(selected) =>
+                      setPlanFiles((current) => [...current, ...selected])
+                    }
+                    onRemove={(file) =>
+                      setPlanFiles((current) =>
+                        current.filter((candidate) => candidate !== file),
+                      )
+                    }
+                    required
+                  />
+                </div>
+                <button
+                  className="nibol-btn-primary mt-3 px-4 py-2 text-sm"
+                  disabled={uploadPlanEvidence.isPending || !planFiles.length}
+                  type="submit"
+                >
+                  <FileText className="h-4 w-4" />
+                  {uploadPlanEvidence.isPending
+                    ? "Cargando…"
+                    : "Cargar evidencia"}
+                </button>
+              </form>
+            ) : null}
             <div className="mt-5">
               {planEvidence.length ? (
                 <div className="divide-y divide-stone-200">
@@ -754,7 +871,7 @@ export function ActionPlanDetailView({
         </div>
 
         <aside className="space-y-6">
-          <section className="nibol-panel p-5">
+          <section className="nibol-panel p-5" id="plazo">
             <div className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-5 w-5 text-amber-700" />
               <div>
@@ -778,7 +895,7 @@ export function ActionPlanDetailView({
                           Avance por revisar
                         </p>
                         <p className="mt-1 font-semibold text-stone-950">
-                          {item.progressPercent}% ·{" "}
+                          {item.reportedProgressPercent ?? 0}% reportado ·{" "}
                           {getProgressTypeLabel(item.type)}
                         </p>
                       </div>
@@ -792,9 +909,14 @@ export function ActionPlanDetailView({
                     {canReviewProgress ? (
                       <div className="mt-3">
                         <ApprovalActions
+                          officialStatus={item.officialStatus}
                           isPending={review.isPending}
-                          onAction={(action) =>
-                            review.mutate({ action, id: item.id })
+                          onAction={(action, officialStatus) =>
+                            review.mutate({
+                              action,
+                              id: item.id,
+                              officialStatus,
+                            })
                           }
                         />
                       </div>
@@ -823,10 +945,7 @@ export function ActionPlanDetailView({
                           disabled={reviewExtension.isPending}
                           onClick={() =>
                             reviewExtension.mutate({
-                              action:
-                                item.status === "SENT_TO_AUDIT"
-                                  ? "auditApprove"
-                                  : "managerApprove",
+                              action: "managerApprove",
                               id: item.id,
                             })
                           }
@@ -839,10 +958,7 @@ export function ActionPlanDetailView({
                           disabled={reviewExtension.isPending}
                           onClick={() =>
                             reviewExtension.mutate({
-                              action:
-                                item.status === "SENT_TO_AUDIT"
-                                  ? "auditReject"
-                                  : "managerReject",
+                              action: "managerReject",
                               id: item.id,
                             })
                           }
@@ -922,20 +1038,104 @@ export function ActionPlanDetailView({
               <div>
                 <dt className="text-stone-500">Actual</dt>
                 <dd className="mt-1 font-semibold">
-                  {formatRemediationDate(plan.currentDueDate)}
+                  {formatRemediationDate(plan.effectiveDueDate)}
                 </dd>
               </div>
             </dl>
             <p
               className={cn(
                 "mt-5 text-sm leading-6",
-                plan.isOverdue ? "text-rose-700" : "text-stone-500",
+                plan.deadlineStatus === "VENCIDO"
+                  ? "text-rose-700"
+                  : "text-stone-500",
               )}
             >
-              {plan.isOverdue
+              {plan.deadlineStatus === "VENCIDO"
                 ? "El plan está vencido y requiere atención."
-                : "El plan se encuentra dentro del plazo actual."}
+                : `El plan se encuentra dentro del plazo efectivo${plan.reprogrammed ? " reprogramado" : ""}.`}
             </p>
+            {canRequestExtension && !extensions.length ? (
+              <div className="mt-5 border-t border-stone-200 pt-5">
+                <button
+                  className="nibol-btn-secondary px-4 py-2.5 text-sm"
+                  onClick={() => setExtensionOpen((value) => !value)}
+                  type="button"
+                >
+                  Solicitar ampliación de plazo
+                </button>
+                {extensionOpen ? (
+                  <form
+                    className="mt-4 space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      requestExtension.mutate();
+                    }}
+                  >
+                    <label className="grid gap-1 text-sm font-semibold">
+                      Clasificación
+                      <select
+                        className="nibol-field"
+                        required
+                        value={extensionClassification}
+                        onChange={(event) =>
+                          setExtensionClassification(event.target.value)
+                        }
+                      >
+                        <option value="">Seleccione una clasificación</option>
+                        {classificationsQuery.data?.map((item) => (
+                          <option key={item.code} value={item.code}>
+                            {item.name} · máximo {item.maxAdditionalDays} días
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {selectedExtensionClass ? (
+                      <div className="rounded-lg border border-amber-200 bg-white/70 p-3 text-xs text-stone-700">
+                        <p>{selectedExtensionClass.description}</p>
+                        <p className="mt-1">
+                          Fecha actual: {plan.currentDueDate.slice(0, 10)} ·
+                          Fecha máxima permitida: {maxExtensionDate}
+                        </p>
+                      </div>
+                    ) : null}
+                    <label className="grid gap-1 text-sm font-semibold">
+                      Nueva fecha solicitada
+                      <input
+                        className="nibol-field"
+                        max={maxExtensionDate || undefined}
+                        min={plan.currentDueDate.slice(0, 10)}
+                        required
+                        type="date"
+                        value={extensionDate}
+                        onInput={(event) =>
+                          setExtensionDate(event.currentTarget.value)
+                        }
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm font-semibold">
+                      Justificación
+                      <textarea
+                        className="nibol-field min-h-20 py-2"
+                        required
+                        value={extensionReason}
+                        onChange={(event) =>
+                          setExtensionReason(event.target.value)
+                        }
+                      />
+                    </label>
+                    <button
+                      className="nibol-btn-primary px-4 py-2.5 text-sm"
+                      disabled={requestExtension.isPending}
+                      type="submit"
+                    >
+                      {requestExtension.isPending
+                        ? "Enviando…"
+                        : "Enviar solicitud"}
+                    </button>
+                  </form>
+                ) : null}
+              </div>
+            ) : null}
           </section>
 
           {extensions.length ? (
