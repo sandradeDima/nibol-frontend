@@ -15,7 +15,6 @@ import { cn } from "@/utils";
 type LogoutButtonProps = {
   children?: ReactNode;
   className?: string;
-  onBeforeOpen?: () => void;
   onLoggedOut?: () => void;
   variant?: "button" | "menu";
 };
@@ -23,7 +22,6 @@ type LogoutButtonProps = {
 export function LogoutButton({
   children = "Sign out",
   className,
-  onBeforeOpen,
   onLoggedOut,
   variant = "button",
 }: LogoutButtonProps) {
@@ -59,7 +57,6 @@ export function LogoutButton({
         )}
         disabled={logoutMutation.isPending}
         onClick={() => {
-          onBeforeOpen?.();
           setConfirmOpen(true);
         }}
         type="button"

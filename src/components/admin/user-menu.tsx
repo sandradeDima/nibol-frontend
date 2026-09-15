@@ -31,9 +31,13 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
     authorization.permissions.includes("notifications.view");
 
   const handleDocumentPointerDown = useEffectEvent((event: PointerEvent) => {
-    if (!containerRef.current?.contains(event.target as Node)) {
-      setOpen(false);
-    }
+    const target = event.target;
+    if (
+      containerRef.current?.contains(target as Node) ||
+      (target instanceof Element && target.closest('[role="dialog"]'))
+    )
+      return;
+    setOpen(false);
   });
 
   useEffect(() => {
@@ -128,9 +132,6 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
                       </span>
                     ))}
                   </div>
-                  <p className="text-xs text-[var(--muted)]">
-                    {authorization.permissions.length} permisos activos
-                  </p>
                 </div>
               </div>
             </div>
@@ -145,14 +146,8 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
               >
                 Mi perfil
               </Link>
-              <div className="border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-sm text-[var(--muted)]">
-                Sesión administrada por Better Auth
-              </div>
               <LogoutButton
                 className="inline-flex items-center gap-3 border border-[var(--border)] px-4 py-3 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--foreground)]"
-                onBeforeOpen={() => {
-                  setOpen(false);
-                }}
                 onLoggedOut={() => {
                   setOpen(false);
                 }}
