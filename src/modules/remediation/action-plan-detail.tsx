@@ -26,6 +26,7 @@ import { useSearchParams } from "next/navigation";
 import { ErrorState } from "@/components/ui/error-state";
 import { FilePicker } from "@/components/ui/file-picker";
 import { QUERY_KEYS } from "@/lib/constants";
+import { buildObservationUrl } from "@/lib/observation-links";
 import { extensionRequestService } from "@/services/extension-request-service";
 import { observationService } from "@/services/observation-service";
 import { progressService } from "@/services/progress-service";
@@ -99,9 +100,11 @@ const getFileKind = (mimeType: string) => {
 };
 
 function DocumentRow({
+  canDownload,
   file,
   onDownload,
 }: {
+  canDownload: boolean;
   file: ActionPlanEvidenceItem | ProgressEvaluationItem["evidence"][number];
   onDownload: (file: { downloadPath: string; originalName: string }) => void;
 }) {
@@ -131,25 +134,31 @@ function DocumentRow({
         >
           {evidenceStatusLabels[file.reviewStatus]}
         </span>
-        <button
-          aria-label={`Descargar ${file.originalName}`}
-          className="nibol-btn-secondary px-2.5 py-2 text-xs"
-          onClick={() => onDownload(file)}
-          title="Descargar documento"
-          type="button"
-        >
-          <Download className="h-3.5 w-3.5" />
-        </button>
+        {canDownload ? (
+          <button
+            aria-label={`Descargar ${file.originalName}`}
+            className="nibol-btn-secondary px-2.5 py-2 text-xs"
+            onClick={() => onDownload(file)}
+            title="Descargar documento"
+            type="button"
+          >
+            <Download className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
       </div>
     </div>
   );
 }
 
 function ApprovalActions({
+  canApprove,
+  canReturn,
   officialStatus,
   isPending,
   onAction,
 }: {
+  canApprove: boolean;
+  canReturn: boolean;
   officialStatus: ActionPlanStatus;
   isPending: boolean;
   onAction: (action: "approve" | "return", status: ActionPlanStatus) => void;
@@ -172,24 +181,28 @@ function ApprovalActions({
           <option value="CONCLUDED">Concluido</option>
         </select>
       </label>
-      <button
-        className="nibol-btn-primary px-3 py-2 text-xs"
-        disabled={isPending}
-        onClick={() => onAction("approve", status)}
-        type="button"
-      >
-        <Check className="h-3.5 w-3.5" />
-        Aprobar
-      </button>
-      <button
-        className="nibol-btn-secondary px-3 py-2 text-xs"
-        disabled={isPending}
-        onClick={() => onAction("return", status)}
-        type="button"
-      >
-        <RotateCcw className="h-3.5 w-3.5" />
-        Devolver
-      </button>
+      {canApprove ? (
+        <button
+          className="nibol-btn-primary px-3 py-2 text-xs"
+          disabled={isPending}
+          onClick={() => onAction("approve", status)}
+          type="button"
+        >
+          <Check className="h-3.5 w-3.5" />
+          Aprobar
+        </button>
+      ) : null}
+      {canReturn ? (
+        <button
+          className="nibol-btn-secondary px-3 py-2 text-xs"
+          disabled={isPending}
+          onClick={() => onAction("return", status)}
+          type="button"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Devolver
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -197,21 +210,33 @@ function ApprovalActions({
 export function ActionPlanDetailView({
   canEdit,
   canManageExtensions,
+  canApproveExtensions,
+  canApproveProgress,
   canRequestExtension,
+  canRejectExtensions,
+  canReturnProgress,
   canUploadEvidence,
+  canViewObservation,
   canViewExtensions,
-  canReviewProgress,
   actionPlanId,
+  currentUserId,
   initialEditing = false,
+  isAdmin,
 }: {
   canEdit: boolean;
+  canApproveExtensions: boolean;
+  canApproveProgress: boolean;
   canManageExtensions: boolean;
   canRequestExtension: boolean;
+  canRejectExtensions: boolean;
+  canReturnProgress: boolean;
   canUploadEvidence: boolean;
+  canViewObservation: boolean;
   canViewExtensions: boolean;
-  canReviewProgress: boolean;
   actionPlanId: string;
+  currentUserId: string;
   initialEditing?: boolean;
+  isAdmin: boolean;
 }) {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -237,6 +262,11 @@ export function ActionPlanDetailView({
     queryKey: ["progress-evaluations", "action-plan", actionPlanId],
   });
   const plan = planQuery.data;
+  const canRequestExtensionForPlan = Boolean(
+    canRequestExtension &&
+      plan &&
+      (isAdmin || plan.responsibleUser.id === currentUserId),
+  );
   const observationQuery = useQuery({
     enabled: Boolean(plan && editing),
     queryFn: () => observationService.getObservationById(plan!.observation.id),
@@ -250,7 +280,7 @@ export function ActionPlanDetailView({
     queryKey: QUERY_KEYS.observationOptions,
   });
   const commentsQuery = useQuery({
-    enabled: Boolean(plan),
+    enabled: Boolean(plan && canViewObservation),
     queryFn: () => progressService.getComments(plan!.observation.id),
     queryKey: ["observation-comments", plan?.observation.id],
   });
@@ -263,7 +293,7 @@ export function ActionPlanDetailView({
     queryKey: ["extension-requests", "action-plan", actionPlanId],
   });
   const classificationsQuery = useQuery({
-    enabled: Boolean(plan && canRequestExtension),
+    enabled: canRequestExtensionForPlan,
     queryFn: extensionRequestService.listClassifications,
     queryKey: ["deadline-extension-classifications"],
   });
@@ -273,7 +303,7 @@ export function ActionPlanDetailView({
     await Promise.all([
       planQuery.refetch(),
       evaluationsQuery.refetch(),
-      commentsQuery.refetch(),
+      canViewObservation ? commentsQuery.refetch() : Promise.resolve(),
       canViewExtensions ? extensionsQuery.refetch() : Promise.resolve(),
       queryClient.invalidateQueries({ queryKey: ["action-plans"] }),
       queryClient.invalidateQueries({
@@ -447,7 +477,11 @@ export function ActionPlanDetailView({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           className="nibol-btn-secondary px-4 py-2.5 text-sm"
-          href={`/observaciones/${plan.observation.id}`}
+          href={buildObservationUrl({
+            observationId: plan.observation.id,
+            planId: plan.id,
+            tab: "plans",
+          })}
         >
           <ArrowLeft className="h-4 w-4" />
           Volver a la observación
@@ -666,6 +700,7 @@ export function ActionPlanDetailView({
                       <div className="mt-1 divide-y divide-stone-200">
                         {item.evidence.map((file) => (
                           <DocumentRow
+                            canDownload={canViewObservation}
                             file={file}
                             key={file.id}
                             onDownload={(value) => download.mutate(value)}
@@ -699,8 +734,10 @@ export function ActionPlanDetailView({
                   ) : null}
                   {item.reviewStatus === "SENT_TO_AUDIT" ? (
                     <div className="mt-5 border-t border-stone-200 pt-4">
-                      {canReviewProgress ? (
+                      {canApproveProgress || canReturnProgress ? (
                         <ApprovalActions
+                          canApprove={canApproveProgress}
+                          canReturn={canReturnProgress}
                           officialStatus={item.officialStatus}
                           isPending={review.isPending}
                           onAction={(action, officialStatus) =>
@@ -789,6 +826,7 @@ export function ActionPlanDetailView({
                 <div className="divide-y divide-stone-200">
                   {planEvidence.map((file) => (
                     <DocumentRow
+                      canDownload={canViewObservation}
                       file={file}
                       key={file.id}
                       onDownload={(value) => download.mutate(value)}
@@ -803,71 +841,75 @@ export function ActionPlanDetailView({
             </div>
           </section>
 
-          <section className="nibol-panel p-6">
-            <div className="flex items-start gap-3">
-              <MessageSquare className="mt-0.5 h-5 w-5 text-amber-700" />
-              <div>
-                <p className="nibol-eyebrow">Colaboración</p>
-                <h2 className="mt-2 text-xl font-semibold">
-                  Comentarios del plan
-                </h2>
-              </div>
-            </div>
-            <div className="mt-5 space-y-3">
-              {comments.map((item) => (
-                <div
-                  className="border-b border-stone-200 pb-3 last:border-b-0"
-                  key={item.id}
-                >
-                  <div className="flex flex-wrap justify-between gap-2 text-xs text-stone-500">
-                    <span className="font-semibold text-stone-700">
-                      {item.authorUser.name}
-                    </span>
-                    <span>{formatProgressDate(item.createdAt)}</span>
-                  </div>
-                  <p className="mt-2 text-sm leading-6 whitespace-pre-wrap text-stone-700">
-                    {item.body}
-                  </p>
+          {canViewObservation ? (
+            <section className="nibol-panel p-6">
+              <div className="flex items-start gap-3">
+                <MessageSquare className="mt-0.5 h-5 w-5 text-amber-700" />
+                <div>
+                  <p className="nibol-eyebrow">Colaboración</p>
+                  <h2 className="mt-2 text-xl font-semibold">
+                    Comentarios del plan
+                  </h2>
                 </div>
-              ))}
-              {!commentsQuery.isLoading && !comments.length ? (
-                <p className="text-sm text-stone-500">
-                  Todavía no hay comentarios en este plan.
-                </p>
-              ) : null}
-            </div>
-            <form
-              className="mt-5 border-t border-stone-200 pt-5"
-              onSubmit={(event) => {
-                event.preventDefault();
-                addComment.mutate();
-              }}
-            >
-              <label
-                className="grid gap-2 text-sm font-semibold"
-                htmlFor="action-plan-comment"
-              >
-                Agregar comentario
-                <textarea
-                  className="nibol-field min-h-24 resize-y py-3"
-                  id="action-plan-comment"
-                  placeholder="Comparta una actualización o una observación…"
-                  value={comment}
-                  onChange={(event) => setComment(event.target.value)}
-                />
-              </label>
-              <div className="mt-3 flex justify-end">
-                <button
-                  className="nibol-btn-secondary px-4 py-2.5 text-sm"
-                  disabled={addComment.isPending || !comment.trim()}
-                  type="submit"
-                >
-                  <Send className="h-4 w-4" />
-                  {addComment.isPending ? "Guardando…" : "Publicar comentario"}
-                </button>
               </div>
-            </form>
-          </section>
+              <div className="mt-5 space-y-3">
+                {comments.map((item) => (
+                  <div
+                    className="border-b border-stone-200 pb-3 last:border-b-0"
+                    key={item.id}
+                  >
+                    <div className="flex flex-wrap justify-between gap-2 text-xs text-stone-500">
+                      <span className="font-semibold text-stone-700">
+                        {item.authorUser.name}
+                      </span>
+                      <span>{formatProgressDate(item.createdAt)}</span>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 whitespace-pre-wrap text-stone-700">
+                      {item.body}
+                    </p>
+                  </div>
+                ))}
+                {!commentsQuery.isLoading && !comments.length ? (
+                  <p className="text-sm text-stone-500">
+                    Todavía no hay comentarios en este plan.
+                  </p>
+                ) : null}
+              </div>
+              <form
+                className="mt-5 border-t border-stone-200 pt-5"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  addComment.mutate();
+                }}
+              >
+                <label
+                  className="grid gap-2 text-sm font-semibold"
+                  htmlFor="action-plan-comment"
+                >
+                  Agregar comentario
+                  <textarea
+                    className="nibol-field min-h-24 resize-y py-3"
+                    id="action-plan-comment"
+                    placeholder="Comparta una actualización o una observación…"
+                    value={comment}
+                    onChange={(event) => setComment(event.target.value)}
+                  />
+                </label>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    className="nibol-btn-secondary px-4 py-2.5 text-sm"
+                    disabled={addComment.isPending || !comment.trim()}
+                    type="submit"
+                  >
+                    <Send className="h-4 w-4" />
+                    {addComment.isPending
+                      ? "Guardando…"
+                      : "Publicar comentario"}
+                  </button>
+                </div>
+              </form>
+            </section>
+          ) : null}
         </div>
 
         <aside className="space-y-6">
@@ -906,9 +948,11 @@ export function ActionPlanDetailView({
                     <p className="mt-2 text-xs leading-5 text-stone-600">
                       {item.submittedByUser.name}: {item.comment}
                     </p>
-                    {canReviewProgress ? (
+                    {canApproveProgress || canReturnProgress ? (
                       <div className="mt-3">
                         <ApprovalActions
+                          canApprove={canApproveProgress}
+                          canReturn={canReturnProgress}
                           officialStatus={item.officialStatus}
                           isPending={review.isPending}
                           onAction={(action, officialStatus) =>
@@ -938,34 +982,42 @@ export function ActionPlanDetailView({
                     <p className="mt-2 text-xs leading-5 text-stone-600">
                       {item.reason}
                     </p>
-                    {canManageExtensions ? (
+                    {canManageExtensions &&
+                    (isAdmin ||
+                      item.observationArea?.areaResponsible.id ===
+                        currentUserId) &&
+                    (canApproveExtensions || canRejectExtensions) ? (
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <button
-                          className="nibol-btn-primary px-3 py-2 text-xs"
-                          disabled={reviewExtension.isPending}
-                          onClick={() =>
-                            reviewExtension.mutate({
-                              action: "managerApprove",
-                              id: item.id,
-                            })
-                          }
-                          type="button"
-                        >
-                          <Check className="h-3.5 w-3.5" /> Aprobar
-                        </button>
-                        <button
-                          className="nibol-btn-secondary px-3 py-2 text-xs text-rose-700"
-                          disabled={reviewExtension.isPending}
-                          onClick={() =>
-                            reviewExtension.mutate({
-                              action: "managerReject",
-                              id: item.id,
-                            })
-                          }
-                          type="button"
-                        >
-                          <X className="h-3.5 w-3.5" /> Rechazar
-                        </button>
+                        {canApproveExtensions ? (
+                          <button
+                            className="nibol-btn-primary px-3 py-2 text-xs"
+                            disabled={reviewExtension.isPending}
+                            onClick={() =>
+                              reviewExtension.mutate({
+                                action: "managerApprove",
+                                id: item.id,
+                              })
+                            }
+                            type="button"
+                          >
+                            <Check className="h-3.5 w-3.5" /> Aprobar
+                          </button>
+                        ) : null}
+                        {canRejectExtensions ? (
+                          <button
+                            className="nibol-btn-secondary px-3 py-2 text-xs text-rose-700"
+                            disabled={reviewExtension.isPending}
+                            onClick={() =>
+                              reviewExtension.mutate({
+                                action: "managerReject",
+                                id: item.id,
+                              })
+                            }
+                            type="button"
+                          >
+                            <X className="h-3.5 w-3.5" /> Rechazar
+                          </button>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -1054,7 +1106,7 @@ export function ActionPlanDetailView({
                 ? "El plan está vencido y requiere atención."
                 : `El plan se encuentra dentro del plazo efectivo${plan.reprogrammed ? " reprogramado" : ""}.`}
             </p>
-            {canRequestExtension && !extensions.length ? (
+            {canRequestExtensionForPlan && !extensions.length ? (
               <div className="mt-5 border-t border-stone-200 pt-5">
                 <button
                   className="nibol-btn-secondary px-4 py-2.5 text-sm"
@@ -1153,7 +1205,12 @@ export function ActionPlanDetailView({
                 {extensions.map((item) => (
                   <Link
                     className="block border-b border-stone-200 pb-3 last:border-b-0"
-                    href={`/ampliaciones-plazo/${item.id}`}
+                    href={buildObservationUrl({
+                      extensionId: item.id,
+                      observationId: plan.observation.id,
+                      planId: plan.id,
+                      tab: "plans",
+                    })}
                     key={item.id}
                   >
                     <div className="flex items-start justify-between gap-3">

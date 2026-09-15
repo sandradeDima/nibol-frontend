@@ -4,10 +4,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, RotateCcw } from "lucide-react";
 import Link from "next/link";
 
+import { buildObservationUrl } from "@/lib/observation-links";
 import { progressService } from "@/services/progress-service";
 import type { ActionPlanStatus } from "@/types";
 
-export function PendingProgressApprovals() {
+export function PendingProgressApprovals({
+  canApproveProgress,
+  canReturnProgress,
+}: {
+  canApproveProgress: boolean;
+  canReturnProgress: boolean;
+}) {
   const queryClient = useQueryClient();
   const query = useQuery({
     queryFn: () =>
@@ -31,7 +38,7 @@ export function PendingProgressApprovals() {
         action,
         action === "approve"
           ? { officialStatus }
-            : {
+          : {
               comment: "Revisión requerida",
               officialStatus,
             },
@@ -50,7 +57,12 @@ export function PendingProgressApprovals() {
             <div>
               <Link
                 className="text-xs font-semibold tracking-wider text-amber-700 uppercase hover:underline"
-                href={`/observaciones/${item.observation.id}`}
+                href={buildObservationUrl({
+                  advanceId: item.id,
+                  observationId: item.observation.id,
+                  planId: item.actionPlan.id,
+                  tab: "plans",
+                })}
               >
                 {item.observation.displayCode}
               </Link>
@@ -69,34 +81,49 @@ export function PendingProgressApprovals() {
             {item.comment}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              className="nibol-btn-primary px-3 py-2 text-xs"
-              onClick={() =>
-                review.mutate({
-                  action: "approve",
-                  id: item.id,
-                  officialStatus: item.officialStatus,
-                })
-              }
-              type="button"
-            >
-              <Check className="h-3.5 w-3.5" />
-              Aprobar
-            </button>
-            <button
+            <Link
               className="nibol-btn-secondary px-3 py-2 text-xs"
-              onClick={() =>
-                review.mutate({
-                  action: "return",
-                  id: item.id,
-                  officialStatus: item.officialStatus,
-                })
-              }
-              type="button"
+              href={buildObservationUrl({
+                advanceId: item.id,
+                observationId: item.observation.id,
+                planId: item.actionPlan.id,
+                tab: "plans",
+              })}
             >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Devolver
-            </button>
+              Ver
+            </Link>
+            {canApproveProgress ? (
+              <button
+                className="nibol-btn-primary px-3 py-2 text-xs"
+                onClick={() =>
+                  review.mutate({
+                    action: "approve",
+                    id: item.id,
+                    officialStatus: item.officialStatus,
+                  })
+                }
+                type="button"
+              >
+                <Check className="h-3.5 w-3.5" />
+                Aprobar
+              </button>
+            ) : null}
+            {canReturnProgress ? (
+              <button
+                className="nibol-btn-secondary px-3 py-2 text-xs"
+                onClick={() =>
+                  review.mutate({
+                    action: "return",
+                    id: item.id,
+                    officialStatus: item.officialStatus,
+                  })
+                }
+                type="button"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Devolver
+              </button>
+            ) : null}
           </div>
         </article>
       ))}

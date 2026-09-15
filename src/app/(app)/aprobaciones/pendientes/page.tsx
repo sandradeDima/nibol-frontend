@@ -1,11 +1,13 @@
 import { PageHeader } from "@/components/ui/page-header";
+import { hasAnyPermission } from "@/lib/permissions";
 import { requireAnyPermission } from "@/lib/server-auth";
 import { PendingApprovalsWorkspace } from "@/modules/extension-requests/pending-approvals-workspace";
 
 export default async function PendingApprovalsPage() {
   const authorization = await requireAnyPermission([
-    "observations.view",
-    "deadline_extensions.view",
+    "action_plans.evaluate",
+    "deadline_extensions.approve",
+    "deadline_extensions.reject",
   ]);
 
   return (
@@ -17,11 +19,22 @@ export default async function PendingApprovalsPage() {
       />
 
       <PendingApprovalsWorkspace
-        canViewExtensions={authorization.permissions.includes(
-          "deadline_extensions.view",
-        )}
+        canApproveProgress={
+          authorization.isAdmin ||
+          (authorization.permissions.includes("action_plans.evaluate") &&
+            authorization.permissions.includes("action_plans.approve"))
+        }
+        canReturnProgress={
+          authorization.isAdmin ||
+          (authorization.permissions.includes("action_plans.evaluate") &&
+            authorization.permissions.includes("action_plans.return"))
+        }
+        canViewExtensions={hasAnyPermission(authorization.permissions, [
+          "deadline_extensions.approve",
+          "deadline_extensions.reject",
+        ])}
         canViewProgress={authorization.permissions.includes(
-          "observations.view",
+          "action_plans.evaluate",
         )}
       />
     </main>

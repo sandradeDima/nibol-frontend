@@ -9,7 +9,21 @@ import Link from "next/link";
 import { extensionRequestService } from "@/services/extension-request-service";
 import { getApiErrorMessage } from "@/utils";
 
-export function ExtensionRequestDetail({ requestId }: { requestId: string }) {
+export function ExtensionRequestDetail({
+  canApprove,
+  canReject,
+  canRequest,
+  currentUserId,
+  isAdmin,
+  requestId,
+}: {
+  canApprove: boolean;
+  canReject: boolean;
+  canRequest: boolean;
+  currentUserId: string;
+  isAdmin: boolean;
+  requestId: string;
+}) {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const query = useQuery({
@@ -49,6 +63,9 @@ export function ExtensionRequestDetail({ requestId }: { requestId: string }) {
         Cargando solicitud…
       </section>
     );
+  const isOwner = isAdmin || request.requestedByUser.id === currentUserId;
+  const canManageAsAreaResponsible =
+    isAdmin || request.observationArea?.areaResponsible.id === currentUserId;
   const observationHref = request.observation
     ? `/observaciones/${request.observation.id}`
     : "/observaciones";
@@ -145,7 +162,7 @@ export function ExtensionRequestDetail({ requestId }: { requestId: string }) {
           </div>
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
-          {request.status === "DRAFT" ? (
+          {request.status === "DRAFT" && canRequest && isOwner ? (
             <button
               className="nibol-btn-primary px-4 py-2 text-sm"
               onClick={() => action.mutate("submit")}
@@ -155,27 +172,36 @@ export function ExtensionRequestDetail({ requestId }: { requestId: string }) {
               Enviar a aprobación
             </button>
           ) : null}
-          {request.status === "SENT_TO_MANAGER" ? (
+          {request.status === "SENT_TO_MANAGER" &&
+          canManageAsAreaResponsible &&
+          (canApprove || canReject) ? (
             <>
-              <button
-                className="nibol-btn-primary px-4 py-2 text-sm"
-                onClick={() => action.mutate("managerApprove")}
-                type="button"
-              >
-                <Check className="h-4 w-4" />
-                Aprobar como Gerencia
-              </button>
-              <button
-                className="nibol-btn-secondary px-4 py-2 text-sm"
-                onClick={() => action.mutate("managerReject")}
-                type="button"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Rechazar
-              </button>
+              {canApprove ? (
+                <button
+                  className="nibol-btn-primary px-4 py-2 text-sm"
+                  onClick={() => action.mutate("managerApprove")}
+                  type="button"
+                >
+                  <Check className="h-4 w-4" />
+                  Aprobar como Gerencia
+                </button>
+              ) : null}
+              {canReject ? (
+                <button
+                  className="nibol-btn-secondary px-4 py-2 text-sm"
+                  onClick={() => action.mutate("managerReject")}
+                  type="button"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Rechazar
+                </button>
+              ) : null}
             </>
           ) : null}
-          {!request.finalApprovedAt && request.status !== "CANCELLED" ? (
+          {!request.finalApprovedAt &&
+          request.status !== "CANCELLED" &&
+          canRequest &&
+          isOwner ? (
             <button
               className="nibol-btn-secondary px-4 py-2 text-sm text-rose-700"
               onClick={() => action.mutate("cancel")}

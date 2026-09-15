@@ -1,4 +1,3 @@
-import { PageHeader } from "@/components/ui/page-header";
 import { requirePermission } from "@/lib/server-auth";
 import { ObservationDetail } from "@/modules/observations/observation-detail";
 
@@ -15,19 +14,21 @@ export default async function ObservationDetailPage({
   const { id } = await params;
 
   return (
-    <main className="space-y-6">
-      <PageHeader
-        description="Revise el resumen ejecutivo del hallazgo, sus responsables, fechas y próximas acciones de seguimiento."
-        eyebrow="Ficha de observacion"
-        title="Detalle de observacion"
-      />
-
+    <main>
       <ObservationDetail
         canAssignRecommendedExecutor={authorization.permissions.includes(
           "action_plans.assign_executor",
         )}
+        canApproveProgress={
+          authorization.isAdmin ||
+          (authorization.permissions.includes("action_plans.evaluate") &&
+            authorization.permissions.includes("action_plans.approve"))
+        }
         canDelete={authorization.permissions.includes("observations.delete")}
         canClose={authorization.permissions.includes("observations.close")}
+        canCreateActionPlans={authorization.permissions.includes(
+          "action_plans.create",
+        )}
         canCreateRecommended={authorization.permissions.includes(
           "recommended_action_plans.create",
         )}
@@ -39,12 +40,14 @@ export default async function ObservationDetailPage({
         canEditRecommended={authorization.permissions.includes(
           "recommended_action_plans.edit",
         )}
-        canReviewProgress={authorization.permissions.includes(
-          "action_plans.evaluate",
-        )}
         canReviewEvidence={
           authorization.roleCode === "AUDITOR" &&
           authorization.permissions.includes("evidence.review")
+        }
+        canReturnProgress={
+          authorization.isAdmin ||
+          (authorization.permissions.includes("action_plans.evaluate") &&
+            authorization.permissions.includes("action_plans.return"))
         }
         canSubmitProgress={authorization.permissions.includes(
           "action_plans.submit_to_audit",
@@ -62,6 +65,8 @@ export default async function ObservationDetailPage({
         canViewRecommended={authorization.permissions.includes(
           "recommended_action_plans.view",
         )}
+        currentUserId={authorization.userId}
+        isAdmin={authorization.isAdmin}
         observationId={id}
       />
     </main>

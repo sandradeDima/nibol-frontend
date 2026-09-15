@@ -5,19 +5,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ChevronDown,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
-  X,
-} from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import * as IconSet from "lucide-react";
 
 import { Breadcrumbs } from "@/components/admin/breadcrumbs";
+import { GlobalSearch } from "@/components/admin/global-search";
 import { UserMenu } from "@/components/admin/user-menu";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { SearchField } from "@/components/ui/search-field";
 import type { AuthSession, AuthorizationSummary, SidebarItem } from "@/types";
 import { cn } from "@/utils";
 
@@ -48,7 +42,7 @@ const GROUP_LABELS: Record<string, string> = {
   Principal: "Principal",
 };
 
-const isActiveRoute = (pathname: string, route: string): boolean => {
+const matchesRoute = (pathname: string, route: string): boolean => {
   if (route === "/") {
     return pathname === "/";
   }
@@ -88,6 +82,9 @@ const buildNavigationGroups = (items: SidebarItem[]) => {
 function SidebarNav({ collapsed = false, items, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
   const groups = buildNavigationGroups(items);
+  const activeRoute = items
+    .filter((item) => matchesRoute(pathname, item.route))
+    .sort((left, right) => right.route.length - left.route.length)[0]?.route;
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     {},
   );
@@ -142,7 +139,7 @@ function SidebarNav({ collapsed = false, items, onNavigate }: SidebarNavProps) {
                         typeof IconSet.LayoutDashboard
                       >
                     )[item.icon] ?? IconSet.LayoutDashboard;
-                  const active = isActiveRoute(pathname, item.route);
+                  const active = activeRoute === item.route;
 
                   return (
                     <Link
@@ -187,15 +184,7 @@ function SidebarNav({ collapsed = false, items, onNavigate }: SidebarNavProps) {
   );
 }
 
-function SidebarBrand({
-  collapsed,
-  onToggleCollapsed,
-  showCollapseToggle,
-}: {
-  collapsed: boolean;
-  onToggleCollapsed?: () => void;
-  showCollapseToggle?: boolean;
-}) {
+function SidebarBrand({ collapsed }: { collapsed: boolean }) {
   return (
     <div className="border-b border-white/10 pb-6">
       <div
@@ -229,20 +218,6 @@ function SidebarBrand({
             </div>
           ) : null}
         </div>
-
-        {showCollapseToggle && onToggleCollapsed ? (
-          <button
-            className="hidden border border-white/10 bg-white/6 p-2.5 text-slate-200 transition hover:bg-white/10 hover:text-white lg:inline-flex"
-            onClick={onToggleCollapsed}
-            type="button"
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="h-4.5 w-4.5" />
-            ) : (
-              <PanelLeftClose className="h-4.5 w-4.5" />
-            )}
-          </button>
-        ) : null}
       </div>
     </div>
   );
@@ -279,7 +254,7 @@ function SidebarSummary({
           collapsed && "px-0",
         )}
       >
-        {collapsed ? null : "Cerrar sesion"}
+        {collapsed ? null : "Cerrar sesión"}
       </LogoutButton>
     </div>
   );
@@ -291,9 +266,14 @@ export function AdminShell({
   navigationItems,
   session,
 }: AdminShellProps) {
+  const pathname = usePathname();
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const [desktopHovered, setDesktopHovered] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [toolbarSearch, setToolbarSearch] = useState("");
+  const sidebarExpanded = !desktopCollapsed || desktopHovered;
+  const isObservationDetail =
+    pathname !== "/observaciones/nueva" &&
+    /^\/observaciones\/[^/]+$/.test(pathname);
 
   useEffect(() => {
     if (!mobileOpen) {
@@ -313,29 +293,32 @@ export function AdminShell({
       <div className="flex min-h-screen w-full">
         <aside
           className={cn(
-            "nibol-panel-dark sticky top-0 hidden h-screen max-h-screen shrink-0 overflow-hidden border-r border-r-white/10 px-4 py-5 shadow-[var(--shadow-sidebar)] lg:block",
-            desktopCollapsed ? "w-[5.75rem]" : "w-[18.75rem]",
+            "nibol-panel-dark sticky top-0 hidden h-screen max-h-screen shrink-0 overflow-hidden border-r border-r-white/10 px-4 py-5 shadow-[var(--shadow-sidebar)] transition-[width] duration-200 ease-out lg:block",
+            sidebarExpanded ? "w-[18.75rem]" : "w-[5.75rem]",
           )}
+          onFocus={() => {
+            if (desktopCollapsed) setDesktopHovered(true);
+          }}
+          onMouseEnter={() => {
+            if (desktopCollapsed) setDesktopHovered(true);
+          }}
+          onMouseLeave={() => {
+            if (desktopCollapsed) setDesktopHovered(false);
+          }}
         >
           <div className="flex h-full min-h-0 flex-col">
-            <SidebarBrand
-              collapsed={desktopCollapsed}
-              onToggleCollapsed={() => {
-                setDesktopCollapsed((current) => !current);
-              }}
-              showCollapseToggle
-            />
+            <SidebarBrand collapsed={!sidebarExpanded} />
 
             <div className="mt-6 min-h-0 flex-1 overflow-y-auto pr-1">
               <SidebarNav
-                collapsed={desktopCollapsed}
+                collapsed={!sidebarExpanded}
                 items={navigationItems}
               />
             </div>
 
             <SidebarSummary
               authorization={authorization}
-              collapsed={desktopCollapsed}
+              collapsed={!sidebarExpanded}
               session={session}
             />
           </div>
@@ -344,7 +327,7 @@ export function AdminShell({
         {mobileOpen ? (
           <div className="fixed inset-0 z-40 lg:hidden">
             <button
-              aria-label="Close navigation"
+              aria-label="Cerrar navegación"
               className="absolute inset-0 bg-[rgba(7,20,45,0.42)]"
               onClick={() => {
                 setMobileOpen(false);
@@ -394,14 +377,25 @@ export function AdminShell({
         ) : null}
 
         <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[rgba(255,255,255,0.96)] backdrop-blur-md">
+          <header
+            className={cn(
+              "border-b border-[var(--border)] bg-[rgba(255,255,255,0.96)] backdrop-blur-md",
+              !isObservationDetail && "sticky top-0 z-20",
+            )}
+          >
             <div className="px-4 py-4 sm:px-6 lg:px-8">
-              <div className="grid gap-4 xl:grid-cols-[auto_minmax(0,1fr)_auto] xl:items-center">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
                   <button
-                    className="nibol-btn-secondary px-3 lg:hidden"
+                    aria-label="Alternar navegación"
+                    aria-expanded={sidebarExpanded}
+                    className="nibol-btn-secondary px-3"
                     onClick={() => {
-                      setMobileOpen(true);
+                      if (window.matchMedia("(min-width: 1024px)").matches) {
+                        setDesktopCollapsed((current) => !current);
+                      } else {
+                        setMobileOpen(true);
+                      }
                     }}
                     type="button"
                   >
@@ -416,17 +410,37 @@ export function AdminShell({
                   </div>
                 </div>
 
-                <SearchField
-                  className="hidden xl:block"
-                  onChange={(value) => {
-                    setToolbarSearch(value);
-                  }}
-                  placeholder="Buscar modulo o seccion"
-                  value={toolbarSearch}
-                />
-
-                <UserMenu authorization={authorization} session={session} />
+                <div className="flex items-center gap-3">
+                  <GlobalSearch
+                    canSearchAuditReports={authorization.permissions.includes(
+                      "audit_reports.view",
+                    )}
+                    canViewObservations={authorization.permissions.includes(
+                      "observations.view",
+                    )}
+                    canViewReports={authorization.permissions.includes(
+                      "reports.view",
+                    )}
+                    className="hidden w-[min(31rem,34vw)] lg:block"
+                    navigationItems={navigationItems}
+                  />
+                  <UserMenu authorization={authorization} session={session} />
+                </div>
               </div>
+
+              <GlobalSearch
+                canSearchAuditReports={authorization.permissions.includes(
+                  "audit_reports.view",
+                )}
+                canViewObservations={authorization.permissions.includes(
+                  "observations.view",
+                )}
+                canViewReports={authorization.permissions.includes(
+                  "reports.view",
+                )}
+                className="mt-4 w-full lg:hidden"
+                navigationItems={navigationItems}
+              />
 
               <div className="mt-4">
                 <Breadcrumbs />

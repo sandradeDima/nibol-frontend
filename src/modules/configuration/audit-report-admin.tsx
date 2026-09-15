@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { Pencil, Plus, Save, Search, X } from "lucide-react";
 
 import {
@@ -22,11 +23,14 @@ const emptyClass = { description: "", name: "" };
 
 export function AuditReportAdmin() {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const [reportForm, setReportForm] = useState(emptyReport);
   const [editingReport, setEditingReport] = useState<AuditReportEntry | null>(
     null,
   );
-  const [reportSearch, setReportSearch] = useState("");
+  const [reportSearch, setReportSearch] = useState(
+    () => searchParams.get("search") ?? "",
+  );
   const [classForm, setClassForm] = useState(emptyClass);
   const [editingClass, setEditingClass] =
     useState<AuditReportClassEntry | null>(null);

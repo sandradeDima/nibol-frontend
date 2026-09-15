@@ -37,13 +37,15 @@ import {
 
 type Props = {
   canAssignRecommendedExecutor: boolean;
+  canApproveProgress: boolean;
   canClose: boolean;
+  canCreateActionPlans: boolean;
   canCreateRecommended: boolean;
   canDelete: boolean;
   canEdit: boolean;
   canEditActionPlans: boolean;
   canEditRecommended: boolean;
-  canReviewProgress: boolean;
+  canReturnProgress: boolean;
   canReviewEvidence: boolean;
   canSend: boolean;
   canSubmitRecommended: boolean;
@@ -51,6 +53,8 @@ type Props = {
   canUploadEvidence: boolean;
   canViewTechnical: boolean;
   canViewRecommended: boolean;
+  currentUserId: string;
+  isAdmin: boolean;
   observationId: string;
 };
 
@@ -95,13 +99,15 @@ const remainingLabel = (dateValue: string) => {
 
 export function ObservationDetail({
   canAssignRecommendedExecutor,
+  canApproveProgress,
   canClose,
+  canCreateActionPlans,
   canCreateRecommended,
   canEditRecommended,
   canDelete,
   canEdit,
   canEditActionPlans,
-  canReviewProgress,
+  canReturnProgress,
   canReviewEvidence,
   canSend,
   canSubmitRecommended,
@@ -109,6 +115,8 @@ export function ObservationDetail({
   canUploadEvidence,
   canViewTechnical,
   canViewRecommended,
+  currentUserId,
+  isAdmin,
   observationId,
 }: Props) {
   const queryClient = useQueryClient();
@@ -127,17 +135,31 @@ export function ObservationDetail({
   const activeTab = isObservationTab(requestedTab)
     ? requestedTab
     : (legacyTab ?? "summary");
+  const activePlanId = searchParams.get("planId");
+  const activeAdvanceId = searchParams.get("advanceId");
   const activeEvidenceId = searchParams.get("evidenceId");
+  const activeExtensionId = searchParams.get("extensionId");
 
   const changeTab = (tab: ObservationTab) => {
     const next = new URLSearchParams(searchParams.toString());
     next.set("tab", tab);
     if (tab !== "evidence") next.delete("evidenceId");
+    if (tab !== "plans") {
+      next.delete("planId");
+      next.delete("advanceId");
+      next.delete("extensionId");
+    }
     router.push(`${pathname}?${next.toString()}`, { scroll: false });
   };
   const query = useQuery({
     queryFn: () => observationService.getObservationById(observationId),
     queryKey: QUERY_KEYS.observationDetails(observationId),
+  });
+  const closeReadiness = useQuery({
+    enabled: canClose,
+    queryFn: () => observationService.getObservationActionItems(observationId),
+    queryKey: QUERY_KEYS.observationActionItems(observationId),
+    staleTime: 30_000,
   });
   const remove = useMutation({
     mutationFn: () => observationService.deleteObservation(observationId),
@@ -185,171 +207,162 @@ export function ObservationDetail({
         Cargando detalle…
       </section>
     );
+  const canCloseObservation = Boolean(
+    canClose &&
+      !observation.status.isFinal &&
+      closeReadiness.data?.some(
+        (item) => item.actionType === "REQUEST_CLOSURE",
+      ),
+  );
 
   return (
     <div className="space-y-6">
-      <section className="nibol-panel min-w-0 overflow-hidden">
-        <div className="border-b border-stone-200 bg-stone-950 px-6 py-6 text-white">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold tracking-[0.22em] text-amber-400 uppercase">
-                {observation.displayCode}
-              </p>
-              <h2 className="mt-2 max-w-4xl text-3xl font-semibold tracking-tight break-words">
-                {observation.title}
-              </h2>
-              <p className="mt-2 text-sm text-stone-300">
-                {observation.auditReport.title}
-              </p>
-            </div>
-            <div className="flex min-w-0 flex-wrap gap-2">
-              <Link
-                className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
-                href="/observaciones"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Volver
-              </Link>
-              {canClose && !observation.status.isFinal ? (
-                <button
-                  className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
-                  id="cierre-observacion"
-                  onClick={() => setConfirmClose(true)}
-                  type="button"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Concluir
-                </button>
-              ) : null}
-              {canSend && !observation.status.isFinal ? (
-                <button
-                  className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
-                  disabled={send.isPending}
-                  onClick={() => send.mutate()}
-                  type="button"
-                >
-                  <Send className="h-4 w-4" />
-                  {send.isPending ? "Enviando..." : "Enviar a involucrados"}
-                </button>
-              ) : null}
-              {observation.actionPlanCount === 1 ? (
+      <div className="sticky top-0 z-10 -mx-4 space-y-2 bg-[var(--background)] pb-1 sm:-mx-6 lg:-mx-8">
+        <section className="nibol-panel min-w-0 overflow-hidden">
+          <div className="border-b border-stone-200 bg-stone-950 px-6 py-6 text-white">
+            <div className="flex flex-wrap items-start justify-between gap-5">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold tracking-[0.22em] text-amber-400 uppercase">
+                  {observation.displayCode}
+                </p>
+                <h1 className="mt-2 max-w-4xl text-2xl font-semibold tracking-tight break-words sm:text-3xl">
+                  {observation.title}
+                </h1>
+                <p className="mt-2 text-sm text-stone-300">
+                  {observation.auditReport.title}
+                </p>
+                <p className="mt-1 text-xs text-stone-400">
+                  {observation.areas
+                    .map((area) => area.area.name)
+                    .join(" · ") || "Sin área asignada"}
+                </p>
+              </div>
+              <div className="flex min-w-0 flex-wrap gap-2">
                 <Link
                   className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
-                  href={`/observaciones/${observation.id}?tab=plans&planId=${observation.actionPlans[0]?.id ?? ""}`}
+                  href="/observaciones"
                 >
-                  <FileText className="h-4 w-4" />
-                  Ver Plan de Acción
+                  <ArrowLeft className="h-4 w-4" />
+                  Volver
                 </Link>
-              ) : observation.actionPlanCount > 1 ? (
-                <Link
-                  className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
-                  href={`/observaciones/${observation.id}?tab=plans`}
-                >
-                  <FileText className="h-4 w-4" />
-                  Ver Planes de Acción
-                </Link>
-              ) : null}
-              <Link
-                className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
-                href={`/observaciones/${observation.id}?tab=evidence`}
-              >
-                <FileText className="h-4 w-4" />
-                Ver documentos de respaldo
-              </Link>
-              {canEdit ? (
-                <Link
-                  className="nibol-btn-primary px-4 py-2.5 text-sm"
-                  href={`/observaciones/${observation.id}/editar`}
-                >
-                  <Pencil className="h-4 w-4" />
-                  Editar
-                </Link>
-              ) : null}
+                {canCloseObservation ? (
+                  <button
+                    className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
+                    id="cierre-observacion"
+                    onClick={() => setConfirmClose(true)}
+                    type="button"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Concluir
+                  </button>
+                ) : null}
+                {canSend && !observation.sentAt && !observation.status.isFinal ? (
+                  <button
+                    className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
+                    disabled={send.isPending}
+                    onClick={() => send.mutate()}
+                    type="button"
+                  >
+                    <Send className="h-4 w-4" />
+                    {send.isPending ? "Enviando..." : "Enviar a involucrados"}
+                  </button>
+                ) : null}
+                {canEdit ? (
+                  <Link
+                    className="nibol-btn-primary px-4 py-2.5 text-sm"
+                    href={`/observaciones/${observation.id}/editar`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Editar
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="grid gap-px bg-stone-200 sm:grid-cols-2 xl:grid-cols-6">
-          {[
-            ["Nivel", observation.riskLevel.name, "risk"],
-            ["Estado", observation.status.name, "status"],
-            ["Progreso", `${observation.progressPercent}%`, ""],
-            [
-              "Fecha original",
-              formatObservationDate(observation.originalDueDate),
-              "",
-            ],
-            [
-              "Fecha actual",
-              formatObservationDate(observation.currentDueDate),
-              "",
-            ],
-            ["Plazo", remainingLabel(observation.currentDueDate), ""],
-          ].map(([label, value, kind]) => (
-            <div className="bg-white p-5" key={label}>
-              <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
-                {label}
-              </p>
-              <p
-                className={cn(
-                  "mt-2 text-base font-semibold text-stone-950",
-                  kind === "risk" &&
-                    `inline-flex border px-2.5 py-1 ${getRiskLevelClasses()}`,
-                  kind === "status" && getStatusClasses(observation.status.key),
-                )}
-                style={
-                  kind === "risk"
-                    ? getRiskLevelStyle(observation.riskLevel.colorToken)
-                    : undefined
-                }
-              >
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+          <div className="grid gap-px bg-stone-200 sm:grid-cols-2 xl:grid-cols-6">
+            {[
+              ["Nivel", observation.riskLevel.name, "risk"],
+              ["Estado", observation.status.name, "status"],
+              ["Progreso", `${observation.progressPercent}%`, ""],
+              [
+                "Fecha original",
+                formatObservationDate(observation.originalDueDate),
+                "",
+              ],
+              [
+                "Fecha actual",
+                formatObservationDate(observation.currentDueDate),
+                "",
+              ],
+              ["Plazo", remainingLabel(observation.currentDueDate), ""],
+            ].map(([label, value, kind]) => (
+              <div className="bg-white p-3.5 sm:p-4" key={label}>
+                <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
+                  {label}
+                </p>
+                <p
+                  className={cn(
+                    "mt-2 text-base font-semibold text-stone-950",
+                    kind === "risk" &&
+                      `inline-flex border px-2.5 py-1 ${getRiskLevelClasses()}`,
+                    kind === "status" &&
+                      getStatusClasses(observation.status.key),
+                  )}
+                  style={
+                    kind === "risk"
+                      ? getRiskLevelStyle(observation.riskLevel.colorToken)
+                      : undefined
+                  }
+                >
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-      <nav
-        aria-label="Secciones de la observación"
-        className="nibol-panel min-w-0 p-2"
-      >
-        <div
-          aria-orientation="horizontal"
-          className="flex max-w-full gap-1 overflow-x-auto"
-          role="tablist"
+        <nav
+          aria-label="Secciones de la observación"
+          className="nibol-panel min-w-0 p-2"
         >
-          {observationTabs.map((tab, index) => (
-            <button
-              aria-controls={`observation-tabpanel-${tab.key}`}
-              aria-selected={activeTab === tab.key}
-              className={cn(
-                "min-h-11 shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none",
-                activeTab === tab.key
-                  ? "bg-stone-950 text-white"
-                  : "text-stone-600 hover:bg-amber-50 hover:text-stone-950",
-              )}
-              key={tab.key}
-              id={`${tab.key}-tab`}
-              onClick={() => changeTab(tab.key)}
-              onKeyDown={(event) => {
-                if (event.key !== "ArrowRight" && event.key !== "ArrowLeft")
-                  return;
-                event.preventDefault();
-                const nextIndex =
-                  (index +
-                    (event.key === "ArrowRight" ? 1 : -1) +
-                    observationTabs.length) %
-                  observationTabs.length;
-                changeTab(observationTabs[nextIndex]!.key);
-              }}
-              role="tab"
-              type="button"
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </nav>
+          <div
+            aria-orientation="horizontal"
+            className="flex max-w-full gap-1 overflow-x-auto"
+            role="tablist"
+          >
+            {observationTabs.map((tab, index) => (
+              <button
+                aria-controls={`observation-tabpanel-${tab.key}`}
+                aria-selected={activeTab === tab.key}
+                className={cn(
+                  "min-h-11 shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none",
+                  activeTab === tab.key
+                    ? "bg-stone-950 text-white"
+                    : "text-stone-600 hover:bg-amber-50 hover:text-stone-950",
+                )}
+                key={tab.key}
+                id={`${tab.key}-tab`}
+                onClick={() => changeTab(tab.key)}
+                onKeyDown={(event) => {
+                  if (event.key !== "ArrowRight" && event.key !== "ArrowLeft")
+                    return;
+                  event.preventDefault();
+                  const nextIndex =
+                    (index +
+                      (event.key === "ArrowRight" ? 1 : -1) +
+                      observationTabs.length) %
+                    observationTabs.length;
+                  changeTab(observationTabs[nextIndex]!.key);
+                }}
+                role="tab"
+                type="button"
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </nav>
+      </div>
 
       <ObservationActionPanel observationId={observationId} />
 
@@ -510,7 +523,10 @@ export function ObservationDetail({
         >
           <div id="planes-accion">
             <RemediationWorkspace
+              activeExtensionId={activeExtensionId}
+              activePlanId={activePlanId}
               canAssignRecommendedExecutor={canAssignRecommendedExecutor}
+              canCreateActionPlans={canCreateActionPlans}
               canCreateRecommended={canCreateRecommended}
               canEditActionPlans={canEditActionPlans}
               canEditRecommended={canEditRecommended}
@@ -520,10 +536,14 @@ export function ObservationDetail({
             />
           </div>
           <ObservationCollaborationWorkspace
+            activeEvaluationId={activeAdvanceId}
+            canApproveProgress={canApproveProgress}
             canReviewEvidence={canReviewEvidence}
-            canReviewProgress={canReviewProgress}
+            canReturnProgress={canReturnProgress}
             canSubmitProgress={canSubmitProgress}
             canUploadEvidence={canUploadEvidence}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
             observationId={observationId}
             section="plans"
           />
@@ -540,10 +560,13 @@ export function ObservationDetail({
           <div id="evidencia-hallazgo">
             <ObservationCollaborationWorkspace
               activeEvidenceId={activeEvidenceId}
+              canApproveProgress={canApproveProgress}
               canReviewEvidence={canReviewEvidence}
-              canReviewProgress={canReviewProgress}
+              canReturnProgress={canReturnProgress}
               canSubmitProgress={canSubmitProgress}
               canUploadEvidence={canUploadEvidence}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
               observationId={observationId}
               section="evidence"
             />
@@ -578,17 +601,20 @@ export function ObservationDetail({
             </div>
           </section>
           <ObservationCollaborationWorkspace
+            canApproveProgress={canApproveProgress}
             canReviewEvidence={canReviewEvidence}
-            canReviewProgress={canReviewProgress}
+            canReturnProgress={canReturnProgress}
             canSubmitProgress={canSubmitProgress}
             canUploadEvidence={canUploadEvidence}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
             observationId={observationId}
             section="history"
           />
         </div>
       ) : null}
 
-      {canDelete ? (
+      {canDelete && !observation.sentAt ? (
         <div className="flex justify-end">
           <button
             className="nibol-btn-secondary px-4 py-2.5 text-sm text-rose-700"

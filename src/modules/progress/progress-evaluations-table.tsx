@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
+import { buildObservationUrl } from "@/lib/observation-links";
 import { progressService } from "@/services/progress-service";
 import { getActionPlanStatusLabel } from "../remediation/presentation";
 import { getProgressStatusLabel } from "./presentation";
@@ -33,7 +34,12 @@ export function ProgressEvaluationsTable() {
                 <td className="px-5 py-4">
                   <Link
                     className="font-semibold text-amber-800 hover:underline"
-                    href={`/observaciones/${item.observation.id}`}
+                    href={buildObservationUrl({
+                      advanceId: item.id,
+                      observationId: item.observation.id,
+                      planId: item.actionPlan.id,
+                      tab: "plans",
+                    })}
                   >
                     {item.observation.displayCode}
                   </Link>

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
+import { buildObservationUrl } from "@/lib/observation-links";
 import { extensionRequestService } from "@/services/extension-request-service";
 
 export function ExtensionRequestTable() {
@@ -17,7 +18,16 @@ export function ExtensionRequestTable() {
         {query.data?.data.map((request) => (
           <Link
             className="grid gap-4 p-5 transition hover:bg-amber-50/40 md:grid-cols-[1.5fr_1fr_1fr_auto] md:items-center"
-            href={`/ampliaciones-plazo/${request.id}`}
+            href={
+              request.observation?.id
+                ? buildObservationUrl({
+                    extensionId: request.id,
+                    observationId: request.observation.id,
+                    planId: request.actionPlan?.id ?? undefined,
+                    tab: "plans",
+                  })
+                : `/ampliaciones-plazo/${request.id}`
+            }
             key={request.id}
           >
             <div>

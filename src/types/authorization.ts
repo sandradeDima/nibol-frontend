@@ -13,5 +13,6 @@ export interface SidebarItem {
   icon: string;
   label: string;
   permission?: string;
+  permissions?: string[];
   route: string;
 }

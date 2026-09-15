@@ -16,6 +16,17 @@ export default async function ActionPlanPage({
     <main>
       <ActionPlanDetailView
         actionPlanId={id}
+        canApproveExtensions={authorization.permissions.includes(
+          "deadline_extensions.approve",
+        )}
+        canApproveProgress={
+          authorization.isAdmin ||
+          (authorization.permissions.includes("action_plans.evaluate") &&
+            authorization.permissions.includes("action_plans.approve"))
+        }
+        canViewObservation={authorization.permissions.includes(
+          "observations.view",
+        )}
         canEdit={authorization.permissions.includes("action_plans.edit")}
         canManageExtensions={
           authorization.permissions.includes("deadline_extensions.approve") ||
@@ -24,18 +35,23 @@ export default async function ActionPlanPage({
         canRequestExtension={authorization.permissions.includes(
           "deadline_extensions.request",
         )}
+        canRejectExtensions={authorization.permissions.includes(
+          "deadline_extensions.reject",
+        )}
+        canReturnProgress={
+          authorization.isAdmin ||
+          (authorization.permissions.includes("action_plans.evaluate") &&
+            authorization.permissions.includes("action_plans.return"))
+        }
         canViewExtensions={authorization.permissions.includes(
           "deadline_extensions.view",
         )}
-        canReviewProgress={
-          authorization.isAdmin ||
-          (authorization.permissions.includes("action_plans.evaluate") &&
-            authorization.permissions.includes("action_plans.approve"))
-        }
         canUploadEvidence={authorization.permissions.includes(
           "evidence.create",
         )}
+        currentUserId={authorization.userId}
         initialEditing={edit === "1"}
+        isAdmin={authorization.isAdmin}
       />
     </main>
   );

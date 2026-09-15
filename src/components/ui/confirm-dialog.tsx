@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 
 import { AlertTriangle, X } from "lucide-react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/utils";
 
@@ -63,12 +64,12 @@ export function ConfirmDialog({
     return null;
   }
 
-  return (
+  return createPortal(
     <div
       aria-modal="true"
       aria-describedby={descriptionId}
       aria-labelledby={titleId}
-      className="fixed inset-0 z-50 flex items-end bg-[rgba(7,20,45,0.4)] p-3 sm:items-center sm:justify-center sm:p-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(7,20,45,0.4)] p-3 sm:p-6"
       role="dialog"
     >
       <button
@@ -157,6 +158,7 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

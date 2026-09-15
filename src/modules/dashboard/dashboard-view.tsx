@@ -984,7 +984,7 @@ export function DashboardView({ data }: DashboardViewProps) {
         }
         description={data.subtitle}
         eyebrow={data.scope === "auditoria" ? "Auditoría" : "Área y gerencia"}
-        title="Dashboard de Seguimiento"
+        title="Dashboard de reportería"
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">

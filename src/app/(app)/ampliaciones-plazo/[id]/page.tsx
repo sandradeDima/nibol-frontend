@@ -11,7 +11,7 @@ type ExtensionRequestDetailPageProps = {
 export default async function ExtensionRequestDetailPage({
   params,
 }: ExtensionRequestDetailPageProps) {
-  await requirePermission("deadline_extensions.view");
+  const authorization = await requirePermission("deadline_extensions.view");
   const { id } = await params;
 
   return (
@@ -22,7 +22,20 @@ export default async function ExtensionRequestDetailPage({
         title="Detalle de ampliación"
       />
 
-      <ExtensionRequestDetail requestId={id} />
+      <ExtensionRequestDetail
+        canApprove={authorization.permissions.includes(
+          "deadline_extensions.approve",
+        )}
+        canReject={authorization.permissions.includes(
+          "deadline_extensions.reject",
+        )}
+        canRequest={authorization.permissions.includes(
+          "deadline_extensions.request",
+        )}
+        currentUserId={authorization.userId}
+        isAdmin={authorization.isAdmin}
+        requestId={id}
+      />
     </main>
   );
 }

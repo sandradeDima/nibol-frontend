@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, ChevronRight, Pencil, Plus, Target } from "lucide-react";
 import Link from "next/link";
 
 import { QUERY_KEYS } from "@/lib/constants";
+import { buildObservationUrl } from "@/lib/observation-links";
+import { extensionRequestService } from "@/services/extension-request-service";
 import { observationService } from "@/services/observation-service";
 import { remediationService } from "@/services/remediation-service";
 import { getApiErrorMessage } from "@/utils";
@@ -25,7 +27,10 @@ const emptyForm = {
 };
 
 export function RemediationWorkspace({
+  activeExtensionId,
+  activePlanId,
   canAssignRecommendedExecutor,
+  canCreateActionPlans,
   canCreateRecommended,
   canEditActionPlans,
   canEditRecommended,
@@ -33,7 +38,10 @@ export function RemediationWorkspace({
   canViewRecommended,
   observationId,
 }: {
+  activeExtensionId?: string | null;
+  activePlanId?: string | null;
   canAssignRecommendedExecutor: boolean;
+  canCreateActionPlans: boolean;
   canCreateRecommended: boolean;
   canEditActionPlans: boolean;
   canEditRecommended: boolean;
@@ -61,6 +69,11 @@ export function RemediationWorkspace({
       ),
     queryKey: ["action-plans", observationId],
   });
+  const activeExtension = useQuery({
+    enabled: Boolean(activeExtensionId),
+    queryFn: () => extensionRequestService.getById(activeExtensionId as string),
+    queryKey: ["extension-request", activeExtensionId],
+  });
   const remediationPlans = useQuery({
     enabled: canViewRecommended,
     queryFn: () => remediationService.listRemediationPlans(observationId),
@@ -84,6 +97,9 @@ export function RemediationWorkspace({
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.observationDetails(observationId),
         }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.observationActionItems(observationId),
+        }),
       ]);
     },
   });
@@ -106,11 +122,26 @@ export function RemediationWorkspace({
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.observationDetails(observationId),
         }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.observationActionItems(observationId),
+        }),
       ]);
     },
   });
   const data = observation.data;
   const rows = plans.data?.data ?? [];
+
+  useEffect(() => {
+    const targetId = activeExtensionId
+      ? `extension-${activeExtensionId}`
+      : activePlanId
+        ? `action-plan-${activePlanId}`
+        : null;
+    if (!targetId) return;
+    document
+      .getElementById(targetId)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [activeExtensionId, activeExtension.data, activePlanId, plans.data]);
 
   return (
     <section className="nibol-panel p-6">
@@ -127,7 +158,7 @@ export function RemediationWorkspace({
             forma independiente.
           </p>
         </div>
-        {canEditActionPlans ? (
+        {canCreateActionPlans ? (
           <button
             className="nibol-btn-primary px-4 py-2.5 text-sm"
             onClick={() => setShowForm((value) => !value)}
@@ -139,7 +170,26 @@ export function RemediationWorkspace({
         ) : null}
       </div>
 
-      {showForm && canEditActionPlans && data ? (
+      {activeExtension.data && !activeExtension.data.actionPlan ? (
+        <div
+          className="mt-5 border border-[var(--primary)] bg-[var(--primary-soft)] p-4 ring-2 ring-[color:color-mix(in_srgb,var(--primary)_20%,transparent)]"
+          id={`extension-${activeExtension.data.id}`}
+        >
+          <p className="text-xs font-semibold tracking-[0.16em] text-[var(--primary)] uppercase">
+            Ampliación solicitada
+          </p>
+          <p className="mt-2 text-sm text-stone-700">
+            Hasta {activeExtension.data.proposedDueDate.slice(0, 10)} · +
+            {activeExtension.data.impactDays} días ·{" "}
+            {activeExtension.data.status}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-stone-700">
+            {activeExtension.data.reason}
+          </p>
+        </div>
+      ) : null}
+
+      {showForm && canCreateActionPlans && data ? (
         <form
           className="mt-6 grid gap-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-5 md:grid-cols-2"
           onSubmit={(event) => {
@@ -310,12 +360,17 @@ export function RemediationWorkspace({
                       />
                     ) : (
                       <div
-                        className="relative rounded-2xl border border-stone-200 bg-white transition hover:border-amber-300 hover:shadow-sm"
+                        className={`relative rounded-2xl border bg-white transition hover:border-amber-300 hover:shadow-sm ${activePlanId === plan.id || activeExtension.data?.actionPlan?.id === plan.id ? "border-[var(--primary)] bg-[var(--primary-soft)] ring-2 ring-[color:color-mix(in_srgb,var(--primary)_20%,transparent)]" : "border-stone-200"}`}
+                        id={`action-plan-${plan.id}`}
                         key={plan.id}
                       >
                         <Link
                           className="group block p-5 pr-14"
-                          href={`/planes-accion/${plan.id}`}
+                          href={buildObservationUrl({
+                            observationId,
+                            planId: plan.id,
+                            tab: "plans",
+                          })}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div>
@@ -349,6 +404,28 @@ export function RemediationWorkspace({
                             />
                           </div>
                         </Link>
+                        {activeExtension.data?.actionPlan?.id === plan.id ? (
+                          <div
+                            className="mx-5 mb-5 border border-[var(--primary)] bg-white p-3 ring-2 ring-[color:color-mix(in_srgb,var(--primary)_20%,transparent)]"
+                            id={`extension-${activeExtension.data.id}`}
+                          >
+                            <p className="text-xs font-semibold tracking-[0.14em] text-[var(--primary)] uppercase">
+                              Ampliación solicitada
+                            </p>
+                            <p className="mt-1 text-sm text-stone-700">
+                              Hasta{" "}
+                              {activeExtension.data.proposedDueDate.slice(
+                                0,
+                                10,
+                              )}{" "}
+                              · +{activeExtension.data.impactDays} días ·{" "}
+                              {activeExtension.data.status}
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-stone-600">
+                              {activeExtension.data.reason}
+                            </p>
+                          </div>
+                        ) : null}
                         {canEditActionPlans ? (
                           <button
                             aria-label="Editar plan de acción"

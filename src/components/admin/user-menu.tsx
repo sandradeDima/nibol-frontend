@@ -146,16 +146,19 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
                 Mi perfil
               </Link>
               <div className="border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-sm text-[var(--muted)]">
-                Sesion administrada por Better Auth
+                Sesión administrada por Better Auth
               </div>
               <LogoutButton
                 className="inline-flex items-center gap-3 border border-[var(--border)] px-4 py-3 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--foreground)]"
+                onBeforeOpen={() => {
+                  setOpen(false);
+                }}
                 onLoggedOut={() => {
                   setOpen(false);
                 }}
                 variant="menu"
               >
-                Cerrar sesion
+                Cerrar sesión
               </LogoutButton>
             </div>
           </div>

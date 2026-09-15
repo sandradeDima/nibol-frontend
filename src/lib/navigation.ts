@@ -1,5 +1,6 @@
 import { generatedSidebarItems } from "@/modules/generated-module-registry";
-import type { SidebarItem } from "@/types";
+import type { AuthorizationSummary, SidebarItem } from "@/types";
+import { hasAnyPermission, hasPermission } from "./permissions";
 
 type SidebarConfigItem = Omit<SidebarItem, "icon"> & {
   icon: string;
@@ -11,6 +12,13 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     icon: "LayoutDashboard",
     label: "Dashboard",
     route: "/dashboard",
+  },
+  {
+    group: "Principal",
+    icon: "ChartNoAxesCombined",
+    label: "Dashboard de reportería",
+    permission: "reports.view",
+    route: "/dashboard/reporteria",
   },
   {
     group: "Gestion",
@@ -65,7 +73,11 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     group: "Control",
     icon: "BadgeCheck",
     label: "Aprobaciones pendientes",
-    permission: "observations.view",
+    permissions: [
+      "action_plans.evaluate",
+      "deadline_extensions.approve",
+      "deadline_extensions.reject",
+    ],
     route: "/aprobaciones/pendientes",
   },
   {
@@ -213,12 +225,42 @@ export const SIDEBAR_ITEMS: SidebarConfigItem[] = [
     })),
 ];
 
+const OPERATIONAL_ROLE_CODES = new Set([
+  "EXECUTOR",
+  "AREA_RESPONSIBLE",
+  "PROCESS_OWNER",
+]);
+
+const OPERATIONAL_ROUTES = new Set([
+  "/dashboard",
+  "/dashboard/reporteria",
+  "/observaciones",
+  "/reportes",
+  "/aprobaciones/pendientes",
+  "/ampliaciones-plazo",
+  "/aprobaciones/flujos",
+]);
+
+export const getVisibleSidebarItems = (
+  authorization: AuthorizationSummary,
+): SidebarItem[] =>
+  SIDEBAR_ITEMS.filter((item) => {
+    const hasRequiredPermission = item.permissions
+      ? hasAnyPermission(authorization.permissions, item.permissions)
+      : !item.permission ||
+        hasPermission(authorization.permissions, item.permission);
+    if (!hasRequiredPermission) return false;
+    if (!OPERATIONAL_ROLE_CODES.has(authorization.roleCode ?? "")) return true;
+    return OPERATIONAL_ROUTES.has(item.route);
+  });
+
 const routeLabelMap = new Map(
   SIDEBAR_ITEMS.map((item) => [item.route, item.label] as const),
 );
 
 routeLabelMap.set("/dashboard/auditoria", "Dashboard Auditoría");
 routeLabelMap.set("/dashboard/area", "Dashboard Área");
+routeLabelMap.set("/dashboard/reporteria", "Dashboard de reportería");
 routeLabelMap.set("/reportes", "Reportes");
 routeLabelMap.set("/reportes/generador", "Generador de reportes");
 routeLabelMap.set("/reportes/vigentes-vencidas", "Vigentes y vencidas");

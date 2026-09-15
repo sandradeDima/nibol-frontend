@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
+import { buildObservationUrl } from "@/lib/observation-links";
 import { remediationService } from "@/services/remediation-service";
 import {
   formatRemediationDate,
@@ -40,7 +41,11 @@ export function ActionPlanScheduleTable() {
                 <td className="px-5 py-4">
                   <Link
                     className="font-semibold text-amber-800 hover:underline"
-                    href={`/observaciones/${plan.observation.id}`}
+                    href={buildObservationUrl({
+                      observationId: plan.observation.id,
+                      planId: plan.id,
+                      tab: "plans",
+                    })}
                   >
                     {plan.observation.displayCode}
                   </Link>

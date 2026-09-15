@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -20,9 +20,11 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useFloatingMenuPosition } from "@/components/data-table/data-table";
 import { SearchField } from "@/components/ui/search-field";
 import { QUERY_KEYS } from "@/lib/constants";
+import { buildObservationUrl } from "@/lib/observation-links";
 import { observationService } from "@/services/observation-service";
 import type { ObservationTableRow } from "@/types";
 import { cn, getApiErrorMessage } from "@/utils";
+import { useSearchParams } from "next/navigation";
 
 import {
   formatObservationDate,
@@ -100,7 +102,14 @@ function ObservationActionsMenu({
               {canViewActionPlans && row.actionPlanCount > 0 ? (
                 <Link
                   className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-amber-50"
-                  href={`/observaciones/${row.id}?tab=plans${row.actionPlans.length === 1 ? `&planId=${row.actionPlans[0].id}` : ""}`}
+                  href={buildObservationUrl({
+                    observationId: row.id,
+                    planId:
+                      row.actionPlans.length === 1
+                        ? row.actionPlans[0]?.id
+                        : undefined,
+                    tab: "plans",
+                  })}
                   onClick={() => setOpen(false)}
                   role="menuitem"
                 >
@@ -155,21 +164,57 @@ export function ObservationTable({
   canViewActionPlans: boolean;
 }) {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pendingDelete, setPendingDelete] =
     useState<ObservationTableRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const params = new URLSearchParams({
-    page: String(page),
-    perPage: "20",
-    search,
-    sortBy: "updatedAt",
-    sortDirection: "desc",
-  });
+  const filterQuery = useMemo(() => {
+    const next = new URLSearchParams();
+    [
+      "filter.actionPlanResponsibleUserId",
+      "filter.areaId",
+      "filter.areaResponsibleUserId",
+      "filter.auditReportId",
+      "filter.currentDueDateFrom",
+      "filter.currentDueDateTo",
+      "filter.mainObservationId",
+      "filter.observationStatus",
+      "filter.overdue",
+      "filter.processOwnerUserId",
+      "filter.riskId",
+      "filter.riskLevelId",
+    ].forEach((key) => {
+      const value = searchParams.get(key);
+      if (value) next.set(key, value);
+    });
+    return next.toString();
+  }, [searchParams]);
+  const params = useMemo(() => {
+    const next = new URLSearchParams(filterQuery);
+    next.set("page", String(page));
+    next.set("perPage", "20");
+    next.set("search", search);
+    next.set("sortBy", "updatedAt");
+    next.set("sortDirection", "desc");
+    return next;
+  }, [filterQuery, page, search]);
+  const activeFilters = [
+    searchParams.get("filter.overdue") === "true" ? "Vencidas" : null,
+    searchParams.get("filter.observationStatus")
+      ? `Estado: ${searchParams.get("filter.observationStatus")}`
+      : null,
+    searchParams.get("filter.currentDueDateFrom")
+      ? `Desde: ${searchParams.get("filter.currentDueDateFrom")}`
+      : null,
+    searchParams.get("filter.currentDueDateTo")
+      ? `Hasta: ${searchParams.get("filter.currentDueDateTo")}`
+      : null,
+  ].filter((value): value is string => Boolean(value));
   const query = useQuery({
-    queryFn: () => observationService.listObservations(`?${params}`),
-    queryKey: [...QUERY_KEYS.observations, search, page],
+    queryFn: () => observationService.listObservations(`?${params.toString()}`),
+    queryKey: [...QUERY_KEYS.observations, filterQuery, search, page],
   });
   const remove = useMutation({
     mutationFn: (id: string) => observationService.deleteObservation(id),
@@ -203,6 +248,25 @@ export function ObservationTable({
           placeholder="Buscar por informe, título, área o responsable"
           value={search}
         />
+        {activeFilters.length ? (
+          <div className="flex w-full flex-wrap items-center gap-2 text-xs text-stone-600">
+            <span className="font-semibold">Filtros activos:</span>
+            {activeFilters.map((filter) => (
+              <span
+                className="border border-amber-200 bg-amber-50 px-2.5 py-1 font-medium text-amber-900"
+                key={filter}
+              >
+                {filter}
+              </span>
+            ))}
+            <Link
+              className="font-semibold text-amber-800 hover:underline"
+              href="/observaciones"
+            >
+              Limpiar filtros
+            </Link>
+          </div>
+        ) : null}
         <div className="flex items-center gap-3">
           <p className="text-sm text-stone-500">
             {pagination?.total ?? 0} observaciones
@@ -397,7 +461,7 @@ export function ObservationTable({
                     <Link
                       aria-label="Ver observación"
                       className="nibol-btn-primary shrink-0 justify-center px-2 py-2 text-[11px]"
-                      href={`/observaciones/${row.id}`}
+                      href={buildObservationUrl({ observationId: row.id })}
                       title="Ver"
                     >
                       <Eye className="h-3.5 w-3.5" />
@@ -496,7 +560,7 @@ export function ObservationTable({
                 <Link
                   aria-label="Ver observación"
                   className="nibol-btn-primary px-3 py-2 text-xs"
-                  href={`/observaciones/${row.id}`}
+                  href={buildObservationUrl({ observationId: row.id })}
                 >
                   <Eye className="h-3.5 w-3.5" />
                   Ver
@@ -504,7 +568,14 @@ export function ObservationTable({
                 {canViewActionPlans && row.actionPlanCount > 0 ? (
                   <Link
                     className="nibol-btn-secondary px-3 py-2 text-xs"
-                    href={`/observaciones/${row.id}?tab=plans${row.actionPlans.length === 1 ? `&planId=${row.actionPlans[0].id}` : ""}`}
+                    href={buildObservationUrl({
+                      observationId: row.id,
+                      planId:
+                        row.actionPlans.length === 1
+                          ? row.actionPlans[0]?.id
+                          : undefined,
+                      tab: "plans",
+                    })}
                   >
                     <ClipboardList className="h-3.5 w-3.5" />
                     Planes

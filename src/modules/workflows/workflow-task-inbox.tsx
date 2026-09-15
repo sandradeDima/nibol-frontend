@@ -74,18 +74,24 @@ export function WorkflowTaskInbox() {
   return (
     <section className="space-y-5">
       <div className="nibol-panel grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_15rem_15rem]">
-        <label className="relative block">
-          <span className="sr-only">Buscar tarea</span>
-          <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-          <input
-            className="nibol-field pl-10"
-            onChange={(event) => {
-              setPage(1);
-              setSearch(event.target.value);
-            }}
-            placeholder="Buscar por registro, flujo o solicitante"
-            value={search}
-          />
+        <label className="min-w-0 space-y-2">
+          <span className="block text-xs font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
+            Buscar
+          </span>
+          <span className="relative block">
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+            <input
+              className="nibol-field"
+              onChange={(event) => {
+                setPage(1);
+                setSearch(event.target.value);
+              }}
+              placeholder="Buscar por registro, flujo o solicitante"
+              style={{ paddingLeft: "2.5rem" }}
+              type="search"
+              value={search}
+            />
+          </span>
         </label>
         <label>
           <span className="mb-2 block text-xs font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">

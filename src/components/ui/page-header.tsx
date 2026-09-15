@@ -5,6 +5,7 @@ import { cn } from "@/utils";
 type PageHeaderProps = {
   actions?: ReactNode;
   className?: string;
+  compact?: boolean;
   description?: string;
   eyebrow?: string;
   title: string;
@@ -13,6 +14,7 @@ type PageHeaderProps = {
 export function PageHeader({
   actions,
   className,
+  compact = false,
   description,
   eyebrow,
   title,
@@ -20,19 +22,37 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "nibol-panel flex flex-col gap-5 px-6 py-6 sm:px-8",
+        "nibol-panel flex flex-col px-6 sm:px-8",
+        compact ? "gap-3 py-4" : "gap-5 py-6",
         className,
       )}
     >
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-3">
+      <div
+        className={cn(
+          "flex flex-col lg:flex-row lg:items-end lg:justify-between",
+          compact ? "gap-3" : "gap-5",
+        )}
+      >
+        <div className={compact ? "space-y-2" : "space-y-3"}>
           {eyebrow ? <p className="nibol-eyebrow">{eyebrow}</p> : null}
           <div className="space-y-2">
-            <h1 className="font-display text-4xl leading-none font-bold tracking-[-0.03em] text-[var(--foreground)] uppercase sm:text-5xl">
+            <h1
+              className={cn(
+                "font-display leading-none font-bold tracking-[-0.03em] text-[var(--foreground)] uppercase",
+                compact ? "text-3xl sm:text-4xl" : "text-4xl sm:text-5xl",
+              )}
+            >
               {title}
             </h1>
             {description ? (
-              <p className="max-w-3xl text-sm leading-7 text-[var(--foreground-soft)] sm:text-base">
+              <p
+                className={cn(
+                  "max-w-3xl text-[var(--foreground-soft)]",
+                  compact
+                    ? "text-sm leading-6"
+                    : "text-sm leading-7 sm:text-base",
+                )}
+              >
                 {description}
               </p>
             ) : null}

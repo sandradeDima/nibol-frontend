@@ -15,6 +15,7 @@ import { cn } from "@/utils";
 type LogoutButtonProps = {
   children?: ReactNode;
   className?: string;
+  onBeforeOpen?: () => void;
   onLoggedOut?: () => void;
   variant?: "button" | "menu";
 };
@@ -22,6 +23,7 @@ type LogoutButtonProps = {
 export function LogoutButton({
   children = "Sign out",
   className,
+  onBeforeOpen,
   onLoggedOut,
   variant = "button",
 }: LogoutButtonProps) {
@@ -57,6 +59,7 @@ export function LogoutButton({
         )}
         disabled={logoutMutation.isPending}
         onClick={() => {
+          onBeforeOpen?.();
           setConfirmOpen(true);
         }}
         type="button"
@@ -66,15 +69,16 @@ export function LogoutButton({
       </button>
 
       <ConfirmDialog
-        confirmLabel="Cerrar sesion"
-        description="Tendra que volver a ingresar para acceder a las areas protegidas de la aplicacion."
+        cancelLabel="Cancelar"
+        confirmLabel="Cerrar sesión"
+        description="Tendrá que volver a ingresar para acceder a las áreas protegidas de la aplicación."
         isLoading={logoutMutation.isPending}
         onConfirm={() => {
           logoutMutation.mutate();
         }}
         onOpenChange={setConfirmOpen}
         open={confirmOpen}
-        title="Desea cerrar esta sesion?"
+        title="DESEA CERRAR ESTA SESIÓN?"
       />
     </>
   );

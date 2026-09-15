@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
+import { buildObservationUrl } from "@/lib/observation-links";
 import { extensionRequestService } from "@/services/extension-request-service";
 
 export function PendingExtensionRequestApprovals({
@@ -18,9 +19,8 @@ export function PendingExtensionRequestApprovals({
   return (
     <div className="space-y-3">
       {query.data?.data.map((request) => (
-        <Link
-          className="block rounded-2xl border border-stone-200 bg-white p-5 transition hover:border-amber-300"
-          href={`/ampliaciones-plazo/${request.id}`}
+        <article
+          className="rounded-2xl border border-stone-200 bg-white p-5 transition hover:border-amber-300"
           key={request.id}
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -52,7 +52,24 @@ export function PendingExtensionRequestApprovals({
           <p className="mt-3 line-clamp-2 text-sm leading-6 text-stone-700">
             {request.reason}
           </p>
-        </Link>
+          <div className="mt-4 flex justify-end">
+            <Link
+              className="nibol-btn-secondary px-3 py-2 text-xs"
+              href={
+                request.observation?.id
+                  ? buildObservationUrl({
+                      extensionId: request.id,
+                      observationId: request.observation.id,
+                      planId: request.actionPlan?.id ?? undefined,
+                      tab: "plans",
+                    })
+                  : `/ampliaciones-plazo/${request.id}`
+              }
+            >
+              Ver
+            </Link>
+          </div>
+        </article>
       ))}
       {!query.isLoading && !query.data?.data.length ? (
         <p className="rounded-xl border border-dashed border-stone-300 p-6 text-center text-sm text-stone-500">

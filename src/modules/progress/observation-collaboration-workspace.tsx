@@ -2,17 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowUpRight,
-  Check,
-  FileUp,
-  GitBranch,
-  MessageSquare,
-  Send,
-  ShieldCheck,
-} from "lucide-react";
+import { Check, FileUp, MessageSquare, Send, ShieldCheck } from "lucide-react";
 
 import { FilePicker } from "@/components/ui/file-picker";
 import { QUERY_KEYS } from "@/lib/constants";
@@ -43,19 +34,27 @@ const evidenceReviewLabels: Record<EvidenceFileItem["reviewStatus"], string> = {
 
 export function ObservationCollaborationWorkspace({
   activeEvidenceId,
+  activeEvaluationId,
+  canApproveProgress,
   canReviewEvidence,
-  canReviewProgress,
+  canReturnProgress,
   canSubmitProgress,
   canUploadEvidence,
+  currentUserId,
   observationId,
+  isAdmin,
   section = "all",
 }: {
   activeEvidenceId?: string | null;
+  activeEvaluationId?: string | null;
+  canApproveProgress: boolean;
   canReviewEvidence: boolean;
-  canReviewProgress: boolean;
+  canReturnProgress: boolean;
   canSubmitProgress: boolean;
   canUploadEvidence: boolean;
+  currentUserId: string;
   observationId: string;
+  isAdmin: boolean;
   section?: "all" | "plans" | "evidence" | "history";
 }) {
   const showPlans = section === "all" || section === "plans";
@@ -114,6 +113,9 @@ export function ObservationCollaborationWorkspace({
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.observationDetails(observationId),
       }),
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.observationActionItems(observationId),
+      }),
     ]);
   const createEvaluation = useMutation({
     mutationFn: async () => {
@@ -162,10 +164,7 @@ export function ObservationCollaborationWorkspace({
       officialStatus: ActionPlanStatus;
     }) =>
       progressService.reviewProgressEvaluation(id, action, {
-        comment:
-          action === "approve"
-            ? null
-            : "Revisión requerida",
+        comment: action === "approve" ? null : "Revisión requerida",
         officialStatus,
       }),
     onError: (cause) => setError(getApiErrorMessage(cause)),
@@ -258,6 +257,13 @@ export function ObservationCollaborationWorkspace({
       .getElementById(`evidence-${activeEvidenceId}`)
       ?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [activeEvidenceId, evidence.data, section]);
+
+  useEffect(() => {
+    if (section !== "plans" || !activeEvaluationId || !evaluations.data) return;
+    document
+      .getElementById(`progress-evaluation-${activeEvaluationId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [activeEvaluationId, evaluations.data, section]);
 
   return (
     <section className="nibol-panel p-6">
@@ -430,7 +436,8 @@ export function ObservationCollaborationWorkspace({
               {evaluations.data?.data.length ? (
                 evaluations.data.data.map((item) => (
                   <article
-                    className="rounded-2xl border border-stone-200 p-5"
+                    className={`rounded-2xl border p-5 ${activeEvaluationId === item.id ? "border-amber-500 bg-amber-50/40 ring-2 ring-amber-200" : "border-stone-200"}`}
+                    id={`progress-evaluation-${item.id}`}
                     key={item.id}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -462,6 +469,7 @@ export function ObservationCollaborationWorkspace({
                     ) : null}
                     <div className="mt-4 flex flex-wrap gap-2">
                       {canSubmitProgress &&
+                      item.submittedByUser.id === currentUserId &&
                       ["DRAFT", "RETURNED"].includes(item.reviewStatus) ? (
                         <button
                           className="nibol-btn-secondary px-3 py-2 text-xs"
@@ -473,36 +481,41 @@ export function ObservationCollaborationWorkspace({
                         </button>
                       ) : null}
                       {item.reviewStatus === "SENT_TO_AUDIT" &&
-                      canReviewProgress ? (
+                      (canApproveProgress || canReturnProgress) ? (
                         <>
-                          <button
-                            className="nibol-btn-primary px-3 py-2 text-xs"
-                            disabled={review.isPending}
-                            onClick={() =>
-                              review.mutate({
-                                action: "approve",
-                                id: item.id,
-                                officialStatus: item.officialStatus,
-                              })
-                            }
-                            type="button"
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                            Aprobar
-                          </button>
-                          <button
-                            className="nibol-btn-secondary px-3 py-2 text-xs"
-                            onClick={() =>
-                              review.mutate({
-                                action: "return",
-                                id: item.id,
-                                officialStatus: item.officialStatus,
-                              })
-                            }
-                            type="button"
-                          >
-                            Devolver
-                          </button>
+                          {canApproveProgress ? (
+                            <button
+                              className="nibol-btn-primary px-3 py-2 text-xs"
+                              disabled={review.isPending}
+                              onClick={() =>
+                                review.mutate({
+                                  action: "approve",
+                                  id: item.id,
+                                  officialStatus: item.officialStatus,
+                                })
+                              }
+                              type="button"
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                              Aprobar
+                            </button>
+                          ) : null}
+                          {canReturnProgress ? (
+                            <button
+                              className="nibol-btn-secondary px-3 py-2 text-xs"
+                              disabled={review.isPending}
+                              onClick={() =>
+                                review.mutate({
+                                  action: "return",
+                                  id: item.id,
+                                  officialStatus: item.officialStatus,
+                                })
+                              }
+                              type="button"
+                            >
+                              Devolver
+                            </button>
+                          ) : null}
                         </>
                       ) : null}
                     </div>
@@ -648,6 +661,8 @@ export function ObservationCollaborationWorkspace({
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
                             {canUploadEvidence &&
+                            (isAdmin ||
+                              file.uploadedByUser?.id === currentUserId) &&
                             ["DRAFT", "RETURNED"].includes(
                               file.reviewStatus,
                             ) ? (
@@ -693,15 +708,6 @@ export function ObservationCollaborationWorkspace({
                                   Devolver
                                 </button>
                               </>
-                            ) : null}
-                            {file.workflowInstanceId ? (
-                              <Link
-                                className="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 hover:underline"
-                                href={`/configuracion/flujos/instancias/${file.workflowInstanceId}`}
-                              >
-                                <GitBranch className="h-3.5 w-3.5" />
-                                Flujo <ArrowUpRight className="h-3 w-3" />
-                              </Link>
                             ) : null}
                           </div>
                         </div>
