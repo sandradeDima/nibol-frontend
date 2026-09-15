@@ -379,8 +379,8 @@ export function AdminShell({
         <div className="min-w-0 flex-1">
           <header
             className={cn(
-              "border-b border-[var(--border)] bg-[rgba(255,255,255,0.96)] backdrop-blur-md",
-              !isObservationDetail && "sticky top-0 z-20",
+              "relative z-20 border-b border-[var(--border)] bg-[rgba(255,255,255,0.96)] backdrop-blur-md",
+              !isObservationDetail && "sticky top-0",
             )}
           >
             <div className="px-4 py-4 sm:px-6 lg:px-8">
