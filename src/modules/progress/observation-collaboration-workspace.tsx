@@ -275,7 +275,7 @@ export function ObservationCollaborationWorkspace({
               ? "Planes y avances"
               : showEvidence
                 ? "Evidencias y documentos"
-                : "Historial y comentarios"}
+                : "Comentarios de la observación"}
         </p>
         <h3 className="mt-2 text-2xl font-semibold text-stone-950">
           {showPlans && showEvidence
@@ -288,7 +288,7 @@ export function ObservationCollaborationWorkspace({
         </h3>
         <p className="mt-1 text-sm text-stone-500">
           {showHistory
-            ? "Conserve aquí las conversaciones y la trazabilidad de la observación."
+            ? "Comparta comentarios y acuerdos sobre esta observación."
             : "Cada avance pertenece a un único plan de acción; el progreso de la observación se agrega solo desde evaluaciones aprobadas."}
         </p>
       </div>
@@ -735,7 +735,7 @@ export function ObservationCollaborationWorkspace({
           >
             <input
               className="nibol-field"
-              placeholder="Escriba un comentario para el equipo"
+              placeholder="Escriba un comentario sobre esta observación"
               required
               value={comment}
               onChange={(event) => setComment(event.target.value)}

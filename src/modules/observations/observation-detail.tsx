@@ -8,7 +8,6 @@ import {
   CalendarClock,
   CheckCircle2,
   FileText,
-  History,
   Pencil,
   Send,
   ShieldAlert,
@@ -24,7 +23,6 @@ import { QUERY_KEYS } from "@/lib/constants";
 import { observationService } from "@/services/observation-service";
 import { cn, getApiErrorMessage } from "@/utils";
 
-import { EntityActivityTimeline } from "../activity/entity-activity-timeline";
 import { ObservationCollaborationWorkspace } from "../progress/observation-collaboration-workspace";
 import { RemediationWorkspace } from "../remediation/remediation-workspace";
 import { ObservationActionPanel } from "./observation-action-panel";
@@ -51,7 +49,6 @@ type Props = {
   canSubmitRecommended: boolean;
   canSubmitProgress: boolean;
   canUploadEvidence: boolean;
-  canViewTechnical: boolean;
   canViewRecommended: boolean;
   currentUserId: string;
   isAdmin: boolean;
@@ -67,7 +64,7 @@ const observationTabs: Array<{
   { key: "summary", label: "Resumen" },
   { key: "plans", label: "Planes de acción" },
   { key: "evidence", label: "Evidencias y documentos" },
-  { key: "history", label: "Historial y comentarios" },
+  { key: "history", label: "Comentarios de la observación" },
 ];
 
 const isObservationTab = (value: string | null): value is ObservationTab =>
@@ -113,7 +110,6 @@ export function ObservationDetail({
   canSubmitRecommended,
   canSubmitProgress,
   canUploadEvidence,
-  canViewTechnical,
   canViewRecommended,
   currentUserId,
   isAdmin,
@@ -577,29 +573,10 @@ export function ObservationDetail({
       {activeTab === "history" ? (
         <div
           aria-labelledby="history-tab"
-          className="min-w-0 space-y-6"
+          className="min-w-0"
           id="observation-tabpanel-history"
           role="tabpanel"
         >
-          <section className="nibol-panel min-w-0 p-6">
-            <div className="flex items-center gap-3">
-              <History className="h-5 w-5 text-amber-700" />
-              <div>
-                <p className="text-xs font-semibold tracking-[0.2em] text-amber-700 uppercase">
-                  Trazabilidad
-                </p>
-                <h3 className="mt-2 text-xl font-semibold">
-                  Actividad y aprobaciones
-                </h3>
-              </div>
-            </div>
-            <div className="mt-6">
-              <EntityActivityTimeline
-                canViewTechnical={canViewTechnical}
-                observationId={observationId}
-              />
-            </div>
-          </section>
           <ObservationCollaborationWorkspace
             canApproveProgress={canApproveProgress}
             canReviewEvidence={canReviewEvidence}

@@ -58,10 +58,6 @@ export default async function ObservationDetailPage({
         canUploadEvidence={authorization.permissions.includes(
           "evidence.create",
         )}
-        canViewTechnical={
-          authorization.permissions.includes("activity.technical") ||
-          authorization.isAdmin
-        }
         canViewRecommended={authorization.permissions.includes(
           "recommended_action_plans.view",
         )}
