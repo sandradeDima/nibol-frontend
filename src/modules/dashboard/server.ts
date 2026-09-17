@@ -8,6 +8,7 @@ import type {
   AuditDashboardData,
   DashboardMySummary,
   OperationalDashboardData,
+  RoleDashboardData,
 } from "@/types";
 
 export class DashboardRequestError extends Error {
@@ -78,5 +79,9 @@ export const dashboardServer = {
     return fetchDashboardResource<OperationalDashboardData>(
       "/dashboard/operational",
     );
+  },
+
+  getRoleDashboard() {
+    return fetchDashboardResource<RoleDashboardData>("/dashboard/role");
   },
 };

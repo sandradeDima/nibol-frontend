@@ -18,13 +18,17 @@ import Link from "next/link";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useFloatingMenuPosition } from "@/components/data-table/data-table";
-import { SearchField } from "@/components/ui/search-field";
+import { DataTableFilters } from "@/components/data-table/data-table-filters";
+import type {
+  DataTableFilterConfig,
+  DataTableFilterValue,
+} from "@/components/data-table/types";
 import { QUERY_KEYS } from "@/lib/constants";
 import { buildObservationUrl } from "@/lib/observation-links";
 import { observationService } from "@/services/observation-service";
 import type { ObservationTableRow } from "@/types";
 import { cn, getApiErrorMessage } from "@/utils";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
   formatObservationDate,
@@ -32,6 +36,25 @@ import {
   getRiskLevelStyle,
   getStatusClasses,
 } from "./presentation";
+
+const OBSERVATION_FILTER_QUERY_KEYS = [
+  "filter.actionPlanResponsibleUserId",
+  "filter.areaId",
+  "filter.areaResponsibleUserId",
+  "filter.auditReportId",
+  "filter.currentDueDateFrom",
+  "filter.currentDueDateTo",
+  "filter.deadlineStatus",
+  "filter.mainObservationId",
+  "filter.observationState",
+  "filter.observationStatus",
+  "filter.overdue",
+  "filter.progressStatus",
+  "filter.processOwnerUserId",
+  "filter.riskId",
+  "filter.riskLevelId",
+  "filter.title",
+] as const;
 
 function ObservationActionsMenu({
   canDelete,
@@ -164,28 +187,144 @@ export function ObservationTable({
   canViewActionPlans: boolean;
 }) {
   const queryClient = useQueryClient();
+  const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pendingDelete, setPendingDelete] =
     useState<ObservationTableRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const optionsQuery = useQuery({
+    queryFn: observationService.getObservationOptions,
+    queryKey: QUERY_KEYS.observationOptions,
+    staleTime: 60_000,
+  });
+  const filterDefinitions = useMemo<DataTableFilterConfig[]>(
+    () => [
+      {
+        id: "title",
+        label: "Título",
+        placeholder: "Buscar por título",
+        type: "text",
+      },
+      {
+        id: "auditReportId",
+        label: "Informe de auditoría",
+        options: (optionsQuery.data?.auditReports ?? []).map((report) => ({
+          label: `${report.reportNumber} · ${report.title}`,
+          value: report.id,
+        })),
+        placeholder: "Todos los informes",
+        type: "select",
+      },
+      {
+        id: "areaId",
+        label: "Área",
+        options: (optionsQuery.data?.areas ?? []).map((area) => ({
+          label: area.name,
+          value: area.id,
+        })),
+        placeholder: "Todas las áreas",
+        type: "select",
+      },
+      {
+        id: "areaResponsibleUserId",
+        label: "Responsable de área",
+        options: (optionsQuery.data?.users ?? []).map((user) => ({
+          label: user.name,
+          value: user.id,
+        })),
+        placeholder: "Todos los responsables",
+        type: "select",
+      },
+      {
+        id: "actionPlanResponsibleUserId",
+        label: "Ejecutor",
+        options: (optionsQuery.data?.users ?? []).map((user) => ({
+          label: user.name,
+          value: user.id,
+        })),
+        placeholder: "Todos los ejecutores",
+        type: "select",
+      },
+      {
+        id: "observationState",
+        label: "Estado de observación",
+        options: [
+          { label: "Pendiente", value: "PENDING" },
+          { label: "Concluido", value: "CONCLUDED" },
+        ],
+        placeholder: "Todos los estados",
+        type: "select",
+      },
+      {
+        id: "deadlineStatus",
+        label: "Estado según plazo",
+        options: [
+          { label: "Vigente", value: "VIGENTE" },
+          { label: "Vencido", value: "VENCIDO" },
+          { label: "Reprogramado", value: "REPROGRAMADO" },
+        ],
+        placeholder: "Todos los plazos",
+        type: "select",
+      },
+      {
+        id: "progressStatus",
+        label: "Estado según avance",
+        options: [
+          { label: "No iniciado", value: "NO_INICIADO" },
+          { label: "Iniciado", value: "INICIADO" },
+          { label: "Con avance", value: "CON_AVANCE" },
+          { label: "Concluido", value: "CONCLUIDO" },
+        ],
+        placeholder: "Todos los avances",
+        type: "select",
+      },
+      {
+        id: "riskLevelId",
+        label: "Nivel de riesgo",
+        options: (optionsQuery.data?.riskLevels ?? []).map((level) => ({
+          label: level.name,
+          value: level.id,
+        })),
+        placeholder: "Todos los niveles",
+        type: "select",
+      },
+      {
+        id: "currentDueDateFrom",
+        label: "Fecha límite desde",
+        type: "date",
+      },
+      {
+        id: "currentDueDateTo",
+        label: "Fecha límite hasta",
+        type: "date",
+      },
+    ],
+    [optionsQuery.data],
+  );
+  const filterValues = useMemo<
+    Record<string, DataTableFilterValue | undefined>
+  >(
+    () =>
+      Object.fromEntries(
+        filterDefinitions.map((filter) => [
+          filter.id,
+          (() => {
+            const value = searchParams.get(
+              `filter.${filter.queryKey ?? filter.id}`,
+            );
+            return value && filter.type === "select"
+              ? value.split(",").filter(Boolean)
+              : (value ?? undefined);
+          })(),
+        ]),
+      ),
+    [filterDefinitions, searchParams],
+  );
   const filterQuery = useMemo(() => {
     const next = new URLSearchParams();
-    [
-      "filter.actionPlanResponsibleUserId",
-      "filter.areaId",
-      "filter.areaResponsibleUserId",
-      "filter.auditReportId",
-      "filter.currentDueDateFrom",
-      "filter.currentDueDateTo",
-      "filter.mainObservationId",
-      "filter.observationStatus",
-      "filter.overdue",
-      "filter.processOwnerUserId",
-      "filter.riskId",
-      "filter.riskLevelId",
-    ].forEach((key) => {
+    OBSERVATION_FILTER_QUERY_KEYS.forEach((key) => {
       const value = searchParams.get(key);
       if (value) next.set(key, value);
     });
@@ -195,26 +334,62 @@ export function ObservationTable({
     const next = new URLSearchParams(filterQuery);
     next.set("page", String(page));
     next.set("perPage", "20");
-    next.set("search", search);
     next.set("sortBy", "updatedAt");
     next.set("sortDirection", "desc");
     return next;
-  }, [filterQuery, page, search]);
-  const activeFilters = [
-    searchParams.get("filter.overdue") === "true" ? "Vencidas" : null,
-    searchParams.get("filter.observationStatus")
-      ? `Estado: ${searchParams.get("filter.observationStatus")}`
-      : null,
-    searchParams.get("filter.currentDueDateFrom")
-      ? `Desde: ${searchParams.get("filter.currentDueDateFrom")}`
-      : null,
-    searchParams.get("filter.currentDueDateTo")
-      ? `Hasta: ${searchParams.get("filter.currentDueDateTo")}`
-      : null,
-  ].filter((value): value is string => Boolean(value));
+  }, [filterQuery, page]);
+  const activeFilters = useMemo(
+    () =>
+      filterDefinitions
+        .map((filter) => {
+          const value = searchParams.get(
+            `filter.${filter.queryKey ?? filter.id}`,
+          );
+          if (!value) return null;
+          const labels = value.split(",").map((selectedValue) => {
+            const option = filter.options?.find(
+              (item) => item.value === selectedValue,
+            );
+            return option?.label ?? selectedValue;
+          });
+          return `${filter.label}: ${labels.join(", ")}`;
+        })
+        .filter((value): value is string => Boolean(value)),
+    [filterDefinitions, searchParams],
+  );
+  const replaceFilters = (next: URLSearchParams) => {
+    next.delete("page");
+    router.replace(
+      `${pathname}${next.toString() ? `?${next.toString()}` : ""}`,
+      { scroll: false },
+    );
+    setPage(1);
+  };
+  const updateFilter = (
+    filterId: string,
+    value: DataTableFilterValue | undefined,
+  ) => {
+    const definition = filterDefinitions.find(
+      (filter) => filter.id === filterId,
+    );
+    if (!definition) return;
+    const next = new URLSearchParams(searchParams.toString());
+    const key = `filter.${definition.queryKey ?? definition.id}`;
+    if (value === undefined || value === "" || value.length === 0) {
+      next.delete(key);
+    } else {
+      next.set(key, Array.isArray(value) ? value.join(",") : value);
+    }
+    replaceFilters(next);
+  };
+  const resetFilters = () => {
+    const next = new URLSearchParams(searchParams.toString());
+    OBSERVATION_FILTER_QUERY_KEYS.forEach((key) => next.delete(key));
+    replaceFilters(next);
+  };
   const query = useQuery({
     queryFn: () => observationService.listObservations(`?${params.toString()}`),
-    queryKey: [...QUERY_KEYS.observations, filterQuery, search, page],
+    queryKey: [...QUERY_KEYS.observations, filterQuery, page],
   });
   const remove = useMutation({
     mutationFn: (id: string) => observationService.deleteObservation(id),
@@ -239,32 +414,24 @@ export function ObservationTable({
   return (
     <section className="nibol-panel overflow-visible">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 p-4">
-        <SearchField
-          className="w-full sm:max-w-md"
-          onChange={(value) => {
-            setSearch(value);
-            setPage(1);
-          }}
-          placeholder="Buscar por informe, título, área o responsable"
-          value={search}
-        />
         {activeFilters.length ? (
           <div className="flex w-full flex-wrap items-center gap-2 text-xs text-stone-600">
             <span className="font-semibold">Filtros activos:</span>
-            {activeFilters.map((filter) => (
+            {activeFilters.map((filter, index) => (
               <span
                 className="border border-amber-200 bg-amber-50 px-2.5 py-1 font-medium text-amber-900"
-                key={filter}
+                key={`${filter}-${index}`}
               >
                 {filter}
               </span>
             ))}
-            <Link
+            <button
               className="font-semibold text-amber-800 hover:underline"
-              href="/observaciones"
+              onClick={resetFilters}
+              type="button"
             >
               Limpiar filtros
-            </Link>
+            </button>
           </div>
         ) : null}
         <div className="flex items-center gap-3">
@@ -284,6 +451,13 @@ export function ObservationTable({
           ) : null}
         </div>
       </div>
+      <DataTableFilters
+        filters={filterDefinitions}
+        onChange={updateFilter}
+        onReset={resetFilters}
+        searchableSelects
+        values={filterValues}
+      />
       <div className="hidden w-full xl:block">
         <table className="w-full table-fixed text-left text-xs">
           <colgroup>

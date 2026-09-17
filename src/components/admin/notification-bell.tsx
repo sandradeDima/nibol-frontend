@@ -132,7 +132,7 @@ export function NotificationBell({ canView }: { canView: boolean }) {
       </button>
 
       {open ? (
-        <div className="absolute top-[calc(100%+0.75rem)] right-0 z-30 w-[min(30rem,92vw)] border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-panel-strong)]">
+        <div className="absolute top-[calc(100%+0.75rem)] right-0 z-50 w-[min(30rem,92vw)] border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-panel-strong)]">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <p className="nibol-eyebrow">Centro de alertas</p>

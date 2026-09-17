@@ -78,7 +78,7 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
 
   const updateDraft = (
     key: keyof ReportFilters,
-    value: string | number | boolean | undefined,
+    value: string | string[] | number | boolean | undefined,
   ) => {
     setDraft((current) => {
       const next = { ...current } as Record<string, unknown>;
@@ -119,7 +119,7 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
       );
       triggerDownload(
         blob,
-        `reporte-${submitted.type.toLowerCase()}-${format === "excel" ? "nibol.xls" : "nibol.pdf"}`,
+        `reporte-${submitted.type.toLowerCase()}-${format === "excel" ? "nibol.xlsx" : "nibol.pdf"}`,
       );
     } catch {
       setExportError(
@@ -146,6 +146,7 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
                 disabled={
                   !submitted || previewMutation.isPending || exporting !== null
                 }
+                loading={exporting !== null}
                 onExport={(format) => {
                   void handleExport(format);
                 }}

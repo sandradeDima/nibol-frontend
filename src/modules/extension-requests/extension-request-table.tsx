@@ -3,14 +3,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { buildObservationUrl } from "@/lib/observation-links";
 import { extensionRequestService } from "@/services/extension-request-service";
 
 export function ExtensionRequestTable() {
+  const searchParams = useSearchParams();
+  const areaId = searchParams.get("filter.areaId");
+  const status = searchParams.get("filter.status");
   const query = useQuery({
-    queryFn: () => extensionRequestService.list("?perPage=100"),
-    queryKey: ["extension-requests", "all"],
+    queryFn: () => {
+      const params = new URLSearchParams({ perPage: "100" });
+      if (areaId) params.set("filter.areaId", areaId);
+      if (status) params.set("filter.status", status);
+      return extensionRequestService.list(`?${params.toString()}`);
+    },
+    queryKey: ["extension-requests", "all", areaId, status],
   });
   return (
     <section className="nibol-panel overflow-hidden">

@@ -911,26 +911,27 @@ const buildSecondaryMetrics = (
       },
       {
         description: "Observaciones activas que aún no están en estado final.",
-        href: "/observaciones",
+        href: "/observaciones?filter.observationState=PENDING",
         label: "Observaciones abiertas",
         value: String(data.summary.openObservations),
       },
       {
         description:
           "Observaciones en estado final dentro del periodo consultado.",
+        href: "/observaciones?filter.observationState=CONCLUDED",
         label: "Observaciones cerradas",
         value: String(data.summary.closedObservations),
       },
       {
         description:
           "Solicitudes de ampliación aún dentro del flujo de aprobación.",
-        href: "/ampliaciones-plazo",
+        href: "/ampliaciones-plazo?filter.status=SENT_TO_MANAGER",
         label: "Ampliaciones pendientes",
         value: String(data.summary.pendingExtensions),
       },
       {
         description: "Avances y evidencias enviados a Auditoría para dictamen.",
-        href: "/avances-evidencias?filter.status=SENT_TO_AUDIT",
+        href: "/avances-evidencias?filter.reviewStatus=SENT_TO_AUDIT",
         label: "Avances pendientes de revisión",
         value: String(data.summary.pendingProgressReviews),
       },
@@ -946,21 +947,21 @@ const buildSecondaryMetrics = (
     },
     {
       description: "Planes no concluidos dentro del cronograma visible.",
-      href: "/cronograma",
+      href: "/planes-accion?filter.progressStatus=NOT_STARTED",
       label: "Planes pendientes",
       value: String(data.summary.pendingActionPlans),
     },
     {
       description:
         "Avances devueltos por Auditoría que requieren ajuste o corrección.",
-      href: "/avances-evidencias?filter.status=RETURNED",
+      href: "/avances-evidencias?filter.reviewStatus=RETURNED",
       label: "Avances devueltos por Auditoría",
       value: String(data.summary.returnedProgressEvaluations),
     },
     {
       description:
         "Solicitudes de ampliación activas dentro de su flujo de aprobación.",
-      href: "/ampliaciones-plazo",
+      href: "/ampliaciones-plazo?filter.status=SENT_TO_MANAGER",
       label: "Ampliaciones en proceso",
       value: String(data.summary.extensionsInProcess),
     },

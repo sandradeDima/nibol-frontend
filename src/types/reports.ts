@@ -15,13 +15,15 @@ export type ReportType =
 export interface ReportFilters {
   activeOnly?: boolean;
   areaId?: string;
-  auditReportId?: string;
+  areaResponsibleId?: string[];
+  auditReportId?: string[];
+  cutoffDate?: string;
   dateFrom?: string;
   dateTo?: string;
   deadlineStatus?: "VIGENTE" | "VENCIDO";
   dueSoon?: boolean;
   dueSoonDays?: number;
-  executorId?: string;
+  executorId?: string[];
   hasEvidence?: boolean;
   hasExtension?: boolean;
   hasPlan?: boolean;
@@ -34,7 +36,7 @@ export interface ReportFilters {
   progressMax?: number;
   progressMin?: number;
   progressStatus?: "NOT_STARTED" | "STARTED" | "WITH_PROGRESS" | "CONCLUDED";
-  processOwnerId?: string;
+  processOwnerId?: string[];
   reprogrammed?: boolean;
   responsibleUserId?: string;
   riskLevelId?: string;
@@ -54,7 +56,13 @@ export interface ReportActionPlanRow {
   effectiveDueDate: string;
   executor: ObservationUserSummary | null;
   href: string;
-  observation: { code: string; id: string; title: string };
+  observation: {
+    code: string;
+    id: string;
+    status: { isFinal: boolean; key: string; name: string };
+    title: string;
+  };
+  observationDueDate: string;
   observationId: string;
   officialProgress: {
     code: "NI" | "I" | "CA" | "CO";
@@ -77,10 +85,57 @@ export interface ReportActionPlanRow {
   updatedAt: string;
 }
 
+export interface ReportCriticalObservation {
+  area: { id: string; name: string };
+  dueDate: string;
+  href: string;
+  id: string;
+  progressPercent: number;
+  riskLevel: { colorToken: string | null; name: string };
+  status: { key: string; name: string };
+  title: string;
+}
+
+export interface ReportUpcomingActionPlan {
+  actionPlanId: string;
+  effectiveDueDate: string;
+  executorName: string;
+  href: string;
+  observationCode: string;
+  progress: { code: "NI" | "I" | "CA" | "CO"; label: string; percent: number };
+  status: string;
+  title: string;
+}
+
 export interface ReportOptions {
   areas: Array<{ id: string; name: string }>;
+  areaRelationships: Array<{
+    areaId: string;
+    areaResponsibleIds: string[];
+    executorIds: string[];
+    processOwnerIds: string[];
+    responsibleExecutorIds: Array<{
+      areaResponsibleId: string;
+      executorIds: string[];
+    }>;
+  }>;
+  hierarchyRelationships: Array<{
+    areaId: string;
+    areaResponsibleId: string | null;
+    executorId: string | null;
+    processOwnerId: string | null;
+  }>;
   auditReports: Array<{ id: string; label: string }>;
+  areaResponsibles: ObservationUserSummary[];
   executors: ObservationUserSummary[];
+  filterCapabilities: {
+    area: boolean;
+    areaResponsible: boolean;
+    auditReport: boolean;
+    executor: boolean;
+    processOwner: boolean;
+  };
+  observationStatuses: Array<{ id: string; key: string; name: string }>;
   processOwners: ObservationUserSummary[];
   progressStatuses: Array<{
     code: "NI" | "I" | "CA" | "CO";
@@ -94,6 +149,7 @@ export interface ReportOptions {
     key: string;
     name: string;
   }>;
+  defaultCutoffDate: string;
 }
 
 export interface ReportChartItem {
@@ -142,6 +198,7 @@ export interface ReportDashboardData {
   charts: {
     areaPerformance: Array<ReportChartItem & { compliancePercent: number }>;
     areaDistribution: ReportChartItem[];
+    areaResponsibleDistribution: ReportChartItem[];
     currentVsOverdue: ReportChartItem[];
     deadlineDistribution: ReportChartItem[];
     executorDistribution: ReportChartItem[];
@@ -150,6 +207,8 @@ export interface ReportDashboardData {
     reprogrammedDistribution: ReportChartItem[];
     riskDistribution: ReportChartItem[];
     statusDistribution: ReportChartItem[];
+    topOverdueAreas?: ReportChartItem[];
+    topResponsibleWorkload?: ReportChartItem[];
     trend: Array<{
       closed: number;
       created: number;
@@ -158,8 +217,13 @@ export interface ReportDashboardData {
     }>;
   };
   dueSoonDays: number;
+  cutoffDate: string;
   generatedAt: string;
   insights: string[];
+  operational: {
+    criticalOrOverdueObservations: ReportCriticalObservation[];
+    upcomingActionPlans: ReportUpcomingActionPlan[];
+  };
   rows: ReportActionPlanRow[];
   summary: {
     averageResolutionDays: number;
@@ -176,12 +240,16 @@ export interface ReportDashboardData {
     predominantRisk: { count: number; key: string; label: string } | null;
     reprogramados: number;
     total: number;
+    totalObservations: number;
+    pendingObservations: number;
+    closedObservations: number;
     vencidos: number;
     vigentes: number;
   };
 }
 
 export interface ReportPreviewData {
+  charts: ReportDashboardData["charts"];
   columns: string[];
   filters: Record<string, string | number | boolean | null>;
   generatedAt: string;

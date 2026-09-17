@@ -106,7 +106,7 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
         </button>
 
         {open ? (
-          <div className="absolute top-[calc(100%+0.75rem)] right-0 z-30 w-[19rem] border border-[var(--border)] bg-white p-3 shadow-[var(--shadow-panel-strong)]">
+          <div className="absolute top-[calc(100%+0.75rem)] right-0 z-50 w-[19rem] border border-[var(--border)] bg-white p-3 shadow-[var(--shadow-panel-strong)]">
             <div className="border border-[var(--border)] bg-[var(--surface-soft)] p-4">
               <p className="text-sm font-semibold text-[var(--foreground)]">
                 {session.user.name}

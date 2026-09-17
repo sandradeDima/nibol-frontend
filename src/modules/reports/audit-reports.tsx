@@ -90,7 +90,7 @@ export function AuditReports({ canExport }: AuditReportsProps) {
       const blob = await reportService.downloadAuditReport(query, format);
       triggerDownload(
         blob,
-        `reporte-auditoria-${query.template?.toLowerCase() ?? "historial"}-${format === "excel" ? "nibol.xls" : "nibol.pdf"}`,
+        `reporte-auditoria-${query.template?.toLowerCase() ?? "historial"}-${format === "excel" ? "nibol.xlsx" : "nibol.pdf"}`,
       );
     } catch {
       setExportError(
@@ -115,6 +115,7 @@ export function AuditReports({ canExport }: AuditReportsProps) {
             {canExport ? (
               <ReportExportButtons
                 disabled={reportQuery.isPending || exporting !== null}
+                loading={exporting !== null}
                 onExport={(format) => {
                   void handleExport(format);
                 }}

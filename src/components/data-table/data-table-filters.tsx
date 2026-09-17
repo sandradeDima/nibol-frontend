@@ -3,6 +3,7 @@
 import { ListFilter, RotateCcw } from "lucide-react";
 
 import { cn } from "@/utils";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 import { hasActiveFilterValue } from "./query";
 import type { DataTableFilterConfig, DataTableFilterValue } from "./types";
@@ -11,6 +12,7 @@ type DataTableFiltersProps = {
   filters: DataTableFilterConfig[];
   onChange: (filterId: string, value: DataTableFilterValue | undefined) => void;
   onReset: () => void;
+  searchableSelects?: boolean;
   values: Record<string, DataTableFilterValue | undefined>;
 };
 
@@ -25,10 +27,12 @@ const getSelectValue = (value: DataTableFilterValue | undefined): string => {
 const renderFilterControl = ({
   filter,
   onChange,
+  searchableSelects,
   value,
 }: {
   filter: DataTableFilterConfig;
   onChange: (value: DataTableFilterValue | undefined) => void;
+  searchableSelects?: boolean;
   value: DataTableFilterValue | undefined;
 }) => {
   if (filter.type === "text") {
@@ -63,49 +67,52 @@ const renderFilterControl = ({
   }
 
   if (filter.type === "multi-select") {
-    const selectedValues = Array.isArray(value) ? value : [];
+    const selectedValues = Array.isArray(value)
+      ? value
+      : value
+        ? value.split(",").filter(Boolean)
+        : [];
 
     return (
-      <details className="group relative min-w-[13rem]">
-        <summary className="flex h-11 cursor-pointer list-none items-center justify-between border border-[var(--border)] bg-white px-4 text-sm font-medium text-[var(--foreground-soft)] transition hover:border-[var(--primary)] [&::-webkit-details-marker]:hidden">
-          <span className="truncate">
-            {selectedValues.length > 0
-              ? `${filter.label}: ${selectedValues.length} selected`
-              : filter.label}
-          </span>
-          <ListFilter className="h-4 w-4 text-[var(--muted)]" />
-        </summary>
-        <div className="absolute top-[calc(100%+0.5rem)] left-0 z-20 w-full min-w-[15rem] border border-[var(--border)] bg-white p-3 shadow-[var(--shadow-panel)]">
-          <div className="grid gap-2">
-            {filter.options?.map((option) => {
-              const checked = selectedValues.includes(option.value);
+      <SearchableSelect
+        multiple
+        onChange={(nextValues) => {
+          onChange(nextValues.length > 0 ? nextValues : undefined);
+        }}
+        options={(filter.options ?? []).map((option) => ({
+          id: option.value,
+          label: option.label,
+        }))}
+        placeholder={filter.placeholder ?? filter.label}
+        value={selectedValues}
+      />
+    );
+  }
 
-              return (
-                <label
-                  key={option.value}
-                  className="flex items-center gap-3 px-2 py-2 text-sm text-[var(--foreground-soft)] transition hover:bg-[var(--surface-soft)]"
-                >
-                  <input
-                    checked={checked}
-                    className="h-4 w-4 border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--primary)]"
-                    onChange={(event) => {
-                      const nextValues = event.target.checked
-                        ? [...selectedValues, option.value]
-                        : selectedValues.filter(
-                            (item) => item !== option.value,
-                          );
+  if (searchableSelects && filter.type === "select") {
+    const placeholder =
+      filter.placeholder ?? `All ${filter.label.toLowerCase()}`;
+    const selectedValues = Array.isArray(value)
+      ? value
+      : value
+        ? value.split(",").filter(Boolean)
+        : [];
 
-                      onChange(nextValues.length > 0 ? nextValues : undefined);
-                    }}
-                    type="checkbox"
-                  />
-                  <span>{option.label}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      </details>
+    return (
+      <SearchableSelect
+        multiple
+        onChange={(nextValue) => {
+          onChange(nextValue.length > 0 ? nextValue : undefined);
+        }}
+        options={[
+          ...(filter.options ?? []).map((option) => ({
+            id: option.value,
+            label: option.label,
+          })),
+        ]}
+        placeholder={placeholder}
+        value={selectedValues}
+      />
     );
   }
 
@@ -138,6 +145,7 @@ export function DataTableFilters({
   filters,
   onChange,
   onReset,
+  searchableSelects = false,
   values,
 }: DataTableFiltersProps) {
   if (filters.length === 0) {
@@ -194,6 +202,7 @@ export function DataTableFilters({
               onChange: (value) => {
                 onChange(filter.id, value);
               },
+              searchableSelects,
               value: values[filter.id],
             })}
           </div>

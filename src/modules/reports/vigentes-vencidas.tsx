@@ -98,7 +98,7 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
 
   const updateDraft = (
     key: keyof ReportFilters,
-    value: string | number | boolean | undefined,
+    value: string | string[] | number | boolean | undefined,
   ) => {
     setDraft((current) => {
       const next = { ...current } as Record<string, unknown>;
@@ -134,7 +134,7 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
       });
       triggerDownload(
         blob,
-        `planes-${view}-${format === "excel" ? "nibol.xls" : "nibol.pdf"}`,
+        `planes-${view}-${format === "excel" ? "nibol.xlsx" : "nibol.pdf"}`,
       );
     } catch {
       setExportError(
@@ -160,6 +160,7 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
             {canExport ? (
               <ReportExportButtons
                 disabled={exporting !== null || plansQuery.isPending}
+                loading={exporting !== null}
                 onExport={(format) => void handleExport(format)}
               />
             ) : null}

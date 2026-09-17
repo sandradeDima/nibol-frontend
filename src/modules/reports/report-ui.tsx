@@ -28,7 +28,6 @@ import type {
   ReportType,
 } from "@/types";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { UserSearchSelect } from "@/components/ui/user-search-select";
 import { getRiskLevelColor } from "@/modules/observations/presentation";
 import { cn } from "@/utils";
 
@@ -167,144 +166,86 @@ export const formatReportPercent = (value: number): string =>
   `${Math.round(value)}%`;
 
 type ReportFilterBarProps = {
+  compact?: boolean;
+  dashboardOnly?: boolean;
+  defaultCutoffDate?: string;
   draft: ReportFilters;
   onApply: () => void;
   onChange: (
     key: keyof ReportFilters,
-    value: string | number | boolean | undefined,
+    value: string | string[] | number | boolean | undefined,
   ) => void;
   onReset: () => void;
   options?: ReportOptions;
   showProgress?: boolean;
 };
 
-export function ReportFilterBar({
+type DashboardFilterFieldsProps = {
+  allowedAreaResponsibleIds: Set<string>;
+  allowedExecutorIds: Set<string>;
+  allowedProcessOwnerIds: Set<string>;
+  capabilities: ReportOptions["filterCapabilities"];
+  defaultCutoffDate?: string;
+  draft: ReportFilters;
+  options?: ReportOptions;
+  updateFilter: ReportFilterBarProps["onChange"];
+};
+
+function DashboardFilterFields({
+  allowedAreaResponsibleIds,
+  allowedExecutorIds,
+  allowedProcessOwnerIds,
+  capabilities,
+  defaultCutoffDate,
   draft,
-  onApply,
-  onChange,
-  onReset,
   options,
-  showProgress = false,
-}: ReportFilterBarProps) {
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    onApply();
-  };
-
+  updateFilter,
+}: DashboardFilterFieldsProps) {
+  const cutoffDate = draft.cutoffDate ?? defaultCutoffDate;
   return (
-    <form className="nibol-panel space-y-4 p-4 sm:p-5" onSubmit={submit}>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="bg-[var(--primary-soft)] p-2.5 text-[var(--primary)]">
-            <Filter className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="font-display text-base font-bold text-[var(--foreground)] uppercase">
-              Filtros del reporte
-            </p>
-            <p className="text-xs leading-5 text-[var(--muted)]">
-              El mismo alcance alimenta los indicadores, gráficos, filas y
-              exportaciones.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            className="nibol-btn-ghost px-3 py-2 text-xs"
-            onClick={() => {
-              onChange("dateFrom", getReportDateRange(1).dateFrom);
-              onChange("dateTo", getReportDateRange(1).dateTo);
-            }}
-            type="button"
-          >
-            Últimos 30 días
-          </button>
-          <button
-            className="nibol-btn-ghost px-3 py-2 text-xs"
-            onClick={() => {
-              const range = getReportDateRange(3);
-              onChange("dateFrom", range.dateFrom);
-              onChange("dateTo", range.dateTo);
-            }}
-            type="button"
-          >
-            Últimos 3 meses
-          </button>
-          <button
-            className="nibol-btn-ghost px-3 py-2 text-xs"
-            onClick={() => {
-              const range = getReportDateRange(12);
-              onChange("dateFrom", range.dateFrom);
-              onChange("dateTo", range.dateTo);
-            }}
-            type="button"
-          >
-            Últimos 12 meses
-          </button>
-        </div>
-      </div>
-
-      <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <label className="space-y-2">
-          <span className="report-field-label">Período de análisis</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange(
-                "periodField",
-                event.target.value as ReportFilters["periodField"],
-              )
-            }
-            value={draft.periodField ?? "createdAt"}
-          >
-            <option value="createdAt">Fecha de registro</option>
-            <option value="reportDate">Fecha del informe</option>
-            <option value="originalDueDate">Fecha original del plan</option>
-            <option value="currentDueDate">Fecha límite actual</option>
-          </select>
-        </label>
-        <label className="space-y-2">
-          <span className="report-field-label">Desde</span>
-          <input
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("dateFrom", event.target.value || undefined)
-            }
-            type="date"
-            value={draft.dateFrom ?? ""}
-          />
-        </label>
-        <label className="space-y-2">
-          <span className="report-field-label">Hasta</span>
-          <input
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("dateTo", event.target.value || undefined)
-            }
-            type="date"
-            value={draft.dateTo ?? ""}
-          />
-        </label>
-        <label className="min-w-0 space-y-2">
-          <span className="report-field-label">Informe</span>
-          <SearchableSelect
-            onChange={(value) => onChange("auditReportId", value || undefined)}
-            options={
-              options?.auditReports.map((report) => ({
-                id: report.id,
-                label: report.label,
-              })) ?? []
-            }
-            placeholder="Todos los informes"
-            value={draft.auditReportId ?? ""}
-          />
-        </label>
+    <>
+      <label className="space-y-2">
+        <span className="report-field-label">Fecha de corte</span>
+        <input
+          aria-describedby="dashboard-cutoff-description"
+          className="nibol-field h-11 text-sm"
+          onChange={(event) =>
+            updateFilter("cutoffDate", event.target.value || undefined)
+          }
+          type="date"
+          value={cutoffDate ?? ""}
+        />
+        <span
+          className="block text-[11px] leading-4 text-[var(--muted)]"
+          id="dashboard-cutoff-description"
+        >
+          Indicadores calculados con corte a {formatReportDate(cutoffDate)}.
+        </span>
+      </label>
+      <label className="space-y-2">
+        <span className="report-field-label">Estado de observación</span>
+        <select
+          className="nibol-field h-11 text-sm"
+          onChange={(event) =>
+            updateFilter("statusId", event.target.value || undefined)
+          }
+          value={draft.statusId ?? ""}
+        >
+          <option value="">Todos los estados</option>
+          {options?.observationStatuses.map((status) => (
+            <option key={status.id} value={status.id}>
+              {status.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {capabilities.area ? (
         <label className="space-y-2">
           <span className="report-field-label">Área</span>
           <select
             className="nibol-field h-11 text-sm"
             onChange={(event) =>
-              onChange("areaId", event.target.value || undefined)
+              updateFilter("areaId", event.target.value || undefined)
             }
             value={draft.areaId ?? ""}
           >
@@ -316,183 +257,711 @@ export function ReportFilterBar({
             ))}
           </select>
         </label>
-        <label className="space-y-2">
-          <span className="report-field-label">Nivel de riesgo</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("riskLevelId", event.target.value || undefined)
-            }
-            value={draft.riskLevelId ?? ""}
-          >
-            <option value="">Todos los niveles</option>
-            {options?.riskLevels.map((risk) => (
-              <option key={risk.id} value={risk.id}>
-                {risk.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="space-y-2">
-          <span className="report-field-label">Estado de avance</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("progressStatus", event.target.value || undefined)
-            }
-            value={draft.progressStatus ?? ""}
-          >
-            <option value="">Todos los estados</option>
-            {options?.progressStatuses.map((status) => (
-              <option key={status.key} value={status.key}>
-                {status.label}
-              </option>
-            ))}
-          </select>
-        </label>
+      ) : null}
+      {capabilities.processOwner ? (
         <label className="min-w-0 space-y-2">
-          <span className="report-field-label">Dueño del proceso</span>
-          <UserSearchSelect
-            id="report-process-owner"
-            onChange={(value) => onChange("processOwnerId", value || undefined)}
+          <span className="report-field-label">Dueño de proceso</span>
+          <SearchableSelect
+            multiple
+            id="dashboard-process-owner"
+            onChange={(value) =>
+              updateFilter("processOwnerId", value.length ? value : undefined)
+            }
+            options={(options?.processOwners ?? [])
+              .filter((user) => allowedProcessOwnerIds.has(user.id))
+              .map((user) => ({
+                description: user.email,
+                id: user.id,
+                label: user.name,
+                search: user.email,
+              }))}
             placeholder="Todos los dueños"
-            users={options?.processOwners ?? []}
-            value={draft.processOwnerId ?? ""}
+            value={draft.processOwnerId ?? []}
           />
         </label>
+      ) : null}
+      {capabilities.areaResponsible ? (
         <label className="min-w-0 space-y-2">
-          <span className="report-field-label">Ejecutor</span>
-          <UserSearchSelect
-            id="report-executor"
-            onChange={(value) => onChange("executorId", value || undefined)}
-            placeholder="Todos los ejecutores"
-            users={options?.executors ?? []}
-            value={draft.executorId ?? ""}
-          />
-        </label>
-        <label className="space-y-2">
-          <span className="report-field-label">Estado de plazo</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("deadlineStatus", event.target.value || undefined)
-            }
-            value={draft.deadlineStatus ?? ""}
-          >
-            <option value="">Todos los plazos</option>
-            <option value="VIGENTE">Vigente</option>
-            <option value="VENCIDO">Vencido</option>
-          </select>
-        </label>
-        <label className="space-y-2">
-          <span className="report-field-label">Reprogramado</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange(
-                "reprogrammed",
-                event.target.value === ""
-                  ? undefined
-                  : event.target.value === "true",
+          <span className="report-field-label">Responsable de área</span>
+          <SearchableSelect
+            multiple
+            id="dashboard-area-responsible"
+            onChange={(value) =>
+              updateFilter(
+                "areaResponsibleId",
+                value.length ? value : undefined,
               )
             }
-            value={
-              draft.reprogrammed === undefined ? "" : String(draft.reprogrammed)
-            }
-          >
-            <option value="">Todos</option>
-            <option value="true">Sí</option>
-            <option value="false">No</option>
-          </select>
-        </label>
-        <label className="relative min-w-0 space-y-2">
-          <span className="report-field-label">Buscar</span>
-          <input
-            aria-label="Buscar por informe, observación, plan o usuario"
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("search", event.target.value || undefined)
-            }
-            placeholder="Informe, plan, área o usuario"
-            type="search"
-            value={draft.search ?? ""}
+            options={(options?.areaResponsibles ?? [])
+              .filter((user) => allowedAreaResponsibleIds.has(user.id))
+              .map((user) => ({
+                description: user.email,
+                id: user.id,
+                label: user.name,
+                search: user.email,
+              }))}
+            placeholder="Todos los responsables"
+            value={draft.areaResponsibleId ?? []}
           />
         </label>
-        {showProgress ? (
-          <label className="space-y-2">
-            <span className="report-field-label">Avance mínimo</span>
-            <input
-              className="nibol-field h-11 text-sm"
-              max={100}
-              min={0}
-              onChange={(event) =>
-                onChange(
-                  "progressMin",
-                  event.target.value ? Number(event.target.value) : undefined,
-                )
-              }
-              placeholder="Ej. 20"
-              type="number"
-              value={draft.progressMin ?? ""}
-            />
-          </label>
-        ) : null}
-        {showProgress ? (
-          <label className="space-y-2">
-            <span className="report-field-label">Avance máximo</span>
-            <input
-              className="nibol-field h-11 text-sm"
-              max={100}
-              min={0}
-              onChange={(event) =>
-                onChange(
-                  "progressMax",
-                  event.target.value ? Number(event.target.value) : undefined,
-                )
-              }
-              placeholder="Ej. 80"
-              type="number"
-              value={draft.progressMax ?? ""}
-            />
-          </label>
+      ) : null}
+      {capabilities.executor ? (
+        <label className="min-w-0 space-y-2">
+          <span className="report-field-label">Ejecutor</span>
+          <SearchableSelect
+            multiple
+            id="dashboard-executor"
+            onChange={(value) =>
+              updateFilter("executorId", value.length ? value : undefined)
+            }
+            options={(options?.executors ?? [])
+              .filter((user) => allowedExecutorIds.has(user.id))
+              .map((user) => ({
+                description: user.email,
+                id: user.id,
+                label: user.name,
+                search: user.email,
+              }))}
+            placeholder="Todos los ejecutores"
+            value={draft.executorId ?? []}
+          />
+        </label>
+      ) : null}
+    </>
+  );
+}
+
+export function ReportFilterBar({
+  compact = false,
+  dashboardOnly = false,
+  defaultCutoffDate,
+  draft,
+  onApply,
+  onChange,
+  onReset,
+  options,
+  showProgress = false,
+}: ReportFilterBarProps) {
+  const capabilities =
+    options?.filterCapabilities ??
+    (dashboardOnly
+      ? {
+          area: false,
+          areaResponsible: false,
+          auditReport: false,
+          executor: false,
+          processOwner: false,
+        }
+      : {
+          area: true,
+          areaResponsible: true,
+          auditReport: true,
+          executor: true,
+          processOwner: true,
+        });
+  const hierarchyRelationships = options?.hierarchyRelationships ?? [];
+  const getAllowedHierarchyIds = (nextDraft: ReportFilters) => {
+    const byArea = hierarchyRelationships.filter(
+      (item) => !nextDraft.areaId || item.areaId === nextDraft.areaId,
+    );
+    const byProcessOwner = nextDraft.processOwnerId?.length
+      ? byArea.filter(
+          (item) =>
+            item.processOwnerId &&
+            nextDraft.processOwnerId?.includes(item.processOwnerId),
+        )
+      : byArea;
+    const byResponsible = nextDraft.areaResponsibleId?.length
+      ? byProcessOwner.filter(
+          (item) =>
+            item.areaResponsibleId &&
+            nextDraft.areaResponsibleId?.includes(item.areaResponsibleId),
+        )
+      : byProcessOwner;
+    return {
+      areaResponsibleIds: new Set(
+        byProcessOwner.flatMap((item) =>
+          item.areaResponsibleId ? [item.areaResponsibleId] : [],
+        ),
+      ),
+      executorIds: new Set(
+        byResponsible.flatMap((item) =>
+          item.executorId ? [item.executorId] : [],
+        ),
+      ),
+      processOwnerIds: new Set(
+        byArea.flatMap((item) =>
+          item.processOwnerId ? [item.processOwnerId] : [],
+        ),
+      ),
+    };
+  };
+  const allowedHierarchyIds = getAllowedHierarchyIds(draft);
+  const relationship = options?.areaRelationships?.find(
+    (item) => item.areaId === draft.areaId,
+  );
+  const areaResponsibleIds = relationship
+    ? new Set(relationship.areaResponsibleIds)
+    : null;
+  const selectedResponsibleIds = draft.areaResponsibleId ?? [];
+  const responsibleExecutorIds = relationship
+    ? new Set(
+        relationship.responsibleExecutorIds
+          .filter(({ areaResponsibleId }) =>
+            selectedResponsibleIds.includes(areaResponsibleId),
+          )
+          .flatMap(({ executorIds }) => executorIds),
+      )
+    : null;
+  const executorIds = relationship
+    ? responsibleExecutorIds && selectedResponsibleIds.length
+      ? responsibleExecutorIds
+      : new Set(relationship.executorIds)
+    : null;
+  const processOwnerIds = relationship
+    ? new Set(relationship.processOwnerIds)
+    : null;
+  const updateFilter = (
+    key: keyof ReportFilters,
+    value: string | string[] | number | boolean | undefined,
+  ) => {
+    if (
+      dashboardOnly &&
+      ["areaId", "processOwnerId", "areaResponsibleId"].includes(key)
+    ) {
+      const nextDraft = { ...draft, [key]: value } as ReportFilters;
+      const allowed = getAllowedHierarchyIds(nextDraft);
+      const keepSelected = (selected: unknown, ids: Set<string>) => {
+        if (!Array.isArray(selected) || selected.length === 0) return undefined;
+        const next = selected.filter(
+          (item): item is string => typeof item === "string" && ids.has(item),
+        );
+        return next.length ? next : undefined;
+      };
+      onChange(
+        key,
+        key === "areaId"
+          ? value
+          : key === "processOwnerId"
+            ? keepSelected(value, allowed.processOwnerIds)
+            : keepSelected(value, allowed.areaResponsibleIds),
+      );
+      if (key !== "processOwnerId" && key !== "areaResponsibleId")
+        onChange(
+          "processOwnerId",
+          keepSelected(nextDraft.processOwnerId, allowed.processOwnerIds),
+        );
+      if (key !== "areaResponsibleId")
+        onChange(
+          "areaResponsibleId",
+          keepSelected(nextDraft.areaResponsibleId, allowed.areaResponsibleIds),
+        );
+      if (key !== "executorId")
+        onChange(
+          "executorId",
+          keepSelected(nextDraft.executorId, allowed.executorIds),
+        );
+      return;
+    }
+    onChange(key, value);
+    if (key === "areaResponsibleId") {
+      if (!relationship) return;
+      const selected = Array.isArray(value) ? value : [];
+      const allowed = selected.length
+        ? relationship.responsibleExecutorIds
+            .filter(({ areaResponsibleId }) =>
+              selected.includes(areaResponsibleId),
+            )
+            .flatMap(({ executorIds }) => executorIds)
+        : relationship.executorIds;
+      onChange(
+        "executorId",
+        draft.executorId?.filter((id) => allowed.includes(id)),
+      );
+      return;
+    }
+    if (key !== "areaId") return;
+    const nextRelationship = options?.areaRelationships?.find(
+      (item) => item.areaId === value,
+    );
+    const keepSelected = (
+      selected: string[] | undefined,
+      allowed: string[] | undefined,
+    ) => {
+      if (!selected?.length || !allowed) return selected;
+      const allowedSet = new Set(allowed);
+      const next = selected.filter((id) => allowedSet.has(id));
+      return next.length ? next : undefined;
+    };
+    onChange(
+      "areaResponsibleId",
+      keepSelected(
+        draft.areaResponsibleId,
+        nextRelationship?.areaResponsibleIds,
+      ),
+    );
+    onChange(
+      "executorId",
+      keepSelected(draft.executorId, nextRelationship?.executorIds),
+    );
+    onChange(
+      "processOwnerId",
+      keepSelected(draft.processOwnerId, nextRelationship?.processOwnerIds),
+    );
+  };
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onApply();
+  };
+
+  return (
+    <form
+      className={cn(
+        "nibol-panel space-y-4 p-4 sm:p-5",
+        compact && "space-y-3 p-3 sm:p-4",
+      )}
+      onSubmit={submit}
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="bg-[var(--primary-soft)] p-2.5 text-[var(--primary)]">
+            <Filter className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="font-display text-base font-bold text-[var(--foreground)] uppercase">
+              {compact ? "Filtros de la vista" : "Filtros del reporte"}
+            </p>
+            <p className="text-xs leading-5 text-[var(--muted)]">
+              {compact
+                ? "El corte seleccionado actualiza KPIs, gráficos y exportaciones."
+                : "El mismo alcance alimenta los indicadores, gráficos, filas y exportaciones."}
+            </p>
+          </div>
+        </div>
+        {!compact ? (
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="nibol-btn-ghost px-3 py-2 text-xs"
+              onClick={() => {
+                onChange("dateFrom", getReportDateRange(1).dateFrom);
+                onChange("dateTo", getReportDateRange(1).dateTo);
+              }}
+              type="button"
+            >
+              Últimos 30 días
+            </button>
+            <button
+              className="nibol-btn-ghost px-3 py-2 text-xs"
+              onClick={() => {
+                const range = getReportDateRange(3);
+                onChange("dateFrom", range.dateFrom);
+                onChange("dateTo", range.dateTo);
+              }}
+              type="button"
+            >
+              Últimos 3 meses
+            </button>
+            <button
+              className="nibol-btn-ghost px-3 py-2 text-xs"
+              onClick={() => {
+                const range = getReportDateRange(12);
+                onChange("dateFrom", range.dateFrom);
+                onChange("dateTo", range.dateTo);
+              }}
+              type="button"
+            >
+              Últimos 12 meses
+            </button>
+          </div>
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-3">
-          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-[var(--foreground-soft)]">
-            <input
-              checked={draft.dueSoon === true}
-              className="h-4 w-4 accent-[var(--primary)]"
-              onChange={(event) =>
-                onChange("dueSoon", event.target.checked ? true : undefined)
-              }
-              type="checkbox"
-            />
-            Solo próximos a vencer
-          </label>
-          <span className="text-xs leading-6 text-[var(--muted)]">
-            Vencido se calcula con la fecha efectiva aprobada.
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            className="nibol-btn-secondary px-4 py-2.5 text-sm"
-            onClick={onReset}
-            type="button"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Limpiar
-          </button>
-          <button
-            className="nibol-btn-primary px-4 py-2.5 text-sm"
-            type="submit"
-          >
-            <ListFilter className="h-4 w-4" />
-            Aplicar filtros
-          </button>
-        </div>
+      <div
+        className={cn(
+          "grid min-w-0 gap-3",
+          dashboardOnly
+            ? "sm:grid-cols-2 lg:grid-cols-6"
+            : compact
+              ? "sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5"
+              : "md:grid-cols-2 xl:grid-cols-4",
+        )}
+      >
+        {dashboardOnly ? (
+          <DashboardFilterFields
+            allowedAreaResponsibleIds={allowedHierarchyIds.areaResponsibleIds}
+            allowedExecutorIds={allowedHierarchyIds.executorIds}
+            allowedProcessOwnerIds={allowedHierarchyIds.processOwnerIds}
+            capabilities={capabilities}
+            defaultCutoffDate={defaultCutoffDate}
+            draft={draft}
+            options={options}
+            updateFilter={updateFilter}
+          />
+        ) : (
+          <>
+            <label className="space-y-2">
+              <span className="report-field-label">Período de análisis</span>
+              <select
+                className="nibol-field h-11 text-sm"
+                onChange={(event) =>
+                  onChange(
+                    "periodField",
+                    event.target.value as ReportFilters["periodField"],
+                  )
+                }
+                value={draft.periodField ?? "createdAt"}
+              >
+                <option value="createdAt">Fecha de registro</option>
+                <option value="reportDate">Fecha del informe</option>
+                <option value="originalDueDate">Fecha original del plan</option>
+                <option value="currentDueDate">Fecha límite actual</option>
+              </select>
+            </label>
+            <label className="space-y-2">
+              <span className="report-field-label">Desde</span>
+              <input
+                className="nibol-field h-11 text-sm"
+                onChange={(event) =>
+                  onChange("dateFrom", event.target.value || undefined)
+                }
+                type="date"
+                value={draft.dateFrom ?? ""}
+              />
+            </label>
+            <label className="space-y-2">
+              <span className="report-field-label">Hasta</span>
+              <input
+                className="nibol-field h-11 text-sm"
+                onChange={(event) =>
+                  onChange("dateTo", event.target.value || undefined)
+                }
+                type="date"
+                value={draft.dateTo ?? ""}
+              />
+            </label>
+            {capabilities.auditReport ? (
+              <label className="min-w-0 space-y-2">
+                <span className="report-field-label">Informe</span>
+                <SearchableSelect
+                  multiple
+                  onChange={(value) =>
+                    updateFilter(
+                      "auditReportId",
+                      value.length ? value : undefined,
+                    )
+                  }
+                  options={
+                    options?.auditReports.map((report) => ({
+                      id: report.id,
+                      label: report.label,
+                    })) ?? []
+                  }
+                  placeholder="Todos los informes"
+                  value={draft.auditReportId ?? []}
+                />
+              </label>
+            ) : null}
+            {capabilities.area ? (
+              <label className="space-y-2">
+                <span className="report-field-label">Área</span>
+                <select
+                  className="nibol-field h-11 text-sm"
+                  onChange={(event) =>
+                    updateFilter("areaId", event.target.value || undefined)
+                  }
+                  value={draft.areaId ?? ""}
+                >
+                  <option value="">Todas las áreas</option>
+                  {options?.areas.map((area) => (
+                    <option key={area.id} value={area.id}>
+                      {area.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <label className="space-y-2">
+              <span className="report-field-label">Nivel de riesgo</span>
+              <select
+                className="nibol-field h-11 text-sm"
+                onChange={(event) =>
+                  onChange("riskLevelId", event.target.value || undefined)
+                }
+                value={draft.riskLevelId ?? ""}
+              >
+                <option value="">Todos los niveles</option>
+                {options?.riskLevels.map((risk) => (
+                  <option key={risk.id} value={risk.id}>
+                    {risk.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-2">
+              <span className="report-field-label">Estado de avance</span>
+              <select
+                className="nibol-field h-11 text-sm"
+                onChange={(event) =>
+                  onChange("progressStatus", event.target.value || undefined)
+                }
+                value={draft.progressStatus ?? ""}
+              >
+                <option value="">Todos los estados</option>
+                {options?.progressStatuses.map((status) => (
+                  <option key={status.key} value={status.key}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-2">
+              <span className="report-field-label">Estado de observación</span>
+              <select
+                className="nibol-field h-11 text-sm"
+                onChange={(event) =>
+                  updateFilter("statusId", event.target.value || undefined)
+                }
+                value={draft.statusId ?? ""}
+              >
+                <option value="">Todos los estados</option>
+                {options?.observationStatuses.map((status) => (
+                  <option key={status.id} value={status.id}>
+                    {status.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {capabilities.processOwner ? (
+              <label className="min-w-0 space-y-2">
+                <span className="report-field-label">Dueño del proceso</span>
+                <SearchableSelect
+                  multiple
+                  id="report-process-owner"
+                  onChange={(value) =>
+                    updateFilter(
+                      "processOwnerId",
+                      value.length ? value : undefined,
+                    )
+                  }
+                  options={(options?.processOwners ?? [])
+                    .filter(
+                      (user) =>
+                        !processOwnerIds || processOwnerIds.has(user.id),
+                    )
+                    .map((user) => ({
+                      description: user.email,
+                      id: user.id,
+                      label: user.name,
+                      search: user.email,
+                    }))}
+                  placeholder="Todos los dueños"
+                  value={draft.processOwnerId ?? []}
+                />
+              </label>
+            ) : null}
+            {capabilities.areaResponsible ? (
+              <label className="min-w-0 space-y-2">
+                <span className="report-field-label">Responsable de área</span>
+                <SearchableSelect
+                  multiple
+                  id="report-area-responsible"
+                  onChange={(value) =>
+                    updateFilter(
+                      "areaResponsibleId",
+                      value.length ? value : undefined,
+                    )
+                  }
+                  options={(options?.areaResponsibles ?? [])
+                    .filter(
+                      (user) =>
+                        !areaResponsibleIds || areaResponsibleIds.has(user.id),
+                    )
+                    .map((user) => ({
+                      description: user.email,
+                      id: user.id,
+                      label: user.name,
+                      search: user.email,
+                    }))}
+                  placeholder="Todos los responsables"
+                  value={draft.areaResponsibleId ?? []}
+                />
+              </label>
+            ) : null}
+            {capabilities.executor ? (
+              <label className="min-w-0 space-y-2">
+                <span className="report-field-label">Ejecutor</span>
+                <SearchableSelect
+                  multiple
+                  id="report-executor"
+                  onChange={(value) =>
+                    updateFilter("executorId", value.length ? value : undefined)
+                  }
+                  options={(options?.executors ?? [])
+                    .filter((user) => !executorIds || executorIds.has(user.id))
+                    .map((user) => ({
+                      description: user.email,
+                      id: user.id,
+                      label: user.name,
+                      search: user.email,
+                    }))}
+                  placeholder="Todos los ejecutores"
+                  value={draft.executorId ?? []}
+                />
+              </label>
+            ) : null}
+            <label className="space-y-2">
+              <span className="report-field-label">Estado de plazo</span>
+              <select
+                className="nibol-field h-11 text-sm"
+                onChange={(event) =>
+                  onChange("deadlineStatus", event.target.value || undefined)
+                }
+                value={draft.deadlineStatus ?? ""}
+              >
+                <option value="">Todos los plazos</option>
+                <option value="VIGENTE">Vigente</option>
+                <option value="VENCIDO">Vencido</option>
+              </select>
+            </label>
+            <label className="space-y-2">
+              <span className="report-field-label">Reprogramado</span>
+              <select
+                className="nibol-field h-11 text-sm"
+                onChange={(event) =>
+                  onChange(
+                    "reprogrammed",
+                    event.target.value === ""
+                      ? undefined
+                      : event.target.value === "true",
+                  )
+                }
+                value={
+                  draft.reprogrammed === undefined
+                    ? ""
+                    : String(draft.reprogrammed)
+                }
+              >
+                <option value="">Todos</option>
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+            <label className="relative min-w-0 space-y-2">
+              <span className="report-field-label">Buscar</span>
+              <input
+                aria-label="Buscar por informe, observación, plan o usuario"
+                className="nibol-field h-11 text-sm"
+                onChange={(event) =>
+                  onChange("search", event.target.value || undefined)
+                }
+                placeholder="Informe, plan, área o usuario"
+                type="search"
+                value={draft.search ?? ""}
+              />
+            </label>
+            {showProgress ? (
+              <label className="space-y-2">
+                <span className="report-field-label">Avance mínimo</span>
+                <input
+                  className="nibol-field h-11 text-sm"
+                  max={100}
+                  min={0}
+                  onChange={(event) =>
+                    onChange(
+                      "progressMin",
+                      event.target.value
+                        ? Number(event.target.value)
+                        : undefined,
+                    )
+                  }
+                  placeholder="Ej. 20"
+                  type="number"
+                  value={draft.progressMin ?? ""}
+                />
+              </label>
+            ) : null}
+            {showProgress ? (
+              <label className="space-y-2">
+                <span className="report-field-label">Avance máximo</span>
+                <input
+                  className="nibol-field h-11 text-sm"
+                  max={100}
+                  min={0}
+                  onChange={(event) =>
+                    onChange(
+                      "progressMax",
+                      event.target.value
+                        ? Number(event.target.value)
+                        : undefined,
+                    )
+                  }
+                  placeholder="Ej. 80"
+                  type="number"
+                  value={draft.progressMax ?? ""}
+                />
+              </label>
+            ) : null}
+          </>
+        )}
       </div>
+
+      {!dashboardOnly ? (
+        <div className="flex flex-col gap-3 border-t border-[var(--border)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-3">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-[var(--foreground-soft)]">
+              <input
+                checked={draft.dueSoon === true}
+                className="h-4 w-4 accent-[var(--primary)]"
+                onChange={(event) =>
+                  onChange("dueSoon", event.target.checked ? true : undefined)
+                }
+                type="checkbox"
+              />
+              Solo próximos a vencer
+            </label>
+            <span className="text-xs leading-6 text-[var(--muted)]">
+              Vencido se calcula con la fecha efectiva aprobada.
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="nibol-btn-secondary px-4 py-2.5 text-sm"
+              onClick={onReset}
+              type="button"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Limpiar
+            </button>
+            <button
+              className="nibol-btn-primary px-4 py-2.5 text-sm"
+              type="submit"
+            >
+              <ListFilter className="h-4 w-4" />
+              Aplicar filtros
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-end border-t border-[var(--border)] pt-3">
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="nibol-btn-secondary px-4 py-2 text-sm"
+              onClick={onReset}
+              type="button"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Limpiar
+            </button>
+            <button
+              className="nibol-btn-primary px-4 py-2 text-sm"
+              type="submit"
+            >
+              <ListFilter className="h-4 w-4" />
+              Aplicar filtros
+            </button>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
@@ -628,16 +1097,26 @@ export function ReportKpi({
   );
 }
 
-const chartColor = (index: number): string => {
-  return [
-    "var(--primary)",
-    "var(--accent)",
-    "var(--info)",
-    "var(--success)",
-    "#64748b",
-    "#b45309",
-  ][index % 6];
-};
+export const REPORT_CHART_COLORS = {
+  CONCLUDED: "#16A34A",
+  CON_AVANCE: "#F59E0B",
+  INICIADO: "#0EA5E9",
+  NOT_STARTED: "#FACC15",
+  STARTED: "#0EA5E9",
+  WITH_PROGRESS: "#F59E0B",
+  VENCIDO: "#D92D20",
+  SI: "#F59E0B",
+  NO: "#64748B",
+} as const;
+
+export const getReportChartColor = (
+  item: ReportChartItem,
+  index: number,
+): string =>
+  item.colorToken
+    ? getRiskLevelColor(item.colorToken)
+    : (REPORT_CHART_COLORS[item.key as keyof typeof REPORT_CHART_COLORS] ??
+      ["#0B7285", "#2563EB", "#7C3AED", "#64748B", "#B45309"][index % 5]!);
 
 export function ReportBarList({
   items,
@@ -672,9 +1151,7 @@ export function ReportBarList({
               <div
                 className="h-full transition-[width]"
                 style={{
-                  background: item.colorToken
-                    ? getRiskLevelColor(item.colorToken)
-                    : chartColor(index),
+                  background: getReportChartColor(item, index),
                   width: `${Math.max(6, (item.value / max) * 100)}%`,
                 }}
               />
@@ -699,11 +1176,18 @@ export function ReportBarList({
 
 export function ReportDonut({ items }: { items: ReportChartItem[] }) {
   const total = items.reduce((sum, item) => sum + item.value, 0);
+  if (items.length === 0 || total === 0) {
+    return (
+      <div className="border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-4 py-8 text-center text-sm text-[var(--foreground-soft)]">
+        No hay datos para este corte.
+      </div>
+    );
+  }
   let cursor = 0;
   const segments = items.map((item, index) => {
     const start = cursor;
     cursor += total === 0 ? 0 : (item.value / total) * 100;
-    return `${item.colorToken ? getRiskLevelColor(item.colorToken) : chartColor(index)} ${start}% ${cursor}%`;
+    return `${getReportChartColor(item, index)} ${start}% ${cursor}%`;
   });
   return (
     <div className="grid gap-5 sm:grid-cols-[11rem_1fr] sm:items-center">
@@ -733,9 +1217,7 @@ export function ReportDonut({ items }: { items: ReportChartItem[] }) {
                 <span
                   className="h-2.5 w-2.5 shrink-0"
                   style={{
-                    background: item.colorToken
-                      ? getRiskLevelColor(item.colorToken)
-                      : chartColor(index),
+                    background: getReportChartColor(item, index),
                   }}
                 />
                 {item.label}
@@ -851,7 +1333,15 @@ export function ReportFilterSummary({ filters }: { filters: ReportFilters }) {
       filters.processOwnerId ? "Dueño seleccionado" : "Todos",
     ],
     ["Área", filters.areaId ? "Área seleccionada" : "Todas"],
+    [
+      "Responsable de área",
+      filters.areaResponsibleId ? "Responsable seleccionado" : "Todos",
+    ],
     ["Riesgo", filters.riskLevelId ? "Nivel seleccionado" : "Todos"],
+    [
+      "Estado de observación",
+      filters.statusId ? "Estado seleccionado" : "Todos",
+    ],
     [
       "Estado de avance",
       filters.progressStatus ? progressLabels[filters.progressStatus] : "Todos",
@@ -948,9 +1438,11 @@ const formatCellValue = (value: unknown): string => {
 
 export function ReportExportButtons({
   disabled = false,
+  loading = false,
   onExport,
 }: {
   disabled?: boolean;
+  loading?: boolean;
   onExport: (format: "excel" | "pdf") => void;
 }) {
   return (
@@ -961,7 +1453,7 @@ export function ReportExportButtons({
         onClick={() => onExport("excel")}
         type="button"
       >
-        <Download className="h-4 w-4" /> Excel
+        <Download className="h-4 w-4" /> {loading ? "Preparando…" : "Excel"}
       </button>
       <button
         className="nibol-btn-secondary px-3 py-2.5 text-sm"
@@ -969,7 +1461,7 @@ export function ReportExportButtons({
         onClick={() => onExport("pdf")}
         type="button"
       >
-        <Download className="h-4 w-4" /> PDF
+        <Download className="h-4 w-4" /> {loading ? "Preparando…" : "PDF"}
       </button>
     </div>
   );

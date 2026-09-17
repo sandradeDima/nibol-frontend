@@ -44,6 +44,14 @@ export function PendingApprovalsWorkspace({
       : null,
   ].filter(Boolean);
 
+  if (availableTabs.length === 0) {
+    return (
+      <section className="nibol-panel p-8 text-center text-sm text-stone-500">
+        No hay bandejas de aprobación asignadas a su rol.
+      </section>
+    );
+  }
+
   if (availableTabs.length === 1) {
     return activeTab === "progress" ? (
       <PendingProgressApprovals

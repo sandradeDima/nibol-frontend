@@ -9,7 +9,6 @@ import {
   ClipboardCheck,
   ClipboardList,
   Clock3,
-  ListChecks,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
@@ -26,8 +25,6 @@ import {
 type OperationalDashboardProps = {
   canViewApprovals: boolean;
   canViewExtensions: boolean;
-  canViewReports: boolean;
-  canViewWorkflowTasks: boolean;
   data: OperationalDashboardData;
 };
 
@@ -83,8 +80,6 @@ function MetricCard({
 export function OperationalDashboard({
   canViewApprovals,
   canViewExtensions,
-  canViewReports,
-  canViewWorkflowTasks,
   data,
 }: OperationalDashboardProps) {
   const cards = [
@@ -96,45 +91,51 @@ export function OperationalDashboard({
       value: data.summary.totalObservations,
     },
     {
-      description: "Requieren atención prioritaria por vencimiento.",
-      href: data.links.overdueObservations,
+      description: "Observaciones abiertas dentro del alcance visible.",
+      href: data.links.pendingObservations,
       icon: <AlertTriangle className="h-5 w-5" />,
+      label: "Pendientes",
+      value: data.summary.pendingObservations,
+    },
+    {
+      description: "Observaciones cerradas y validadas por Auditoría.",
+      href: data.links.concludedObservations,
+      icon: <CheckCircle2 className="h-5 w-5" />,
+      label: "Concluidas",
+      value: data.summary.concludedObservations,
+    },
+  ];
+
+  const priorities = [
+    {
+      href: data.links.overdueObservations,
+      icon: <AlertTriangle className="h-4 w-4" />,
       label: "Vencidas",
       value: data.summary.overdueObservations,
     },
+    ...(canViewExtensions
+      ? [
+          {
+            href: data.links.pendingExtensions,
+            icon: <CalendarClock className="h-4 w-4" />,
+            label: "Ampliaciones pendientes",
+            value: data.summary.pendingExtensions,
+          },
+        ]
+      : []),
     {
-      description: `Vencen dentro de ${data.reminderDaysBeforeDue} días.`,
-      href: data.links.upcomingObservations,
-      icon: <Clock3 className="h-5 w-5" />,
-      label: "Próximas a vencer",
-      value: data.summary.upcomingObservations,
-    },
-    {
-      description: "Observaciones con ejecución iniciada.",
-      href: data.links.inProgressObservations,
-      icon: <CheckCircle2 className="h-5 w-5" />,
-      label: "En progreso",
-      value: data.summary.inProgressObservations,
+      href: data.links.pendingProgressReviews,
+      icon: <Clock3 className="h-4 w-4" />,
+      label: "Avances pendientes de revisión",
+      value: data.summary.pendingProgressReviews,
     },
     ...(canViewApprovals
       ? [
           {
-            description: "Avances y ampliaciones pendientes de decisión.",
             href: data.links.pendingApprovals,
-            icon: <ClipboardCheck className="h-5 w-5" />,
-            label: "Pendientes de aprobación",
+            icon: <ClipboardCheck className="h-4 w-4" />,
+            label: "Aprobaciones pendientes",
             value: data.summary.pendingApprovals,
-          },
-        ]
-      : []),
-    ...(canViewExtensions
-      ? [
-          {
-            description: "Solicitudes de ampliación dentro del flujo.",
-            href: data.links.pendingExtensions,
-            icon: <CalendarClock className="h-5 w-5" />,
-            label: "Ampliaciones pendientes",
-            value: data.summary.pendingExtensions,
           },
         ]
       : []),
@@ -154,59 +155,44 @@ export function OperationalDashboard({
         title="Dashboard"
       />
 
-      <section className="flex flex-wrap items-center gap-2">
-        <p className="nibol-eyebrow mr-1 whitespace-nowrap">Acciones rápidas</p>
-        <div className="flex min-w-0 flex-1 flex-wrap gap-2">
-          <QuickLink
-            compact
-            href={data.links.allObservations}
-            icon={<ListChecks className="h-4 w-4" />}
-            label="Observaciones"
-          />
-          {canViewReports ? (
-            <QuickLink
-              compact
-              href="/reportes"
-              icon={<ClipboardList className="h-4 w-4" />}
-              label="Reportes"
-            />
-          ) : null}
-          {canViewApprovals ? (
-            <QuickLink
-              compact
-              href={data.links.pendingApprovals}
-              icon={<ClipboardCheck className="h-4 w-4" />}
-              label="Aprobaciones"
-            />
-          ) : null}
-          {canViewExtensions ? (
-            <QuickLink
-              compact
-              href={data.links.pendingExtensions}
-              icon={<CalendarClock className="h-4 w-4" />}
-              label="Ampliaciones"
-            />
-          ) : null}
-          {canViewWorkflowTasks ? (
-            <QuickLink
-              compact
-              href="/aprobaciones/flujos"
-              icon={<ListChecks className="h-4 w-4" />}
-              label="Tareas de flujos"
-            />
-          ) : null}
+      <section className="grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-3 sm:grid-cols-3">
+          {cards.map((card) => (
+            <MetricCard key={card.label} {...card} />
+          ))}
         </div>
-      </section>
 
-      <section
-        className={cn(
-          "grid gap-3 sm:grid-cols-2",
-          cards.length > 4 ? "xl:grid-cols-6" : "xl:grid-cols-4",
-        )}
-      >
-        {cards.map((card) => (
-          <MetricCard key={card.label} {...card} />
-        ))}
+        <section className="nibol-panel-dark p-4 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold tracking-[0.2em] text-slate-300 uppercase">
+                Acciones prioritarias
+              </p>
+              <p className="mt-1 text-sm text-slate-300">
+                Accesos rápidos según su rol y alcance.
+              </p>
+            </div>
+            <ArrowRight className="h-5 w-5 text-slate-300" />
+          </div>
+          <div className="mt-4 grid gap-2">
+            {priorities.map((priority) => (
+              <Link
+                className="flex items-center justify-between gap-3 border border-white/10 bg-white/6 px-3 py-2.5 text-sm transition hover:bg-white/10"
+                href={priority.href}
+                key={priority.label}
+              >
+                <span className="flex items-center gap-2 text-slate-200">
+                  {priority.icon}
+                  {priority.label}
+                </span>
+                <span className="flex items-center gap-2 font-semibold text-white">
+                  {priority.value}
+                  <ArrowRight className="h-3.5 w-3.5 text-slate-400" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
       </section>
 
       <section className="nibol-panel overflow-hidden">
@@ -321,33 +307,5 @@ export function OperationalDashboard({
         )}
       </section>
     </main>
-  );
-}
-
-function QuickLink({
-  compact = false,
-  href,
-  icon,
-  label,
-}: {
-  compact?: boolean;
-  href: string;
-  icon: ReactNode;
-  label: string;
-}) {
-  return (
-    <Link
-      className={cn(
-        "flex items-center justify-between gap-3 border border-[var(--border)] bg-white font-semibold text-[var(--foreground)] transition hover:border-[var(--primary)] hover:shadow-sm",
-        compact ? "px-3 py-2 text-xs" : "p-4 text-sm",
-      )}
-      href={href}
-    >
-      <span className="flex items-center gap-3">
-        <span className="text-[var(--primary)]">{icon}</span>
-        {label}
-      </span>
-      <ArrowRight className="h-4 w-4 text-[var(--muted)]" />
-    </Link>
   );
 }

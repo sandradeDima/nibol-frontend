@@ -5,6 +5,7 @@ import { PendingApprovalsWorkspace } from "@/modules/extension-requests/pending-
 
 export default async function PendingApprovalsPage() {
   const authorization = await requireAnyPermission([
+    "action_plans.view",
     "action_plans.evaluate",
     "deadline_extensions.approve",
     "deadline_extensions.reject",

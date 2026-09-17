@@ -14,8 +14,14 @@ import type {
 } from "@/types";
 
 const appendValue = (params: URLSearchParams, key: string, value: unknown) => {
-  if (value === undefined || value === null || value === "") return;
-  params.set(key, String(value));
+  if (
+    value === undefined ||
+    value === null ||
+    value === "" ||
+    (Array.isArray(value) && value.length === 0)
+  )
+    return;
+  params.set(key, String(Array.isArray(value) ? value.join(",") : value));
 };
 
 type SearchParamsLike = { get(name: string): string | null };
@@ -27,12 +33,9 @@ export const parseReportFilters = (
   const read = (key: string) => searchParams.get(`filter.${key}`);
   const stringKeys = [
     "areaId",
-    "auditReportId",
     "dateFrom",
     "dateTo",
     "deadlineStatus",
-    "executorId",
-    "processOwnerId",
     "progressStatus",
     "responsibleUserId",
     "riskLevelId",
@@ -42,6 +45,24 @@ export const parseReportFilters = (
   stringKeys.forEach((key) => {
     const value = read(key);
     if (value) filters[key] = value;
+  });
+  const cutoffDate =
+    searchParams.get("fechaCorte") ??
+    read("cutoffDate") ??
+    searchParams.get("filter.fechaCorte");
+  if (cutoffDate) filters.cutoffDate = cutoffDate;
+  [
+    "areaResponsibleId",
+    "auditReportId",
+    "executorId",
+    "processOwnerId",
+  ].forEach((key) => {
+    const value = read(key);
+    const values = value
+      ?.split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    if (values?.length) filters[key] = values;
   });
   [
     "dueSoon",
@@ -88,6 +109,10 @@ export const buildReportQuery = (
   appendValue(params, "periodField", filters.periodField ?? "createdAt");
   Object.entries(filters).forEach(([key, value]) => {
     if (key === "periodField") return;
+    if (key === "cutoffDate") {
+      appendValue(params, "fechaCorte", value);
+      return;
+    }
     appendValue(params, `filter.${key}`, value);
   });
   return `?${params.toString()}`;

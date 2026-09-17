@@ -89,7 +89,7 @@ export function ReportsDashboard({
 
   const updateDraft = (
     key: keyof ReportFilters,
-    value: string | number | boolean | undefined,
+    value: string | string[] | number | boolean | undefined,
   ) => {
     setDraft((current) => {
       const next = { ...current } as Record<string, unknown>;
@@ -120,7 +120,7 @@ export function ReportsDashboard({
       });
       triggerDownload(
         blob,
-        `planes-de-accion-${format === "excel" ? "nibol.xls" : "nibol.pdf"}`,
+        `planes-de-accion-${format === "excel" ? "nibol.xlsx" : "nibol.pdf"}`,
       );
     } catch {
       setExportError(
@@ -168,14 +168,15 @@ export function ReportsDashboard({
             {canExport ? (
               <ReportExportButtons
                 disabled={exporting !== null}
+                loading={exporting !== null}
                 onExport={(format) => void handleExport(format)}
               />
             ) : null}
           </>
         }
-        description="Indicadores y seguimiento de planes de acción. El estado de avance y el estado de plazo son dimensiones independientes."
+        description="Resumen ejecutivo de observaciones y seguimiento de sus planes de acción."
         eyebrow="Control y seguimiento"
-        title="Reportes"
+        title="Dashboard de reportería"
       />
 
       <ReportFilterBar
@@ -203,6 +204,50 @@ export function ReportsDashboard({
         <ReportLoading label="Calculando indicadores y distribución del corte seleccionado…" />
       ) : (
         <>
+          <section className="space-y-3">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.18em] text-[var(--accent)] uppercase">
+                Observaciones
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-[var(--foreground)]">
+                Estado del universo filtrado
+              </h2>
+              <p className="mt-1 text-sm text-[var(--foreground-soft)]">
+                Las observaciones se cuentan una sola vez, aunque tengan varios
+                planes de acción.
+              </p>
+            </div>
+            <section className="grid gap-3 md:grid-cols-3">
+              <ReportKpi
+                description="Observaciones dentro del alcance autorizado."
+                icon="total"
+                label="Total observaciones"
+                tone="accent"
+                value={formatReportNumber(data.summary.totalObservations)}
+              />
+              <ReportKpi
+                description="Observaciones cuyo estado todavía no es final."
+                icon="open"
+                label="Pendientes"
+                value={formatReportNumber(data.summary.pendingObservations)}
+              />
+              <ReportKpi
+                description="Observaciones con estado final registrado."
+                icon="closed"
+                label="Cerradas"
+                value={formatReportNumber(data.summary.closedObservations)}
+              />
+            </section>
+          </section>
+
+          <div className="flex items-center gap-3 border-b border-[var(--border)] pb-2">
+            <p className="text-xs font-semibold tracking-[0.18em] text-[var(--accent)] uppercase">
+              Planes de acción
+            </p>
+            <span className="text-xs text-[var(--muted)]">
+              Estado oficial, plazo y avance reportado
+            </span>
+          </div>
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <ReportKpi
               description={`${filterLabel}. Planes incluidos en el alcance.`}
@@ -335,6 +380,12 @@ export function ReportsDashboard({
               <ReportBarList items={data.charts.processOwnerDistribution} />
             </ReportPanel>
             <ReportPanel
+              description="Carga de planes por responsable de cada área."
+              title="Planes por responsable de área"
+            >
+              <ReportBarList items={data.charts.areaResponsibleDistribution} />
+            </ReportPanel>
+            <ReportPanel
               className="xl:col-span-2"
               description="Carga asignada a cada ejecutor."
               title="Planes por ejecutor"
@@ -425,6 +476,7 @@ function ActionPlanTable({ rows }: { rows: ReportActionPlanRow[] }) {
               "Nivel de riesgo",
               "Dueño del proceso",
               "Ejecutor",
+              "Estado de observación",
               "Estado de avance",
               "Avance oficial",
               "Avance reportado",
@@ -474,6 +526,13 @@ function ActionPlanTable({ rows }: { rows: ReportActionPlanRow[] }) {
               </td>
               <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
                 {row.executor?.name ?? "Sin asignar"}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap">
+                <span
+                  className={`inline-flex border px-2.5 py-1 text-xs font-semibold ${row.observation.status.isFinal ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-800"}`}
+                >
+                  {row.observation.status.name}
+                </span>
               </td>
               <td className="px-3 py-3 whitespace-nowrap">
                 <span

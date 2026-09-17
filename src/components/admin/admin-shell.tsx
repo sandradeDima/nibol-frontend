@@ -325,7 +325,7 @@ export function AdminShell({
         </aside>
 
         {mobileOpen ? (
-          <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="fixed inset-0 z-50 lg:hidden">
             <button
               aria-label="Cerrar navegación"
               className="absolute inset-0 bg-[rgba(7,20,45,0.42)]"
@@ -379,7 +379,7 @@ export function AdminShell({
         <div className="min-w-0 flex-1">
           <header
             className={cn(
-              "relative z-20 border-b border-[var(--border)] bg-[rgba(255,255,255,0.96)] backdrop-blur-md",
+              "relative z-40 border-b border-[var(--border)] bg-[rgba(255,255,255,0.96)] backdrop-blur-md",
               !isObservationDetail && "sticky top-0",
             )}
           >

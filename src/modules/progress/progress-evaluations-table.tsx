@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { buildObservationUrl } from "@/lib/observation-links";
 import { progressService } from "@/services/progress-service";
@@ -9,9 +10,17 @@ import { getActionPlanStatusLabel } from "../remediation/presentation";
 import { getProgressStatusLabel } from "./presentation";
 
 export function ProgressEvaluationsTable() {
+  const searchParams = useSearchParams();
+  const areaId = searchParams.get("filter.areaId");
+  const reviewStatus = searchParams.get("filter.reviewStatus");
   const query = useQuery({
-    queryFn: () => progressService.listProgressEvaluations("?perPage=100"),
-    queryKey: ["progress-evaluations", "all"],
+    queryFn: () => {
+      const params = new URLSearchParams({ perPage: "100" });
+      if (areaId) params.set("filter.areaId", areaId);
+      if (reviewStatus) params.set("filter.reviewStatus", reviewStatus);
+      return progressService.listProgressEvaluations(`?${params.toString()}`);
+    },
+    queryKey: ["progress-evaluations", "all", areaId, reviewStatus],
   });
   return (
     <section className="nibol-panel overflow-hidden">
