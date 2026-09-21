@@ -43,11 +43,14 @@ type ReportingDashboardProps = {
 const DEFAULT_FILTERS: ReportFilters = {};
 
 const DASHBOARD_FILTER_KEYS = [
+  "activeOnly",
   "cutoffDate",
   "areaId",
   "areaResponsibleId",
   "executorId",
   "processOwnerId",
+  "observationStatusIds",
+  "deadlineStatuses",
   "statusId",
 ] as const satisfies ReadonlyArray<keyof ReportFilters>;
 
@@ -57,6 +60,8 @@ const pickDashboardFilters = (filters: ReportFilters): ReportFilters =>
       filters[key] === undefined ? [] : [[key, filters[key]]],
     ),
   ) as ReportFilters;
+
+type ObservationKpi = "CLOSED" | "PENDING" | "TOTAL";
 
 const buildObservationDistribution = (
   rows: ReportActionPlanRow[],
@@ -128,13 +133,19 @@ function DashboardPanel({
   );
 }
 
-function CompactDonut({ items }: { items: ReportChartItem[] }) {
+function CompactDonut({
+  items,
+  unit = "observaciones",
+}: {
+  items: ReportChartItem[];
+  unit?: string;
+}) {
   const total = items.reduce((sum, item) => sum + item.value, 0);
   let cursor = 0;
-  const segments = items.map((item, index) => {
+  const segments = items.map((item) => {
     const start = cursor;
     cursor += total ? (item.value / total) * 100 : 0;
-    return `${getReportChartColor(item, index)} ${start}% ${cursor}%`;
+    return `${getReportChartColor(item)} ${start}% ${cursor}%`;
   });
   const style = {
     background: total
@@ -153,7 +164,7 @@ function CompactDonut({ items }: { items: ReportChartItem[] }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
       <div
-        aria-label={`Distribución: ${total} observaciones`}
+        aria-label={`Distribución: ${total} ${unit}`}
         className="relative h-24 w-24 shrink-0 rounded-full border border-[var(--border)]"
         role="img"
         style={style}
@@ -168,7 +179,7 @@ function CompactDonut({ items }: { items: ReportChartItem[] }) {
         </div>
       </div>
       <div className="min-w-0 flex-1 space-y-1.5">
-        {items.map((item, index) => (
+        {items.map((item) => (
           <div
             className="flex min-w-0 items-center justify-between gap-2 text-xs"
             key={`${item.key}-${item.label}`}
@@ -176,7 +187,7 @@ function CompactDonut({ items }: { items: ReportChartItem[] }) {
             <span className="flex min-w-0 items-center gap-2 text-[var(--foreground-soft)]">
               <span
                 className="h-2 w-2 shrink-0"
-                style={{ background: getReportChartColor(item, index) }}
+                style={{ background: getReportChartColor(item) }}
               />
               <span className="truncate">{item.label}</span>
             </span>
@@ -190,40 +201,28 @@ function CompactDonut({ items }: { items: ReportChartItem[] }) {
   );
 }
 
-const ADVANCE_META = [
-  { code: "NI", key: "NOT_STARTED", label: "No iniciado" },
-  { code: "I", key: "STARTED", label: "Iniciado" },
-  { code: "CA", key: "WITH_PROGRESS", label: "Con avance" },
-  { code: "CO", key: "CONCLUDED", label: "Concluido" },
-] as const;
-
 function AdvancePanel({ items }: { items: ReportChartItem[] }) {
   const total = items.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <section className="space-y-3">
       <p className="text-[11px] font-bold tracking-[0.2em] text-[var(--accent)] uppercase">
-        02 · Avance
+        02 · Planes de acción
       </p>
       <DashboardPanel
-        description="Estados oficiales de avance dentro del alcance visible."
-        title="Avance"
+        description="Estado oficial del plan de acción; no es el estado de la observación ni el avance reportado por el ejecutor."
+        title="Estado del plan de acción"
       >
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-          {ADVANCE_META.map((meta, index) => {
-            const item = items.find((entry) => entry.key === meta.key) ?? {
-              key: meta.key,
-              label: meta.label,
-              value: 0,
-            };
+          {items.map((item) => {
             const percentage = total
               ? Math.round((item.value / total) * 100)
               : 0;
-            const color = getReportChartColor(item, index);
+            const color = getReportChartColor(item);
             return (
               <div
                 className="flex items-center gap-3 border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-3"
-                key={meta.key}
+                key={item.key}
               >
                 <div
                   className="relative h-12 w-12 shrink-0 rounded-full"
@@ -237,10 +236,10 @@ function AdvancePanel({ items }: { items: ReportChartItem[] }) {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--accent)] uppercase">
-                    {meta.code}
+                    {item.key}
                   </p>
                   <p className="truncate text-xs text-[var(--foreground-soft)]">
-                    {meta.label}
+                    {item.label}
                   </p>
                   <p className="text-xl leading-none font-semibold text-[var(--foreground)]">
                     {formatReportNumber(item.value)}
@@ -290,15 +289,16 @@ function OperationalObservations({
   }
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[760px] text-left text-xs">
+      <table className="w-full min-w-[900px] text-left text-xs">
         <thead className="border-b border-[var(--border)] text-[10px] tracking-[0.12em] text-[var(--muted)] uppercase">
           <tr>
             <th className="pr-3 pb-2 font-semibold">Observación</th>
             <th className="pr-3 pb-2 font-semibold">Área</th>
             <th className="pr-3 pb-2 font-semibold">Riesgo</th>
-            <th className="pr-3 pb-2 font-semibold">Estado</th>
+            <th className="pr-3 pb-2 font-semibold">Estado de observación</th>
+            <th className="pr-3 pb-2 font-semibold">Estado según plazo</th>
             <th className="pr-3 pb-2 font-semibold">Fecha límite</th>
-            <th className="pb-2 text-right font-semibold">Avance</th>
+            <th className="pb-2 text-right font-semibold">Avance oficial</th>
             <th className="sticky right-0 border-l border-[var(--border)] bg-[var(--surface)] pb-2 pl-3 text-right font-semibold">
               Acciones
             </th>
@@ -321,8 +321,22 @@ function OperationalObservations({
               <td className="py-2.5 pr-3 text-[var(--foreground-soft)]">
                 {item.riskLevel.name}
               </td>
-              <td className="py-2.5 pr-3 text-[var(--foreground-soft)]">
-                {item.status.name}
+              <td className="py-2.5 pr-3 whitespace-nowrap">
+                <span className="inline-flex border border-[var(--border)] bg-[var(--surface-soft)] px-2 py-1 text-[0.68rem] font-semibold text-[var(--foreground-soft)]">
+                  {item.observationStatus.name}
+                </span>
+              </td>
+              <td className="py-2.5 pr-3 whitespace-nowrap">
+                <span
+                  className={cn(
+                    "inline-flex border px-2 py-1 text-[0.68rem] font-semibold",
+                    item.deadlineStatus === "VENCIDO"
+                      ? "border-rose-200 bg-rose-50 text-rose-700"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-700",
+                  )}
+                >
+                  {item.deadlineStatus === "VENCIDO" ? "Vencido" : "Vigente"}
+                </span>
               </td>
               <td className="py-2.5 pr-3 whitespace-nowrap text-[var(--foreground-soft)]">
                 {formatReportDate(item.dueDate)}
@@ -361,13 +375,15 @@ function UpcomingActionPlans({
   }
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[600px] text-left text-xs">
+      <table className="w-full min-w-[820px] text-left text-xs">
         <thead className="border-b border-[var(--border)] text-[10px] tracking-[0.12em] text-[var(--muted)] uppercase">
           <tr>
             <th className="pr-3 pb-2 font-semibold">Plan de acción</th>
             <th className="pr-3 pb-2 font-semibold">Observación</th>
             <th className="pr-3 pb-2 font-semibold">Ejecutor</th>
-            <th className="pr-3 pb-2 font-semibold">Avance</th>
+            <th className="pr-3 pb-2 font-semibold">Estado del plan</th>
+            <th className="pr-3 pb-2 font-semibold">Estado de observación</th>
+            <th className="pr-3 pb-2 font-semibold">Estado según plazo</th>
             <th className="pb-2 font-semibold">Fecha efectiva</th>
             <th className="sticky right-0 border-l border-[var(--border)] bg-[var(--surface)] pb-2 pl-3 text-right font-semibold">
               Acciones
@@ -392,7 +408,23 @@ function UpcomingActionPlans({
                 {item.executorName}
               </td>
               <td className="py-2.5 pr-3 whitespace-nowrap text-[var(--foreground-soft)]">
-                {item.progress.code} · {item.progress.percent}%
+                {item.progress.code} · {item.progress.label} ·{" "}
+                {item.progress.percent}%
+              </td>
+              <td className="py-2.5 pr-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {item.observationStatus}
+              </td>
+              <td className="py-2.5 pr-3 whitespace-nowrap">
+                <span
+                  className={cn(
+                    "inline-flex border px-2 py-1 text-[0.68rem] font-semibold",
+                    item.deadlineStatus === "VENCIDO"
+                      ? "border-rose-200 bg-rose-50 text-rose-700"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-700",
+                  )}
+                >
+                  {item.deadlineStatus === "VENCIDO" ? "Vencido" : "Vigente"}
+                </span>
               </td>
               <td className="py-2.5 whitespace-nowrap text-[var(--foreground-soft)]">
                 {formatReportDate(item.effectiveDueDate)}
@@ -464,6 +496,7 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
   });
   const dashboardQuery = useQuery({
     queryFn: () => reportService.getDashboard(filters),
+    placeholderData: (previous) => previous,
     queryKey: ["dashboard-reporteria", "dashboard", filters],
     staleTime: 30_000,
   });
@@ -486,7 +519,51 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
       cutoffDate: next.cutoffDate ?? optionsQuery.data?.defaultCutoffDate,
     });
     setDraft(clean);
-    router.replace(`${pathname}${buildReportQuery(clean)}`);
+    router.replace(`${pathname}${buildReportQuery(clean)}`, { scroll: false });
+  };
+
+  const applyObservationKpi = (kpi: ObservationKpi) => {
+    const next = { ...filters } as Record<string, unknown>;
+    delete next.activeOnly;
+    delete next.statusId;
+    delete next.observationStatusIds;
+    if (kpi === "PENDING") next.activeOnly = true;
+    if (kpi === "CLOSED") {
+      const closedStatusIds =
+        optionsQuery.data?.observationStatuses
+          .filter((status) => status.isFinal)
+          .map((status) => status.id) ?? [];
+      if (!closedStatusIds.length) return;
+      next.observationStatusIds = closedStatusIds;
+    }
+    applyFilters(next as ReportFilters);
+    window.setTimeout(() => {
+      document
+        .getElementById("reporting-dashboard-results")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  };
+
+  const observationKpiActive = (kpi: ObservationKpi) => {
+    if (kpi === "PENDING") return filters.activeOnly === true;
+    if (kpi === "CLOSED") {
+      const closedStatusIds =
+        optionsQuery.data?.observationStatuses
+          .filter((status) => status.isFinal)
+          .map((status) => status.id) ?? [];
+      return (
+        closedStatusIds.length > 0 &&
+        filters.observationStatusIds?.length === closedStatusIds.length &&
+        closedStatusIds.every(
+          (id) => filters.observationStatusIds?.includes(id) === true,
+        )
+      );
+    }
+    return (
+      !filters.activeOnly &&
+      !filters.statusId &&
+      !filters.observationStatusIds?.length
+    );
   };
 
   const resetFilters = () => applyFilters(DEFAULT_FILTERS);
@@ -586,24 +663,30 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
                 {formatReportNumber(data.summary.totalObservations)} registros
               </span>
             </div>
-            <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
               <ReportKpi
+                active={observationKpiActive("TOTAL")}
                 description="Observaciones dentro del alcance autorizado."
                 icon="total"
                 label="Total observaciones"
+                onClick={() => applyObservationKpi("TOTAL")}
                 tone="accent"
                 value={formatReportNumber(data.summary.totalObservations)}
               />
               <ReportKpi
+                active={observationKpiActive("PENDING")}
                 description="Observaciones cuyo estado todavía no es final."
                 icon="open"
                 label="Pendientes"
+                onClick={() => applyObservationKpi("PENDING")}
                 value={formatReportNumber(data.summary.pendingObservations)}
               />
               <ReportKpi
+                active={observationKpiActive("CLOSED")}
                 description="Observaciones con estado final registrado."
                 icon="closed"
                 label="Cerradas"
+                onClick={() => applyObservationKpi("CLOSED")}
                 value={formatReportNumber(data.summary.closedObservations)}
               />
               <DashboardPanel
@@ -612,6 +695,16 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
                 title="Nivel de riesgo"
               >
                 <CompactDonut items={observationCharts.byRisk} />
+              </DashboardPanel>
+              <DashboardPanel
+                className="h-full"
+                description="Distribución de planes de acción según la fecha efectiva y el corte seleccionado."
+                title="Estado según plazo"
+              >
+                <CompactDonut
+                  items={data.charts.deadlineDistribution}
+                  unit="planes de acción"
+                />
               </DashboardPanel>
             </section>
           </section>
@@ -629,6 +722,11 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
               </p>
             </div>
             <section className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
+              <DistributionPanel
+                description="Catálogo dinámico del ciclo de vida de la observación."
+                items={data.charts.statusDistribution}
+                title="Estado de observación"
+              />
               <DistributionPanel
                 description="Cantidad de observaciones del alcance filtrado."
                 items={observationCharts.byArea}
@@ -719,13 +817,16 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
               />
               <DistributionPanel
                 description="Áreas ordenadas por planes vencidos."
-                items={data.charts.topOverdueAreas ?? []}
+                items={(data.charts.topOverdueAreas ?? []).map((item) => ({
+                  ...item,
+                  colorToken: "VENCIDO",
+                }))}
                 title="Top áreas con más vencimientos"
               />
             </section>
           </section>
 
-          <section className="space-y-3">
+          <section className="space-y-3" id="reporting-dashboard-results">
             <div>
               <p className="text-[11px] font-bold tracking-[0.2em] text-[var(--accent)] uppercase">
                 06 · Operación

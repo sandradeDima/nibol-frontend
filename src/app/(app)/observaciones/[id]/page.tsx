@@ -19,11 +19,6 @@ export default async function ObservationDetailPage({
         canAssignRecommendedExecutor={authorization.permissions.includes(
           "action_plans.assign_executor",
         )}
-        canApproveProgress={
-          authorization.isAdmin ||
-          (authorization.permissions.includes("action_plans.evaluate") &&
-            authorization.permissions.includes("action_plans.approve"))
-        }
         canDelete={authorization.permissions.includes("observations.delete")}
         canClose={authorization.permissions.includes("observations.close")}
         canCreateActionPlans={authorization.permissions.includes(
@@ -31,6 +26,9 @@ export default async function ObservationDetailPage({
         )}
         canCreateRecommended={authorization.permissions.includes(
           "recommended_action_plans.create",
+        )}
+        canDeleteEvidence={authorization.permissions.includes(
+          "evidence.delete",
         )}
         canSend={authorization.permissions.includes("observations.send")}
         canEdit={authorization.permissions.includes("observations.edit")}
@@ -40,15 +38,6 @@ export default async function ObservationDetailPage({
         canEditRecommended={authorization.permissions.includes(
           "recommended_action_plans.edit",
         )}
-        canReviewEvidence={
-          authorization.roleCode === "AUDITOR" &&
-          authorization.permissions.includes("evidence.review")
-        }
-        canReturnProgress={
-          authorization.isAdmin ||
-          (authorization.permissions.includes("action_plans.evaluate") &&
-            authorization.permissions.includes("action_plans.return"))
-        }
         canSubmitProgress={authorization.permissions.includes(
           "action_plans.submit_to_audit",
         )}
@@ -62,7 +51,6 @@ export default async function ObservationDetailPage({
           "recommended_action_plans.view",
         )}
         currentUserId={authorization.userId}
-        isAdmin={authorization.isAdmin}
         observationId={id}
       />
     </main>

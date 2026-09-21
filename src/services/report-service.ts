@@ -54,7 +54,9 @@ export const parseReportFilters = (
   [
     "areaResponsibleId",
     "auditReportId",
+    "deadlineStatuses",
     "executorId",
+    "observationStatusIds",
     "processOwnerId",
   ].forEach((key) => {
     const value = read(key);

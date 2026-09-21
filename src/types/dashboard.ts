@@ -53,6 +53,7 @@ export interface DashboardRiskSummary {
 }
 
 export interface DashboardStatusSummary {
+  isFinal?: boolean;
   key: string;
   name: string;
 }
@@ -265,6 +266,10 @@ export interface RoleDashboardExecutorNode {
   total: number;
 }
 
+export interface RoleDashboardObservationRow extends DashboardObservationRow {
+  executorNames: string[];
+}
+
 export interface RoleDashboardResponsibleNode {
   concluded: number;
   executors: RoleDashboardExecutorNode[];
@@ -318,6 +323,7 @@ export interface RoleDashboardData {
     totalObservations: number;
   };
   hierarchy: RoleDashboardAreaNode[];
+  observations: RoleDashboardObservationRow[];
   priorities: RoleDashboardPriority[];
   quickActions: RoleDashboardQuickAction[];
   roleCode: RoleDashboardRole;
@@ -329,6 +335,7 @@ export interface RoleDashboardData {
   selectedResponsibleIds?: string[];
   summary: {
     concludedObservations: number;
+    overdueObservations: number;
     pendingObservations: number;
     totalObservations: number;
   };

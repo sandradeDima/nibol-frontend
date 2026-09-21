@@ -1,5 +1,6 @@
 import type { ActionPlanStatus } from "./remediation";
 import type { ObservationUserSummary } from "./observations";
+import type { ReviewTaskSummary } from "./review";
 
 export type ProgressEvaluationType = "ADVANCE" | "FINALIZATION";
 export type ProgressEvaluationReviewStatus =
@@ -44,12 +45,20 @@ export interface ProgressReviewHistoryEntry {
 export interface ProgressEvaluationItem {
   actionPlan: {
     area: { id: string; name: string };
+    areaResponsible: ObservationUserSummary;
+    currentDueDate: string;
+    description: string;
     id: string;
+    originalDueDate: string;
+    processOwner: ObservationUserSummary;
     responsibleUser: ObservationUserSummary;
+    title: string;
   };
   evaluatedStatus: ActionPlanStatus | null;
   comment: string;
   evidence: EvidenceFileItem[];
+  effectiveDueDate: string;
+  deadlineStatus: "VIGENTE" | "VENCIDO";
   history: ProgressReviewHistoryEntry[];
   id: string;
   observation: { displayCode: string; id: string; title: string };
@@ -65,6 +74,7 @@ export interface ProgressEvaluationItem {
   type: ProgressEvaluationType;
   updatedAt: string;
   workflowInstanceId: string | null;
+  reviewTask: ReviewTaskSummary | null;
 }
 
 export interface CreateProgressEvaluationInput {

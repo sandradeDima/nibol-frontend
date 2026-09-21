@@ -10,6 +10,7 @@ export * from "./notifications";
 export * from "./observations";
 export * from "./progress";
 export * from "./reports";
+export * from "./review";
 export * from "./roles";
 export * from "./remediation";
 export * from "./settings";

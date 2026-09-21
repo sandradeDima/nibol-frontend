@@ -1,6 +1,7 @@
 import { apiClient } from "@/services/api-client";
 import type {
   ActionPlanDetail,
+  ActionPlanFilterOptions,
   ActionPlanPayload,
   ApiSuccessResponse,
   PaginatedApiSuccessResponse,
@@ -60,6 +61,12 @@ export const remediationService = {
     const response = await apiClient.get<ApiSuccessResponse<ActionPlanDetail>>(
       `/action-plans/${actionPlanId}`,
     );
+    return response.data.data;
+  },
+  async getActionPlanOptions(params = ""): Promise<ActionPlanFilterOptions> {
+    const response = await apiClient.get<
+      ApiSuccessResponse<ActionPlanFilterOptions>
+    >(`/action-plans/options${params}`);
     return response.data.data;
   },
   async listActionPlans(params = ""): Promise<{

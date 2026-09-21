@@ -58,6 +58,9 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
 
       <div className="relative" ref={containerRef}>
         <button
+          aria-label={
+            open ? "Cerrar menú de usuario" : "Abrir menú de usuario"
+          }
           aria-expanded={open}
           className={cn(
             "inline-flex items-center gap-3 border px-3 py-2.5 text-left transition",

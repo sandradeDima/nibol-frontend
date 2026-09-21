@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -35,48 +35,48 @@ import {
 
 type Props = {
   canAssignRecommendedExecutor: boolean;
-  canApproveProgress: boolean;
   canClose: boolean;
   canCreateActionPlans: boolean;
   canCreateRecommended: boolean;
+  canDeleteEvidence: boolean;
   canDelete: boolean;
   canEdit: boolean;
   canEditActionPlans: boolean;
   canEditRecommended: boolean;
-  canReturnProgress: boolean;
-  canReviewEvidence: boolean;
   canSend: boolean;
   canSubmitRecommended: boolean;
   canSubmitProgress: boolean;
   canUploadEvidence: boolean;
   canViewRecommended: boolean;
   currentUserId: string;
-  isAdmin: boolean;
   observationId: string;
 };
 
-type ObservationTab = "summary" | "plans" | "evidence" | "history";
+type ObservationTab = "detail" | "plans" | "comments";
 
 const observationTabs: Array<{
   key: ObservationTab;
   label: string;
 }> = [
-  { key: "summary", label: "Resumen" },
-  { key: "plans", label: "Planes de acción" },
-  { key: "evidence", label: "Evidencias y documentos" },
-  { key: "history", label: "Comentarios de la observación" },
+  { key: "detail", label: "Detalle de Observación" },
+  { key: "plans", label: "Planes de Acción" },
+  { key: "comments", label: "Comentarios" },
 ];
 
-const isObservationTab = (value: string | null): value is ObservationTab =>
-  observationTabs.some((tab) => tab.key === value);
+const normalizeTab = (value: string | null): ObservationTab =>
+  value === "plans"
+    ? "plans"
+    : value === "comments" || value === "comentarios"
+      ? "comments"
+      : "detail";
 
 const getLegacyTab = (): ObservationTab | null => {
   if (typeof window === "undefined") return null;
   const hash = window.location.hash;
   return hash === "#planes-accion"
     ? "plans"
-    : hash === "#evidencia-hallazgo" || hash === "#colaboracion"
-      ? "evidence"
+    : hash === "#avances-evidencias"
+      ? "plans"
       : null;
 };
 
@@ -96,23 +96,20 @@ const remainingLabel = (dateValue: string) => {
 
 export function ObservationDetail({
   canAssignRecommendedExecutor,
-  canApproveProgress,
   canClose,
   canCreateActionPlans,
   canCreateRecommended,
+  canDeleteEvidence,
   canEditRecommended,
   canDelete,
   canEdit,
   canEditActionPlans,
-  canReturnProgress,
-  canReviewEvidence,
   canSend,
   canSubmitRecommended,
   canSubmitProgress,
   canUploadEvidence,
   canViewRecommended,
   currentUserId,
-  isAdmin,
   observationId,
 }: Props) {
   const queryClient = useQueryClient();
@@ -128,9 +125,9 @@ export function ObservationDetail({
     () => null,
   );
   const requestedTab = searchParams.get("tab");
-  const activeTab = isObservationTab(requestedTab)
-    ? requestedTab
-    : (legacyTab ?? "summary");
+  const activeTab = requestedTab
+    ? normalizeTab(requestedTab)
+    : (legacyTab ?? "detail");
   const activePlanId = searchParams.get("planId");
   const activeAdvanceId = searchParams.get("advanceId");
   const activeEvidenceId = searchParams.get("evidenceId");
@@ -138,8 +135,8 @@ export function ObservationDetail({
 
   const changeTab = (tab: ObservationTab) => {
     const next = new URLSearchParams(searchParams.toString());
-    next.set("tab", tab);
-    if (tab !== "evidence") next.delete("evidenceId");
+    next.set("tab", tab === "comments" ? "comentarios" : tab);
+    if (tab !== "detail") next.delete("evidenceId");
     if (tab !== "plans") {
       next.delete("planId");
       next.delete("advanceId");
@@ -189,6 +186,23 @@ export function ObservationDetail({
       await query.refetch();
     },
   });
+  useEffect(() => {
+    const targetId =
+      activeTab === "plans" && window.location.hash === "#avances-evidencias"
+        ? "avances-evidencias"
+        : activeTab === "detail" &&
+            window.location.hash === "#documentos-observacion"
+          ? "documentos-observacion"
+          : null;
+    if (!targetId) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(targetId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeTab, activePlanId, query.data]);
   if (query.isError)
     return (
       <ErrorState
@@ -205,15 +219,16 @@ export function ObservationDetail({
     );
   const canCloseObservation = Boolean(
     canClose &&
-      !observation.status.isFinal &&
-      closeReadiness.data?.some(
-        (item) => item.actionType === "REQUEST_CLOSURE",
-      ),
+    !observation.status.isFinal &&
+    closeReadiness.data?.some((item) => item.actionType === "REQUEST_CLOSURE"),
   );
 
   return (
     <div className="space-y-6">
-      <div className="sticky top-0 z-10 -mx-4 space-y-2 bg-[var(--background)] pb-1 sm:-mx-6 lg:-mx-8">
+      <div
+        className="sticky top-0 z-10 -mx-4 space-y-2 bg-[var(--background)] pb-1 sm:-mx-6 lg:-mx-8"
+        id="observation-detail-sticky"
+      >
         <section className="nibol-panel min-w-0 overflow-hidden">
           <div className="border-b border-stone-200 bg-stone-950 px-6 py-6 text-white">
             <div className="flex flex-wrap items-start justify-between gap-5">
@@ -252,7 +267,9 @@ export function ObservationDetail({
                     Concluir
                   </button>
                 ) : null}
-                {canSend && !observation.sentAt && !observation.status.isFinal ? (
+                {canSend &&
+                !observation.sentAt &&
+                !observation.status.isFinal ? (
                   <button
                     className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
                     disabled={send.isPending}
@@ -362,12 +379,12 @@ export function ObservationDetail({
 
       <ObservationActionPanel observationId={observationId} />
 
-      {activeTab === "summary" ? (
+      {activeTab === "detail" ? (
         <>
           <div
-            aria-labelledby="summary-tab"
+            aria-labelledby="detail-tab"
             className="min-w-0 space-y-6"
-            id="observation-tabpanel-summary"
+            id="observation-tabpanel-detail"
             role="tabpanel"
           >
             <div className="grid min-w-0 gap-6 xl:grid-cols-[1.45fr_1fr]">
@@ -506,8 +523,43 @@ export function ObservationDetail({
                 ))}
               </div>
             </section>
+            <ObservationCollaborationWorkspace
+              activeEvidenceId={activeEvidenceId}
+              canDeleteEvidence={canDeleteEvidence}
+              canSubmitProgress={canSubmitProgress}
+              canUploadEvidence={canUploadEvidence}
+              currentUserId={currentUserId}
+              observationAreas={observation.areas.map((area) => ({
+                id: area.id,
+                name: area.area.name,
+              }))}
+              observationId={observationId}
+              section="evidence"
+            />
           </div>
         </>
+      ) : null}
+
+      {activeTab === "comments" ? (
+        <div
+          aria-labelledby="comments-tab"
+          className="min-w-0"
+          id="observation-tabpanel-comments"
+          role="tabpanel"
+        >
+          <ObservationCollaborationWorkspace
+            canDeleteEvidence={canDeleteEvidence}
+            canSubmitProgress={canSubmitProgress}
+            canUploadEvidence={canUploadEvidence}
+            currentUserId={currentUserId}
+            observationAreas={observation.areas.map((area) => ({
+              id: area.id,
+              name: area.area.name,
+            }))}
+            observationId={observationId}
+            section="comments"
+          />
+        </div>
       ) : null}
 
       {activeTab === "plans" ? (
@@ -531,67 +583,27 @@ export function ObservationDetail({
               observationId={observationId}
             />
           </div>
-          <ObservationCollaborationWorkspace
-            activeEvaluationId={activeAdvanceId}
-            canApproveProgress={canApproveProgress}
-            canReviewEvidence={canReviewEvidence}
-            canReturnProgress={canReturnProgress}
-            canSubmitProgress={canSubmitProgress}
-            canUploadEvidence={canUploadEvidence}
-            currentUserId={currentUserId}
-            isAdmin={isAdmin}
-            observationId={observationId}
-            section="plans"
-          />
-        </div>
-      ) : null}
-
-      {activeTab === "evidence" ? (
-        <div
-          aria-labelledby="evidence-tab"
-          className="min-w-0"
-          id="observation-tabpanel-evidence"
-          role="tabpanel"
-        >
-          <div id="evidencia-hallazgo">
+          <div className="scroll-mt-24" id="avances-evidencias">
             <ObservationCollaborationWorkspace
-              activeEvidenceId={activeEvidenceId}
-              canApproveProgress={canApproveProgress}
-              canReviewEvidence={canReviewEvidence}
-              canReturnProgress={canReturnProgress}
+              activeEvaluationId={activeAdvanceId}
+              activePlanId={activePlanId}
+              canDeleteEvidence={canDeleteEvidence}
               canSubmitProgress={canSubmitProgress}
               canUploadEvidence={canUploadEvidence}
               currentUserId={currentUserId}
-              isAdmin={isAdmin}
+              observationAreas={observation.areas.map((area) => ({
+                id: area.id,
+                name: area.area.name,
+              }))}
               observationId={observationId}
-              section="evidence"
+              section="plans"
+              key={`plans-${activePlanId ?? "all"}`}
             />
           </div>
         </div>
       ) : null}
 
-      {activeTab === "history" ? (
-        <div
-          aria-labelledby="history-tab"
-          className="min-w-0"
-          id="observation-tabpanel-history"
-          role="tabpanel"
-        >
-          <ObservationCollaborationWorkspace
-            canApproveProgress={canApproveProgress}
-            canReviewEvidence={canReviewEvidence}
-            canReturnProgress={canReturnProgress}
-            canSubmitProgress={canSubmitProgress}
-            canUploadEvidence={canUploadEvidence}
-            currentUserId={currentUserId}
-            isAdmin={isAdmin}
-            observationId={observationId}
-            section="history"
-          />
-        </div>
-      ) : null}
-
-      {canDelete && !observation.sentAt ? (
+      {canDelete ? (
         <div className="flex justify-end">
           <button
             className="nibol-btn-secondary px-4 py-2.5 text-sm text-rose-700"
@@ -610,7 +622,7 @@ export function ObservationDetail({
       ) : null}
       <ConfirmDialog
         confirmLabel="Eliminar observación"
-        description={`Se archivará ${observation.displayCode}.`}
+        description={`Se dejará de mostrar ${observation.displayCode}. La información, evidencias e historial se conservarán.`}
         isLoading={remove.isPending}
         onConfirm={async () => remove.mutateAsync()}
         onOpenChange={setConfirmDelete}

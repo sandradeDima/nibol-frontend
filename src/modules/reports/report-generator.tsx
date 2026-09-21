@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -15,7 +16,11 @@ import {
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
-import { reportService, triggerDownload } from "@/services/report-service";
+import {
+  parseReportFilters,
+  reportService,
+  triggerDownload,
+} from "@/services/report-service";
 import type { ReportFilters, ReportPreviewData, ReportType } from "@/types";
 import {
   REPORT_TYPE_META,
@@ -49,7 +54,16 @@ const TYPE_ICONS = [
 ];
 
 export function ReportGenerator({ canExport }: ReportGeneratorProps) {
-  const [draft, setDraft] = useState<ReportFilters>(DEFAULT_FILTERS);
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.toString();
+  const inheritedFilters = useMemo(
+    () => ({
+      ...DEFAULT_FILTERS,
+      ...parseReportFilters(new URLSearchParams(searchQuery)),
+    }),
+    [searchQuery],
+  );
+  const [draft, setDraft] = useState<ReportFilters>(inheritedFilters);
   const [reportName, setReportName] = useState("Reporte operativo NIBOL");
   const [type, setType] = useState<ReportType>("ACTION_PLANS");
   const [submitted, setSubmitted] = useState<{
@@ -100,6 +114,7 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
       reportName: reportName.trim() || "Reporte operativo NIBOL",
       type,
     };
+    previewMutation.reset();
     setSubmitted(input);
     previewMutation.mutate(input);
   };
@@ -130,14 +145,15 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
     }
   };
 
+  const backHref = searchQuery ? `/reportes?${searchQuery}` : "/reportes";
   return (
-    <main className="space-y-6">
+    <main className="min-w-0 space-y-6">
       <PageHeader
         actions={
           <>
             <Link
               className="nibol-btn-secondary px-4 py-2.5 text-sm"
-              href="/reportes"
+              href={backHref}
             >
               <ArrowLeft className="h-4 w-4" /> Volver a reportes
             </Link>
@@ -154,9 +170,9 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
             ) : null}
           </>
         }
-        description="Construya un reporte de negocio con filtros claros, revise el resultado y descargue la versión que necesita compartir."
-        eyebrow="Reportes"
-        title="Generador de reportes"
+        description="Prepare, revise y exporte información según los filtros seleccionados."
+        eyebrow="CONTROL Y SEGUIMIENTO"
+        title="GENERADOR DE REPORTES"
       />
 
       {optionsQuery.isError ? (
@@ -166,95 +182,74 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
           }}
         />
       ) : null}
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="space-y-6">
-          <ReportPanel
-            description="Seleccione el resultado que quiere preparar para seguimiento o comité."
-            title="Tipo de reporte"
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              {REPORT_TYPE_META.map((meta, index) => {
-                const Icon = TYPE_ICONS[index] ?? FileBarChart;
-                const selected = meta.type === type;
-                return (
-                  <button
-                    className={`flex items-start gap-3 border p-4 text-left transition ${selected ? "border-[var(--primary)] bg-[var(--primary-soft)] shadow-[var(--shadow-panel)]" : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--primary)]"}`}
-                    key={meta.type}
-                    onClick={() => setType(meta.type)}
-                    type="button"
-                  >
-                    <span
-                      className={`mt-0.5 p-2 ${selected ? "bg-[var(--primary)] text-white" : "bg-[var(--surface-soft)] text-[var(--primary)]"}`}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-[var(--foreground)]">
-                        {meta.label}
-                      </span>
-                      <span className="mt-1 block text-xs leading-5 text-[var(--foreground-soft)]">
-                        {meta.description}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </ReportPanel>
-          <ReportPanel
-            description="El nombre ayuda a identificar el archivo cuando se comparte fuera del sistema."
-            title="Identificación"
-          >
-            <label className="block space-y-2">
-              <span className="report-field-label">Nombre del reporte</span>
-              <input
-                className="nibol-field text-sm"
-                onChange={(event) => setReportName(event.target.value)}
-                value={reportName}
-              />
-            </label>
-          </ReportPanel>
-          <ReportFilterBar
-            draft={draft}
-            onApply={preview}
-            onChange={updateDraft}
-            onReset={reset}
-            options={optionsQuery.data}
-            showProgress
-          />
-          <button
-            className="nibol-btn-primary w-full justify-center px-4 py-3 text-sm"
-            disabled={previewMutation.isPending}
-            onClick={preview}
-            type="button"
-          >
-            <FileBarChart className="h-4 w-4" />
-            {previewMutation.isPending
-              ? "Preparando vista previa…"
-              : "Previsualizar reporte"}
-          </button>
-        </div>
 
-        <div className="space-y-6">
+      <ReportPanel
+        description="Seleccione el resultado que quiere preparar para seguimiento o comité."
+        title="Tipo de reporte"
+      >
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {REPORT_TYPE_META.map((meta, index) => {
+            const Icon = TYPE_ICONS[index] ?? FileBarChart;
+            const selected = meta.type === type;
+            return (
+              <button
+                aria-pressed={selected}
+                className={`flex min-w-0 items-start gap-3 border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)] ${selected ? "border-[var(--primary)] bg-[var(--primary-soft)] shadow-[var(--shadow-panel)]" : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--primary)]"}`}
+                key={meta.type}
+                onClick={() => setType(meta.type)}
+                type="button"
+              >
+                <span
+                  className={`mt-0.5 shrink-0 p-2 ${selected ? "bg-[var(--primary)] text-white" : "bg-[var(--surface-soft)] text-[var(--primary)]"}`}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 break-words">
+                  <span className="block text-sm font-semibold text-[var(--foreground)]">
+                    {meta.label}
+                  </span>
+                  <span className="mt-1 block text-xs leading-5 text-[var(--foreground-soft)]">
+                    {meta.description}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </ReportPanel>
+
+      <ReportPanel
+        description="El nombre ayuda a identificar el archivo cuando se comparte fuera del sistema."
+        title="Identificación"
+      >
+        <label className="block max-w-3xl space-y-2">
+          <span className="report-field-label">Nombre del reporte</span>
+          <input
+            className="nibol-field text-sm"
+            onChange={(event) => setReportName(event.target.value)}
+            value={reportName}
+          />
+        </label>
+      </ReportPanel>
+
+      <ReportFilterBar
+        description="El mismo alcance alimenta los resultados y las exportaciones."
+        draft={draft}
+        onApply={preview}
+        onChange={updateDraft}
+        onReset={reset}
+        options={optionsQuery.data}
+        showActiveOnly
+        showProgress
+        submitLabel="Generar reporte"
+      />
+
+      {submitted ? (
+        <section className="min-w-0 space-y-6">
           <ReportPanel
             description="La vista previa usa el mismo servicio que las exportaciones y respeta su alcance."
             title="Resumen del resultado"
           >
-            {!previewMutation.data && !previewMutation.isPending ? (
-              <div className="space-y-4">
-                <div className="border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-5 py-10 text-center">
-                  <FileBarChart className="mx-auto h-8 w-8 text-[var(--muted)]" />
-                  <p className="mt-3 text-sm font-semibold text-[var(--foreground)]">
-                    Aún no hay una vista previa
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-[var(--foreground-soft)]">
-                    Elija el tipo, ajuste los filtros y presione “Previsualizar
-                    reporte”.
-                  </p>
-                </div>
-                <ReportFilterSummary filters={draft} />
-              </div>
-            ) : null}
             {previewMutation.isPending ? (
               <ReportLoading label="Consultando datos y armando la vista previa…" />
             ) : null}
@@ -267,7 +262,7 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
             {previewMutation.data ? (
               <ReportPreviewSummary
                 data={previewMutation.data}
-                filters={submitted?.filters ?? {}}
+                filters={submitted.filters}
               />
             ) : null}
           </ReportPanel>
@@ -282,8 +277,9 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
               />
             </ReportPanel>
           ) : null}
-        </div>
-      </section>
+        </section>
+      ) : null}
+
       {exportError ? (
         <div className="border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {exportError}

@@ -286,8 +286,8 @@ function AttentionTable({
     );
   }
   return (
-    <div className="-mx-2 overflow-x-auto px-2">
-      <table className="min-w-[950px] border-collapse text-left text-sm">
+    <div className="report-table-wrapper -mx-2 w-full max-w-full min-w-0 overflow-x-auto px-2">
+      <table className="w-max min-w-[950px] border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-[var(--border-strong)]">
             {[

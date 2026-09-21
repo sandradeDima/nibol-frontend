@@ -274,6 +274,9 @@ export function AdminShell({
   const isObservationDetail =
     pathname !== "/observaciones/nueva" &&
     /^\/observaciones\/[^/]+$/.test(pathname);
+  const isActionPlanDetail = /^\/planes-accion\/[^/]+$/.test(pathname);
+  const isReportsModule =
+    pathname === "/reportes" || pathname.startsWith("/reportes/");
 
   useEffect(() => {
     if (!mobileOpen) {
@@ -346,6 +349,7 @@ export function AdminShell({
                   width={282}
                 />
                 <button
+                  aria-label="Cerrar navegación"
                   className="border border-white/10 bg-white/6 p-2.5 text-slate-200 transition hover:bg-white/10 hover:text-white"
                   onClick={() => {
                     setMobileOpen(false);
@@ -380,7 +384,7 @@ export function AdminShell({
           <header
             className={cn(
               "relative z-40 border-b border-[var(--border)] bg-[rgba(255,255,255,0.96)] backdrop-blur-md",
-              !isObservationDetail && "sticky top-0",
+              !isObservationDetail && !isActionPlanDetail && "sticky top-0",
             )}
           >
             <div className="px-4 py-4 sm:px-6 lg:px-8">
@@ -410,7 +414,13 @@ export function AdminShell({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "flex items-center gap-3",
+                    isReportsModule &&
+                      "max-w-full min-w-0 flex-wrap justify-end",
+                  )}
+                >
                   <GlobalSearch
                     canSearchAuditReports={authorization.permissions.includes(
                       "audit_reports.view",

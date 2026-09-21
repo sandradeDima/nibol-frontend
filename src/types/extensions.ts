@@ -1,4 +1,5 @@
 import type { ObservationUserSummary } from "./observations";
+import type { ReviewTaskSummary } from "./review";
 
 export type ExtensionRequestStatus =
   | "DRAFT"
@@ -14,14 +15,23 @@ export interface ExtensionRequestEvidenceItem {
   id: string;
   mimeType: string;
   originalName: string;
+  sizeBytes: number;
+  uploadedByUser: ObservationUserSummary;
 }
 
 export interface ExtensionRequestDetail {
   actionPlan: {
     currentDueDate: string;
+    description: string;
     id: string;
     originalDueDate: string;
+    observationArea: {
+      area: { id: string; name: string };
+      areaResponsible: ObservationUserSummary;
+      processOwner: ObservationUserSummary;
+    };
     responsibleUser: ObservationUserSummary;
+    title: string;
   } | null;
   attachments: ExtensionRequestEvidenceItem[];
   classification: {
@@ -31,6 +41,7 @@ export interface ExtensionRequestDetail {
     name: string;
   } | null;
   createdAt: string;
+  effectiveDueDate: string;
   finalApprovedAt: string | null;
   id: string;
   impactDays: number;
@@ -51,6 +62,7 @@ export interface ExtensionRequestDetail {
   targetType: "OBSERVATION" | "ACTION_PLAN";
   updatedAt: string;
   workflowInstanceId: string | null;
+  reviewTask: ReviewTaskSummary | null;
 }
 
 export type ExtensionRequestTableRow = ExtensionRequestDetail;

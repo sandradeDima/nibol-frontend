@@ -29,6 +29,7 @@ import type {
   RoleDashboardData,
   RoleDashboardExecutorNode,
   RoleDashboardNodeStatus,
+  RoleDashboardObservationRow,
   RoleDashboardPriority,
   RoleDashboardQuickAction,
   RoleDashboardResponsibleNode,
@@ -38,6 +39,13 @@ import {
   type RoleDashboardQuery,
 } from "@/services/dashboard-service";
 import { cn } from "@/utils";
+
+import {
+  formatObservationDate,
+  getRiskLevelClasses,
+  getRiskLevelStyle,
+  getStatusClasses,
+} from "../observations/presentation";
 
 const roleLabels = {
   AREA_RESPONSIBLE: "Responsable de área",
@@ -73,6 +81,8 @@ const quickActionIcons = {
 
 const optionList = (options: RoleDashboardData["areas"]) =>
   options.map((option) => ({ id: option.id, label: option.name }));
+
+type RoleDashboardCard = "CLOSED" | "OVERDUE" | "PENDING" | "TOTAL";
 
 const buildObservationHref = (
   roleCode: RoleDashboardData["roleCode"],
@@ -317,9 +327,22 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
   >(data.selectedObservationState ?? "");
   const [search, setSearch] = useState("");
   const [collapsedAreas, setCollapsedAreas] = useState<Set<string>>(
-    () => new Set(),
+    () => new Set(data.hierarchy.map((area) => area.id)),
   );
-  const filterPanelRef = useRef<HTMLElement | null>(null);
+  const [collapsedResponsibles, setCollapsedResponsibles] = useState<
+    Set<string>
+  >(
+    () =>
+      new Set(
+        data.hierarchy.flatMap((area) =>
+          (area.responsibles ?? []).map(
+            (responsible) => `${area.id}:${responsible.id}`,
+          ),
+        ),
+      ),
+  );
+  const resultsRef = useRef<HTMLElement | null>(null);
+  const [activeCard, setActiveCard] = useState<RoleDashboardCard | null>(null);
 
   const params = useMemo<RoleDashboardQuery>(
     () => ({
@@ -365,7 +388,6 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
     queryKey: ["dashboard", "role", paramsKey],
   });
   const view = query.data ?? data;
-  const globalSummary = view.globalSummary;
   const responsibleOptions = optionList(view.filters.responsibles);
   const executorOptions = optionList(view.filters.executors);
   const areaOptions = optionList(view.areas);
@@ -379,6 +401,17 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
   const isProcessOwner = view.roleCode === "PROCESS_OWNER";
   const isExecutor = view.roleCode === "EXECUTOR";
 
+  const resultRows = useMemo(() => {
+    if (!activeCard) return [];
+    return view.observations.filter((row) => {
+      const isFinal = row.status.isFinal ?? row.status.key === "CONCLUIDO";
+      if (activeCard === "TOTAL") return true;
+      if (activeCard === "PENDING") return !isFinal;
+      if (activeCard === "CLOSED") return isFinal;
+      return row.isOverdue;
+    });
+  }, [activeCard, view.observations]);
+
   const toggleArea = (id: string) => {
     setCollapsedAreas((current) => {
       const next = new Set(current);
@@ -388,7 +421,18 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
     });
   };
 
+  const toggleResponsible = (areaId: string, responsibleId: string) => {
+    const key = `${areaId}:${responsibleId}`;
+    setCollapsedResponsibles((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   const clearFilters = () => {
+    setActiveCard(null);
     setAreaId("");
     setAreaResponsibleUserIds([]);
     setExecutorIds([]);
@@ -406,18 +450,23 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
       view.filters.executors.find((option) => option.id === id)?.name ?? id,
   );
 
-  const focusFilterPanel = () => {
+  const focusResults = () => {
     window.requestAnimationFrame(() => {
-      filterPanelRef.current?.scrollIntoView({
+      resultsRef.current?.scrollIntoView({
         behavior: "smooth",
-        block: "center",
+        block: "start",
       });
     });
   };
 
-  const toggleObservationState = (nextState: "PENDING" | "CONCLUDED") => {
-    setObservationState((current) => (current === nextState ? "" : nextState));
-    focusFilterPanel();
+  const toggleCard = (card: RoleDashboardCard) => {
+    if (activeCard === card) {
+      setActiveCard(null);
+      return;
+    }
+    setActiveCard(card);
+    setObservationState("");
+    focusResults();
   };
 
   return (
@@ -490,33 +539,42 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         </div>
       </section>
 
-      <section className="grid gap-3 xl:grid-cols-[repeat(3,minmax(0,1fr))_1.35fr]">
+      <section className="grid gap-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_1.35fr]">
         <MetricCard
-          active={!observationState}
-          detail="Alcance total del rol"
+          active={activeCard === "TOTAL"}
+          detail={hasFilters ? "Resultado del filtro" : "Alcance total del rol"}
           icon={ClipboardList}
           label="Total de observaciones"
-          onClick={() => {
-            setObservationState("");
-            focusFilterPanel();
-          }}
-          value={globalSummary.totalObservations}
+          onClick={() => toggleCard("TOTAL")}
+          value={view.summary.totalObservations}
         />
         <MetricCard
-          active={observationState === "PENDING"}
-          detail="Requieren seguimiento"
+          active={activeCard === "PENDING"}
+          detail={
+            hasFilters ? "Pendientes del filtro" : "Requieren seguimiento"
+          }
           icon={AlertTriangle}
           label="Pendientes"
-          onClick={() => toggleObservationState("PENDING")}
-          value={globalSummary.pendingObservations}
+          onClick={() => toggleCard("PENDING")}
+          value={view.summary.pendingObservations}
         />
         <MetricCard
-          active={observationState === "CONCLUDED"}
-          detail="Estado final registrado"
+          active={activeCard === "CLOSED"}
+          detail={
+            hasFilters ? "Concluidas del filtro" : "Estado final registrado"
+          }
           icon={CheckCircle2}
           label="Concluidas"
-          onClick={() => toggleObservationState("CONCLUDED")}
-          value={globalSummary.concludedObservations}
+          onClick={() => toggleCard("CLOSED")}
+          value={view.summary.concludedObservations}
+        />
+        <MetricCard
+          active={activeCard === "OVERDUE"}
+          detail="Pendientes fuera de plazo"
+          icon={AlertTriangle}
+          label="Vencidas"
+          onClick={() => toggleCard("OVERDUE")}
+          value={view.summary.overdueObservations}
         />
         <section className="nibol-panel-dark min-h-[132px] px-5 py-4">
           <div className="flex items-start justify-between gap-3">
@@ -548,10 +606,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         </section>
       </section>
 
-      <section
-        className="nibol-panel overflow-visible p-4 sm:p-5"
-        ref={filterPanelRef}
-      >
+      <section className="nibol-panel overflow-visible p-4 sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center bg-[var(--info-soft)] text-[var(--info)]">
@@ -568,7 +623,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           </div>
           <button
             className="nibol-btn-ghost self-start px-0 py-1.5 text-xs lg:self-auto"
-            disabled={!hasFilters}
+            disabled={!hasFilters && !activeCard}
             onClick={clearFilters}
             type="button"
           >
@@ -618,6 +673,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
             </span>
             <SearchableSelect
               onChange={(value) => {
+                setActiveCard(null);
                 if (value === "PENDING" || value === "CONCLUDED") {
                   setObservationState(value);
                 } else {
@@ -733,7 +789,9 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
                 Observaciones por jerarquía
               </h2>
               <p className="mt-1 text-xs text-[var(--muted)]">
-                Área / Etapa / Responsable / Ejecutor
+                {isProcessOwner
+                  ? "Área / Responsable / Ejecutor"
+                  : "Área / Ejecutor"}
               </p>
             </div>
           </div>
@@ -744,7 +802,11 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           </p>
         </div>
         <div className="hidden grid-cols-[minmax(0,1fr)_150px_120px] gap-4 bg-[var(--surface-soft)] px-5 py-2.5 text-[0.65rem] font-bold tracking-[0.13em] text-[var(--muted)] uppercase lg:grid">
-          <span>Área / Etapa / Responsable / Ejecutor</span>
+          <span>
+            {isProcessOwner
+              ? "Área / Responsable / Ejecutor"
+              : "Área / Ejecutor"}
+          </span>
           <span className="text-right">Cantidad</span>
           <span className="text-right">Acción</span>
         </div>
@@ -786,8 +848,15 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
                         ? (area.responsibles ?? []).map((responsible) => (
                             <ResponsibleRow
                               areaId={area.id}
+                              collapsed={collapsedResponsibles.has(
+                                area.id + ":" + responsible.id,
+                              )}
                               key={responsible.id}
                               node={responsible}
+                              onToggle={() =>
+                                toggleResponsible(area.id, responsible.id)
+                              }
+                              roleCode={view.roleCode}
                               search={search.trim() || undefined}
                             />
                           ))
@@ -818,7 +887,161 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           </div>
         )}
       </section>
+      {activeCard ? (
+        <section className="nibol-panel overflow-hidden" ref={resultsRef}>
+          <RoleObservationResults
+            activeCard={activeCard}
+            isFetching={query.isFetching}
+            items={resultRows}
+          />
+        </section>
+      ) : null}
     </div>
+  );
+}
+
+function RoleObservationResults({
+  activeCard,
+  isFetching,
+  items,
+}: {
+  activeCard: RoleDashboardCard;
+  isFetching: boolean;
+  items: RoleDashboardObservationRow[];
+}) {
+  const titles: Record<RoleDashboardCard, string> = {
+    CLOSED: "Observaciones concluidas",
+    OVERDUE: "Observaciones vencidas",
+    PENDING: "Observaciones pendientes",
+    TOTAL: "Todas las observaciones",
+  };
+
+  return (
+    <>
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] px-4 py-4 sm:px-5">
+        <div>
+          <p className="nibol-eyebrow">Resultado seleccionado</p>
+          <h2 className="mt-1 text-lg font-semibold text-[var(--foreground)]">
+            {titles[activeCard]}
+          </h2>
+          <p className="mt-1 text-xs text-[var(--foreground-soft)]">
+            {items.length} observaciones dentro del alcance y jerarquía
+            seleccionados.
+          </p>
+        </div>
+        <span className="text-xs text-[var(--muted)]">
+          {isFetching ? "Actualizando…" : "Filtrado en el tablero"}
+        </span>
+      </div>
+      {items.length ? (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[60rem] text-left text-xs">
+            <thead className="bg-[var(--surface-soft)] text-[0.65rem] font-bold tracking-[0.12em] text-[var(--muted)] uppercase">
+              <tr>
+                <th className="px-4 py-2.5">Informe / Obs.</th>
+                <th className="px-4 py-2.5">Título</th>
+                <th className="px-4 py-2.5">Área</th>
+                <th className="px-4 py-2.5">Responsable</th>
+                <th className="px-4 py-2.5">Ejecutor</th>
+                <th className="px-4 py-2.5">Riesgo</th>
+                <th className="px-4 py-2.5">Estado</th>
+                <th className="px-4 py-2.5">Estado según plazo</th>
+                <th className="px-4 py-2.5">Fecha compromiso</th>
+                <th className="px-4 py-2.5 text-right">Acción</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {items.map((item) => (
+                <tr
+                  className="align-top hover:bg-[var(--surface-soft)]"
+                  key={item.id}
+                >
+                  <td className="px-4 py-2.5 font-semibold whitespace-nowrap text-[var(--foreground)]">
+                    {item.code}
+                  </td>
+                  <td className="max-w-[18rem] px-4 py-2.5">
+                    <p className="truncate font-semibold text-[var(--foreground)]">
+                      {item.title}
+                    </p>
+                  </td>
+                  <td className="px-4 py-2.5 whitespace-nowrap text-[var(--foreground-soft)]">
+                    {item.area.name}
+                  </td>
+                  <td className="px-4 py-2.5 whitespace-nowrap text-[var(--foreground-soft)]">
+                    {item.responsibleUser?.name ?? "Sin asignar"}
+                  </td>
+                  <td className="max-w-[12rem] px-4 py-2.5 text-[var(--foreground-soft)]">
+                    <span className="block truncate">
+                      {item.executorNames.length
+                        ? item.executorNames.join(", ")
+                        : "Sin asignar"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <span
+                      className={cn(
+                        "inline-flex border px-2 py-1 text-xs font-semibold",
+                        getRiskLevelClasses(),
+                      )}
+                      style={getRiskLevelStyle(item.riskLevel.colorToken)}
+                    >
+                      {item.riskLevel.name}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 whitespace-nowrap">
+                    <span
+                      className={cn(
+                        "inline-flex border px-2 py-1 text-xs font-semibold",
+                        getStatusClasses(item.status.key),
+                      )}
+                    >
+                      {item.status.name}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 whitespace-nowrap">
+                    <span
+                      className={cn(
+                        "inline-flex border px-2 py-1 text-xs font-semibold",
+                        item.isOverdue
+                          ? "border-rose-200 bg-rose-50 text-rose-700"
+                          : "border-emerald-200 bg-emerald-50 text-emerald-700",
+                      )}
+                    >
+                      {item.isOverdue ? "Vencido" : "Vigente"}
+                    </span>
+                  </td>
+                  <td
+                    className={cn(
+                      "px-4 py-2.5 whitespace-nowrap text-[var(--foreground-soft)]",
+                      item.isOverdue && "font-semibold text-[var(--accent)]",
+                    )}
+                  >
+                    {formatObservationDate(item.dueDate)}
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
+                    <Link
+                      className="inline-flex items-center gap-1 font-semibold whitespace-nowrap text-[var(--primary)] hover:underline"
+                      href={item.href}
+                    >
+                      Ver detalle
+                      <ChevronRight
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5"
+                      />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="px-5 py-10 text-center text-sm text-[var(--foreground-soft)]">
+          No hay observaciones para este indicador dentro del alcance
+          seleccionado.
+        </div>
+      )}
+    </>
   );
 }
 
@@ -851,18 +1074,34 @@ function FilterChip({
 
 function ResponsibleRow({
   areaId,
+  collapsed,
   node,
+  onToggle,
+  roleCode,
   search,
 }: {
   areaId: string;
+  collapsed: boolean;
   node: RoleDashboardResponsibleNode;
+  onToggle: () => void;
+  roleCode: RoleDashboardData["roleCode"];
   search?: string;
 }) {
+  const expandable = node.executors.length > 0;
   return (
     <div>
       <HierarchyRow
+        expand={
+          expandable
+            ? {
+                label: node.name,
+                onToggle,
+                open: !collapsed,
+              }
+            : undefined
+        }
         href={buildObservationHref(
-          "PROCESS_OWNER",
+          roleCode,
           areaId,
           node.status,
           node.id,
@@ -875,16 +1114,18 @@ function ResponsibleRow({
         meta="Responsable de área"
         summary={<HierarchySummary status={node.status} total={node.total} />}
       />
-      {node.executors.map((executor) => (
-        <ExecutorRow
-          areaId={areaId}
-          key={executor.id}
-          node={executor}
-          responsibleId={node.id}
-          roleCode="PROCESS_OWNER"
-          search={search}
-        />
-      ))}
+      {!collapsed
+        ? node.executors.map((executor) => (
+            <ExecutorRow
+              areaId={areaId}
+              key={executor.id}
+              node={executor}
+              responsibleId={node.id}
+              roleCode={roleCode}
+              search={search}
+            />
+          ))
+        : null}
     </div>
   );
 }

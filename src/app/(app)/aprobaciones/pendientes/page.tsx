@@ -16,7 +16,7 @@ export default async function PendingApprovalsPage() {
       <PageHeader
         description="Centralice los dictámenes pendientes de avances y ampliaciones de plazo dentro del circuito corporativo de revisión."
         eyebrow="Aprobaciones"
-        title="Pendientes de aprobacion"
+        title="Pendientes de aprobación"
       />
 
       <PendingApprovalsWorkspace
@@ -30,6 +30,12 @@ export default async function PendingApprovalsPage() {
           (authorization.permissions.includes("action_plans.evaluate") &&
             authorization.permissions.includes("action_plans.return"))
         }
+        canApproveExtensions={authorization.permissions.includes(
+          "deadline_extensions.approve",
+        )}
+        canRejectExtensions={authorization.permissions.includes(
+          "deadline_extensions.reject",
+        )}
         canViewExtensions={hasAnyPermission(authorization.permissions, [
           "deadline_extensions.approve",
           "deadline_extensions.reject",

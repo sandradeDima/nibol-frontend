@@ -17,6 +17,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { SearchField } from "@/components/ui/search-field";
 import { StatCard } from "@/components/ui/stat-card";
 import { QUERY_KEYS } from "@/lib/constants";
+import { resolveNotificationTarget } from "@/lib/notification-links";
 import { NotificationComposer } from "@/modules/notifications/notification-composer";
 import { notificationTypeOptions } from "@/modules/notifications/forms";
 import {
@@ -26,7 +27,7 @@ import {
 import { notificationService } from "@/services/notification-service";
 import { getApiErrorMessage } from "@/utils";
 
-const panelClassName = "nibol-panel p-6";
+const panelClassName = "nibol-panel min-w-0 p-6";
 const emptySubscribe = () => () => {};
 
 export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
@@ -228,10 +229,14 @@ export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
           </div>
 
           <div className="mt-6 space-y-4">
-            <div className="flex flex-wrap gap-2 border-b border-[var(--border)] pb-4">
+            <div
+              aria-label="Filtro de notificaciones"
+              className="flex gap-2 overflow-x-auto border-b border-[var(--border)] pb-4"
+              role="group"
+            >
               {(
                 [
-                  ["all", "Todas"],
+                  ["all", "Todas las notificaciones"],
                   ["unread", "No leídas"],
                   ["deadlines", "Vencimientos"],
                   ["approvals", "Aprobaciones"],
@@ -239,10 +244,11 @@ export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
                 ] as const
               ).map(([value, label]) => (
                 <button
+                  aria-pressed={activeTab === value}
                   className={
                     activeTab === value
-                      ? "nibol-btn-primary px-3 py-2 text-xs"
-                      : "nibol-btn-secondary px-3 py-2 text-xs"
+                      ? "nibol-btn-primary min-h-10 shrink-0 px-4 py-2.5 text-sm whitespace-nowrap"
+                      : "nibol-btn-secondary min-h-10 shrink-0 px-4 py-2.5 text-sm whitespace-nowrap"
                   }
                   key={value}
                   onClick={() => {
@@ -272,7 +278,11 @@ export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
                   setPage(1);
                   setTypeFilter(
                     event.target.value as
-                      "all" | "error" | "info" | "success" | "warning",
+                      | "all"
+                      | "error"
+                      | "info"
+                      | "success"
+                      | "warning",
                   );
                 }}
                 value={typeFilter}
@@ -312,25 +322,6 @@ export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
                 type="date"
                 value={dateTo}
               />
-
-              <button
-                className={`inline-flex h-12 items-center justify-center border px-4 text-sm font-semibold transition ${
-                  activeTab === "unread"
-                    ? "border-[var(--primary)] bg-[var(--primary)] text-white"
-                    : "border-[var(--border-strong)] bg-white text-[var(--foreground)] hover:border-[var(--primary)] hover:bg-[var(--surface-soft)]"
-                }`}
-                onClick={() => {
-                  setPage(1);
-                  setActiveTab((current) =>
-                    current === "unread" ? "all" : "unread",
-                  );
-                }}
-                type="button"
-              >
-                {activeTab === "unread"
-                  ? "Solo no leídas"
-                  : "Todas las notificaciones"}
-              </button>
             </div>
           </div>
 
@@ -357,50 +348,55 @@ export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
             </div>
           ) : (
             <div className="mt-6 space-y-4">
-              {visibleNotifications.map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  actions={
-                    <>
-                      {!notification.isRead ? (
-                        <button
-                          className="nibol-btn-secondary px-3.5 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                          disabled={markReadMutation.isPending}
-                          onClick={() => {
-                            void markReadMutation.mutateAsync(notification.id);
-                          }}
-                          type="button"
-                        >
-                          Marcar como leida
-                        </button>
-                      ) : null}
-                      {notification.targetUrl ? (
-                        <Link
-                          className="nibol-btn-secondary px-3.5 py-2 text-sm"
-                          href={notification.targetUrl}
-                          onClick={() => {
-                            if (!notification.isRead)
+              {visibleNotifications.map((notification) => {
+                const targetUrl = resolveNotificationTarget(notification);
+                return (
+                  <NotificationItem
+                    key={notification.id}
+                    actions={
+                      <>
+                        {!notification.isRead ? (
+                          <button
+                            className="nibol-btn-secondary px-3.5 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={markReadMutation.isPending}
+                            onClick={() => {
                               void markReadMutation.mutateAsync(
                                 notification.id,
                               );
+                            }}
+                            type="button"
+                          >
+                            Marcar como leida
+                          </button>
+                        ) : null}
+                        {targetUrl ? (
+                          <Link
+                            className="nibol-btn-secondary px-3.5 py-2 text-sm"
+                            href={targetUrl}
+                            onClick={() => {
+                              if (!notification.isRead)
+                                void markReadMutation.mutateAsync(
+                                  notification.id,
+                                );
+                            }}
+                          >
+                            Abrir registro
+                          </Link>
+                        ) : null}
+                        <NotificationDeleteButton
+                          disabled={deleteNotificationMutation.isPending}
+                          onClick={() => {
+                            void deleteNotificationMutation.mutateAsync(
+                              notification.id,
+                            );
                           }}
-                        >
-                          Abrir registro
-                        </Link>
-                      ) : null}
-                      <NotificationDeleteButton
-                        disabled={deleteNotificationMutation.isPending}
-                        onClick={() => {
-                          void deleteNotificationMutation.mutateAsync(
-                            notification.id,
-                          );
-                        }}
-                      />
-                    </>
-                  }
-                  notification={notification}
-                />
-              ))}
+                        />
+                      </>
+                    }
+                    notification={notification}
+                  />
+                );
+              })}
             </div>
           )}
 

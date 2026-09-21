@@ -16,38 +16,34 @@ export default async function ActionPlanPage({
     <main>
       <ActionPlanDetailView
         actionPlanId={id}
-        canApproveExtensions={authorization.permissions.includes(
-          "deadline_extensions.approve",
-        )}
         canApproveProgress={
           authorization.isAdmin ||
           (authorization.permissions.includes("action_plans.evaluate") &&
             authorization.permissions.includes("action_plans.approve"))
         }
-        canViewObservation={authorization.permissions.includes(
-          "observations.view",
-        )}
-        canEdit={authorization.permissions.includes("action_plans.edit")}
-        canManageExtensions={
-          authorization.permissions.includes("deadline_extensions.approve") ||
-          authorization.permissions.includes("deadline_extensions.reject")
+        canDelete={authorization.permissions.includes("action_plans.delete")}
+        canViewObservation={
+          authorization.isAdmin ||
+          authorization.permissions.includes("observations.view")
         }
+        canEdit={authorization.permissions.includes("action_plans.edit")}
         canRequestExtension={authorization.permissions.includes(
           "deadline_extensions.request",
-        )}
-        canRejectExtensions={authorization.permissions.includes(
-          "deadline_extensions.reject",
         )}
         canReturnProgress={
           authorization.isAdmin ||
           (authorization.permissions.includes("action_plans.evaluate") &&
             authorization.permissions.includes("action_plans.return"))
         }
+        canUploadEvidence={
+          authorization.isAdmin ||
+          authorization.permissions.includes("evidence.create")
+        }
         canViewExtensions={authorization.permissions.includes(
           "deadline_extensions.view",
         )}
-        canUploadEvidence={authorization.permissions.includes(
-          "evidence.create",
+        canViewWorkflowTasks={authorization.permissions.includes(
+          "workflow_tasks.view",
         )}
         currentUserId={authorization.userId}
         initialEditing={edit === "1"}

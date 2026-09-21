@@ -39,6 +39,7 @@ export function UserSearchSelect({
   const listboxId = `${id ?? generatedId}-options`;
   const selected = users.find((user) => user.id === value) ?? null;
   const [open, setOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [query, setQuery] = useState("");
   const results = useMemo(() => {
     const needle = normalize(query.trim());
@@ -54,12 +55,23 @@ export function UserSearchSelect({
     : selected
       ? `${selected.name} · ${selected.email}`
       : "";
+  const choose = (user: UserOption) => {
+    onChange(user.id);
+    setQuery("");
+    setHighlightedIndex(0);
+    setOpen(false);
+  };
 
   return (
     <div className={cn("relative", open ? "z-50" : "z-20")}>
       <SearchFieldFrame>
         <input
           aria-autocomplete="list"
+          aria-activedescendant={
+            open && results[highlightedIndex]
+              ? `${listboxId}-${results[highlightedIndex]!.id}`
+              : undefined
+          }
           aria-controls={listboxId}
           aria-expanded={open}
           autoComplete="off"
@@ -69,12 +81,35 @@ export function UserSearchSelect({
           onBlur={() => window.setTimeout(() => setOpen(false), 120)}
           onChange={(event) => {
             setQuery(event.target.value);
+            setHighlightedIndex(0);
             if (value) onChange("");
             setOpen(true);
           }}
           onFocus={() => {
             setQuery("");
+            setHighlightedIndex(0);
             setOpen(true);
+          }}
+          onKeyDown={(event) => {
+            if (!open || results.length === 0) {
+              if (event.key === "Escape") setOpen(false);
+              return;
+            }
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              setHighlightedIndex((index) =>
+                Math.min(index + 1, results.length - 1),
+              );
+            } else if (event.key === "ArrowUp") {
+              event.preventDefault();
+              setHighlightedIndex((index) => Math.max(index - 1, 0));
+            } else if (event.key === "Enter") {
+              event.preventDefault();
+              choose(results[highlightedIndex] ?? results[0]!);
+            } else if (event.key === "Escape") {
+              event.preventDefault();
+              setOpen(false);
+            }
           }}
           placeholder={placeholder}
           role="combobox"
@@ -89,19 +124,19 @@ export function UserSearchSelect({
           id={listboxId}
         >
           {results.length ? (
-            results.map((user) => (
+            results.map((user, index) => (
               <button
                 aria-selected={user.id === value}
                 className={cn(
                   "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-amber-50",
                   user.id === value && "bg-amber-50",
+                  index === highlightedIndex && "bg-stone-100",
                 )}
+                id={`${listboxId}-${user.id}`}
                 key={user.id}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
-                  onChange(user.id);
-                  setQuery("");
-                  setOpen(false);
+                  choose(user);
                 }}
                 role="option"
                 type="button"

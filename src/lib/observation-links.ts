@@ -1,4 +1,9 @@
-export type ObservationTab = "evidence" | "history" | "plans" | "summary";
+export type ObservationTab =
+  | "comentarios"
+  | "evidence"
+  | "history"
+  | "plans"
+  | "summary";
 
 export const buildObservationUrl = ({
   advanceId,

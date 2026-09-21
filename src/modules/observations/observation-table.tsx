@@ -56,6 +56,9 @@ const OBSERVATION_FILTER_QUERY_KEYS = [
   "filter.title",
 ] as const;
 
+const formatTaskProgress = (completed: number, total: number) =>
+  `${completed} de ${total} ${total === 1 ? "tarea" : "tareas"}`;
+
 function ObservationActionsMenu({
   canDelete,
   canEdit,
@@ -502,7 +505,7 @@ export function ObservationTable({
               <th className="px-2.5 py-3 break-words">Áreas / responsables</th>
               <th className="px-2.5 py-3 break-words">Progreso</th>
               <th className="px-2.5 py-3 break-words">Fecha límite</th>
-              <th className="px-2.5 py-3 break-words">Estado</th>
+              <th className="px-2.5 py-3 break-words">Estados</th>
               <th className="px-2.5 py-3 text-right break-words">Acciones</th>
             </tr>
           </thead>
@@ -593,17 +596,18 @@ export function ObservationTable({
                   <div className="flex items-center gap-2">
                     <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-stone-200">
                       <div
-                        className="h-full bg-amber-600"
+                        className="h-full bg-stone-950"
                         style={{ width: `${row.progressPercent}%` }}
                       />
                     </div>
-                    <span className="font-semibold">
-                      {row.progressPercent}%
+                    <span className="shrink-0 text-xs font-semibold">
+                      {row.progressPercent}% ·{" "}
+                      {formatTaskProgress(
+                        row.completedTaskCount,
+                        row.taskCount,
+                      )}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-stone-500">
-                    {row.actionPlanCount} planes
-                  </p>
                 </td>
                 <td className="min-w-0 overflow-hidden px-2.5 py-3">
                   <p
@@ -621,14 +625,40 @@ export function ObservationTable({
                   ) : null}
                 </td>
                 <td className="min-w-0 overflow-hidden px-2.5 py-3">
-                  <span
-                    className={cn(
-                      "inline-flex border px-2 py-1 text-xs font-semibold",
-                      getStatusClasses(row.status.key),
-                    )}
-                  >
-                    {row.status.name}
-                  </span>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="mb-1 text-[10px] font-semibold tracking-wide text-stone-500 uppercase">
+                        Estado de observación
+                      </p>
+                      <span
+                        className={cn(
+                          "inline-flex border px-2 py-1 text-xs font-semibold",
+                          getStatusClasses(row.status.key),
+                        )}
+                      >
+                        {row.status.name}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[10px] font-semibold tracking-wide text-stone-500 uppercase">
+                        Estado de plazo
+                      </p>
+                      <span
+                        className={cn(
+                          "inline-flex border px-2 py-1 text-xs font-semibold",
+                          row.deadlineStatus === "VENCIDO"
+                            ? "border-rose-200 bg-rose-50 text-rose-800"
+                            : "border-stone-200 bg-stone-50 text-stone-700",
+                        )}
+                      >
+                        {row.deadlineStatus === "NO_APLICA"
+                          ? "No aplica"
+                          : row.deadlineStatus === "VENCIDO"
+                            ? "Vencido"
+                            : "Vigente"}
+                      </span>
+                    </div>
+                  </div>
                 </td>
                 <td className="min-w-0 overflow-hidden px-2.5 py-3">
                   <div className="flex min-w-0 items-center justify-end gap-1">
@@ -708,6 +738,9 @@ export function ObservationTable({
               <div>
                 <p className="text-stone-500">Progreso</p>
                 <p className="font-semibold">{row.progressPercent}%</p>
+                <p className="text-stone-500">
+                  {formatTaskProgress(row.completedTaskCount, row.taskCount)}
+                </p>
               </div>
               <div>
                 <p className="text-stone-500">Fecha límite</p>
@@ -722,14 +755,31 @@ export function ObservationTable({
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span
-                className={cn(
-                  "inline-flex border px-2 py-1 text-xs font-semibold",
-                  getStatusClasses(row.status.key),
-                )}
-              >
-                {row.status.name}
-              </span>
+              <div className="flex flex-wrap gap-2">
+                <span
+                  className={cn(
+                    "inline-flex border px-2 py-1 text-xs font-semibold",
+                    getStatusClasses(row.status.key),
+                  )}
+                >
+                  Observación: {row.status.name}
+                </span>
+                <span
+                  className={cn(
+                    "inline-flex border px-2 py-1 text-xs font-semibold",
+                    row.deadlineStatus === "VENCIDO"
+                      ? "border-rose-200 bg-rose-50 text-rose-800"
+                      : "border-stone-200 bg-stone-50 text-stone-700",
+                  )}
+                >
+                  Plazo:{" "}
+                  {row.deadlineStatus === "NO_APLICA"
+                    ? "No aplica"
+                    : row.deadlineStatus === "VENCIDO"
+                      ? "Vencido"
+                      : "Vigente"}
+                </span>
+              </div>
               <div className="flex items-center gap-2">
                 <Link
                   aria-label="Ver observación"
@@ -830,7 +880,9 @@ export function ObservationTable({
       <ConfirmDialog
         confirmLabel="Eliminar observación"
         description={
-          pendingDelete ? `Se archivará ${pendingDelete.displayCode}.` : ""
+          pendingDelete
+            ? `Se dejará de mostrar ${pendingDelete.displayCode}. La información, evidencias e historial se conservarán.`
+            : ""
         }
         isLoading={remove.isPending}
         onConfirm={async () => {

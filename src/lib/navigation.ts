@@ -333,6 +333,11 @@ const titleCaseSegment = (segment: string): string => {
     .join(" ");
 };
 
+const isOpaqueRouteSegment = (segment: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    segment,
+  );
+
 export type BreadcrumbItem = {
   href: string;
   label: string;
@@ -369,7 +374,9 @@ export const buildBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
 
       return {
         href,
-        label: getRouteLabel(href),
+        label: isOpaqueRouteSegment(segment)
+          ? "Detalle"
+          : getRouteLabel(href),
       };
     }),
   ];

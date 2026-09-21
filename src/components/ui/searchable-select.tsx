@@ -18,6 +18,7 @@ type BaseProps = {
   id?: string;
   options: Option[];
   placeholder: string;
+  showSelectionActions?: boolean;
   showSelectedValues?: boolean;
 };
 
@@ -42,6 +43,7 @@ export function SearchableSelect({
   onChange,
   options,
   placeholder,
+  showSelectionActions = false,
   showSelectedValues = true,
   value,
 }: SingleSelectProps | MultiSelectProps) {
@@ -84,7 +86,9 @@ export function SearchableSelect({
       <SearchFieldFrame
         className={multiple ? "h-auto min-h-12" : undefined}
         endAdornment={
-          showSelectedValues && selectedIds.length > 0 && !disabled ? (
+          (showSelectedValues || (multiple && showSelectionActions)) &&
+          selectedIds.length > 0 &&
+          !disabled ? (
             <button
               aria-label="Limpiar selección"
               className="mr-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center text-stone-400 hover:bg-stone-100"
@@ -129,6 +133,11 @@ export function SearchableSelect({
                 </span>
               ))
             : null}
+          {multiple && !showSelectedValues && selectedIds.length ? (
+            <span className="px-3 text-xs font-semibold text-stone-600">
+              {selectedIds.length} seleccionados
+            </span>
+          ) : null}
           <input
             aria-autocomplete="list"
             aria-controls={listboxId}
@@ -173,6 +182,28 @@ export function SearchableSelect({
           id={listboxId}
           role="listbox"
         >
+          {multiple && showSelectionActions ? (
+            <div className="flex items-center justify-between gap-2 border-b border-stone-200 px-2 py-1.5 text-xs">
+              <button
+                className="font-semibold text-amber-800 hover:underline"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() =>
+                  updateSelection(options.map((option) => option.id))
+                }
+                type="button"
+              >
+                Seleccionar todos
+              </button>
+              <button
+                className="font-semibold text-stone-500 hover:text-stone-800 hover:underline"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => updateSelection([])}
+                type="button"
+              >
+                Limpiar
+              </button>
+            </div>
+          ) : null}
           {results.length ? (
             results.map((option) => (
               <button

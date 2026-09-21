@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -50,11 +50,35 @@ const DEFAULT_FILTERS: ReportFilters = {
   ...getReportDateRange(12),
 };
 
-const withFilter = (
-  filters: ReportFilters,
-  key: keyof ReportFilters,
-  value: string | boolean,
-) => `/reportes${buildReportQuery({ ...filters, [key]: value })}`;
+const STATIC_METRICS_FILTERS: ReportFilters = { periodField: "createdAt" };
+const KPI_SHORTCUT_FILTERS: Array<keyof ReportFilters> = [
+  "activeOnly",
+  "dueSoon",
+  "overdue",
+  "statusId",
+  "progressStatus",
+  "deadlineStatus",
+  "reprogrammed",
+];
+
+type KpiShortcut =
+  | "CLOSED_OBSERVATIONS"
+  | "CONCLUDED"
+  | "NOT_STARTED"
+  | "PENDING_OBSERVATIONS"
+  | "REPROGRAMMED"
+  | "STARTED"
+  | "TOTAL"
+  | "TOTAL_OBSERVATIONS"
+  | "VENCIDOS"
+  | "VIGENTES"
+  | "WITH_PROGRESS";
+
+const clearKpiShortcutFilters = (filters: ReportFilters): ReportFilters => {
+  const next = { ...filters } as Record<string, unknown>;
+  KPI_SHORTCUT_FILTERS.forEach((key) => delete next[key]);
+  return next as ReportFilters;
+};
 
 export function ReportsDashboard({
   canExport,
@@ -74,6 +98,7 @@ export function ReportsDashboard({
   );
   const [draft, setDraft] = useState<ReportFilters>(initialFilters);
   const filters = initialFilters;
+  const reportResultsRef = useRef<HTMLElement>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
   const optionsQuery = useQuery({
@@ -84,6 +109,11 @@ export function ReportsDashboard({
   const dashboardQuery = useQuery({
     queryFn: () => reportService.getDashboard(filters),
     queryKey: ["reports", "dashboard", filters],
+    staleTime: 30_000,
+  });
+  const staticMetricsQuery = useQuery({
+    queryFn: () => reportService.getDashboard(STATIC_METRICS_FILTERS),
+    queryKey: ["reports", "dashboard", "static-metrics"],
     staleTime: 30_000,
   });
 
@@ -101,7 +131,7 @@ export function ReportsDashboard({
 
   const applyFilters = (next: ReportFilters) => {
     setDraft(next);
-    router.replace(`${pathname}${buildReportQuery(next)}`);
+    router.replace(`${pathname}${buildReportQuery(next)}`, { scroll: false });
   };
 
   const resetFilters = () => {
@@ -131,14 +161,89 @@ export function ReportsDashboard({
     }
   };
 
+  const applyShortcut = (shortcut: KpiShortcut) => {
+    const next = clearKpiShortcutFilters(filters);
+    const closedStatusId = optionsQuery.data?.observationStatuses.find(
+      (status) => status.key === "CONCLUIDO",
+    )?.id;
+
+    switch (shortcut) {
+      case "CLOSED_OBSERVATIONS":
+        if (!closedStatusId) return;
+        next.statusId = closedStatusId;
+        break;
+      case "CONCLUDED":
+        next.progressStatus = "CONCLUDED";
+        break;
+      case "NOT_STARTED":
+        next.progressStatus = "NOT_STARTED";
+        break;
+      case "PENDING_OBSERVATIONS":
+        next.activeOnly = true;
+        break;
+      case "REPROGRAMMED":
+        next.reprogrammed = true;
+        break;
+      case "STARTED":
+        next.progressStatus = "STARTED";
+        break;
+      case "VENCIDOS":
+        next.deadlineStatus = "VENCIDO";
+        break;
+      case "VIGENTES":
+        next.deadlineStatus = "VIGENTE";
+        break;
+      case "WITH_PROGRESS":
+        next.progressStatus = "WITH_PROGRESS";
+        break;
+      case "TOTAL":
+      case "TOTAL_OBSERVATIONS":
+        break;
+    }
+
+    applyFilters(next);
+    window.setTimeout(() => {
+      reportResultsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+  };
+
+  const isShortcutActive = (shortcut: KpiShortcut) => {
+    switch (shortcut) {
+      case "CLOSED_OBSERVATIONS":
+        return (
+          filters.statusId ===
+          optionsQuery.data?.observationStatuses.find(
+            (status) => status.key === "CONCLUIDO",
+          )?.id
+        );
+      case "CONCLUDED":
+        return filters.progressStatus === "CONCLUDED";
+      case "PENDING_OBSERVATIONS":
+        return filters.activeOnly === true;
+      case "NOT_STARTED":
+        return filters.progressStatus === "NOT_STARTED";
+      case "REPROGRAMMED":
+        return filters.reprogrammed === true;
+      case "STARTED":
+        return filters.progressStatus === "STARTED";
+      case "VENCIDOS":
+        return filters.deadlineStatus === "VENCIDO";
+      case "VIGENTES":
+        return filters.deadlineStatus === "VIGENTE";
+      case "WITH_PROGRESS":
+        return filters.progressStatus === "WITH_PROGRESS";
+      case "TOTAL":
+      case "TOTAL_OBSERVATIONS":
+        return KPI_SHORTCUT_FILTERS.every((key) => filters[key] === undefined);
+    }
+  };
+
   const data = dashboardQuery.data;
-  const filterLabel = useMemo(
-    () =>
-      filters.dateFrom || filters.dateTo
-        ? `${filters.dateFrom ?? "Inicio"} – ${filters.dateTo ?? "Hoy"}`
-        : "Corte actual",
-    [filters.dateFrom, filters.dateTo],
-  );
+  const staticData = staticMetricsQuery.data;
+  const generatorHref = `/reportes/generador${buildReportQuery(filters)}`;
 
   return (
     <main className="min-w-0 space-y-6">
@@ -147,7 +252,7 @@ export function ReportsDashboard({
           <>
             <Link
               className="nibol-btn-secondary px-4 py-2.5 text-sm"
-              href="/reportes/generador"
+              href={generatorHref}
             >
               <FileBarChart className="h-4 w-4" /> Generar reporte
             </Link>
@@ -174,17 +279,19 @@ export function ReportsDashboard({
             ) : null}
           </>
         }
-        description="Resumen ejecutivo de observaciones y seguimiento de sus planes de acción."
+        description="Indicadores y seguimiento de planes de acción. El estado del plan y el estado según plazo son dimensiones independientes."
         eyebrow="Control y seguimiento"
-        title="Dashboard de reportería"
+        title="Reportes"
       />
 
       <ReportFilterBar
+        description="Los KPI superiores reflejan el alcance autorizado; el mismo alcance alimenta los resultados y las exportaciones."
         draft={draft}
         onApply={() => applyFilters({ ...draft })}
         onChange={updateDraft}
         onReset={resetFilters}
         options={optionsQuery.data}
+        showActiveOnly
         showProgress
       />
 
@@ -193,14 +300,17 @@ export function ReportsDashboard({
           {exportError}
         </div>
       ) : null}
-      {optionsQuery.isError || dashboardQuery.isError ? (
+      {optionsQuery.isError ||
+      dashboardQuery.isError ||
+      staticMetricsQuery.isError ? (
         <ReportError
           onRetry={() => {
             void optionsQuery.refetch();
             void dashboardQuery.refetch();
+            void staticMetricsQuery.refetch();
           }}
         />
-      ) : dashboardQuery.isPending || !data ? (
+      ) : !optionsQuery.data || !staticData ? (
         <ReportLoading label="Calculando indicadores y distribución del corte seleccionado…" />
       ) : (
         <>
@@ -210,7 +320,7 @@ export function ReportsDashboard({
                 Observaciones
               </p>
               <h2 className="mt-1 text-xl font-semibold text-[var(--foreground)]">
-                Estado del universo filtrado
+                Estado del universo autorizado
               </h2>
               <p className="mt-1 text-sm text-[var(--foreground-soft)]">
                 Las observaciones se cuentan una sola vez, aunque tengan varios
@@ -219,23 +329,33 @@ export function ReportsDashboard({
             </div>
             <section className="grid gap-3 md:grid-cols-3">
               <ReportKpi
+                active={isShortcutActive("TOTAL_OBSERVATIONS")}
                 description="Observaciones dentro del alcance autorizado."
                 icon="total"
                 label="Total observaciones"
+                onClick={() => applyShortcut("TOTAL_OBSERVATIONS")}
                 tone="accent"
-                value={formatReportNumber(data.summary.totalObservations)}
+                value={formatReportNumber(staticData.summary.totalObservations)}
               />
               <ReportKpi
+                active={isShortcutActive("PENDING_OBSERVATIONS")}
                 description="Observaciones cuyo estado todavía no es final."
                 icon="open"
                 label="Pendientes"
-                value={formatReportNumber(data.summary.pendingObservations)}
+                onClick={() => applyShortcut("PENDING_OBSERVATIONS")}
+                value={formatReportNumber(
+                  staticData.summary.pendingObservations,
+                )}
               />
               <ReportKpi
+                active={isShortcutActive("CLOSED_OBSERVATIONS")}
                 description="Observaciones con estado final registrado."
                 icon="closed"
                 label="Cerradas"
-                value={formatReportNumber(data.summary.closedObservations)}
+                onClick={() => applyShortcut("CLOSED_OBSERVATIONS")}
+                value={formatReportNumber(
+                  staticData.summary.closedObservations,
+                )}
               />
             </section>
           </section>
@@ -250,196 +370,218 @@ export function ReportsDashboard({
           </div>
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <ReportKpi
-              description={`${filterLabel}. Planes incluidos en el alcance.`}
-              href="/reportes"
+              active={isShortcutActive("TOTAL")}
+              description="Todos los planes dentro del alcance autorizado."
               icon="total"
               label="Total de planes"
+              onClick={() => applyShortcut("TOTAL")}
               tone="accent"
-              value={formatReportNumber(data.summary.total)}
+              value={formatReportNumber(staticData.summary.total)}
             />
             <ReportKpi
+              active={isShortcutActive("NOT_STARTED")}
               description="Planes sin avance oficial aprobado."
-              href={withFilter(filters, "progressStatus", "NOT_STARTED")}
               icon="open"
               label="No iniciado"
-              value={formatReportNumber(data.summary.noIniciado)}
+              onClick={() => applyShortcut("NOT_STARTED")}
+              value={formatReportNumber(staticData.summary.noIniciado)}
             />
             <ReportKpi
+              active={isShortcutActive("STARTED")}
               description="Planes con ejecución iniciada."
-              href={withFilter(filters, "progressStatus", "STARTED")}
               icon="inProcess"
               label="Iniciado"
-              value={formatReportNumber(data.summary.iniciado)}
+              onClick={() => applyShortcut("STARTED")}
+              value={formatReportNumber(staticData.summary.iniciado)}
             />
             <ReportKpi
+              active={isShortcutActive("WITH_PROGRESS")}
               description="Planes con avance oficial del 60%."
-              href={withFilter(filters, "progressStatus", "WITH_PROGRESS")}
               icon="progress"
               label="Con avance"
-              value={formatReportNumber(data.summary.conAvance)}
+              onClick={() => applyShortcut("WITH_PROGRESS")}
+              value={formatReportNumber(staticData.summary.conAvance)}
             />
             <ReportKpi
+              active={isShortcutActive("CONCLUDED")}
               description="Planes con cierre oficial al 100%."
-              href={withFilter(filters, "progressStatus", "CONCLUDED")}
               icon="closed"
               label="Concluido"
-              value={formatReportNumber(data.summary.concluido)}
+              onClick={() => applyShortcut("CONCLUDED")}
+              value={formatReportNumber(staticData.summary.concluido)}
             />
             <ReportKpi
+              active={isShortcutActive("VIGENTES")}
               description="No vencidos; incluye concluidos no atrasados."
-              href={withFilter(filters, "deadlineStatus", "VIGENTE")}
               icon="dueSoon"
               label="Vigentes"
-              value={formatReportNumber(data.summary.vigentes)}
+              onClick={() => applyShortcut("VIGENTES")}
+              value={formatReportNumber(staticData.summary.vigentes)}
             />
             <ReportKpi
+              active={isShortcutActive("VENCIDOS")}
               description="Planes no concluidos cuya fecha efectiva ya pasó."
-              href={withFilter(filters, "deadlineStatus", "VENCIDO")}
               icon="overdue"
               label="Vencidos"
+              onClick={() => applyShortcut("VENCIDOS")}
               tone="danger"
-              value={formatReportNumber(data.summary.vencidos)}
+              value={formatReportNumber(staticData.summary.vencidos)}
             />
             <ReportKpi
+              active={isShortcutActive("REPROGRAMMED")}
               description="Tienen una ampliación aprobada y fecha efectiva distinta."
-              href={withFilter(filters, "reprogrammed", true)}
               icon="reprogrammed"
               label="Reprogramados"
-              value={formatReportNumber(data.summary.reprogramados)}
+              onClick={() => applyShortcut("REPROGRAMMED")}
+              value={formatReportNumber(staticData.summary.reprogramados)}
             />
           </section>
 
-          <section className="grid min-w-0 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <ReportPanel
-              description="La fecha efectiva se toma de la ampliación aprobada cuando existe."
-              title="Lectura del corte"
-            >
-              <ReportFilterSummary filters={filters} />
-              <div className="mt-4 space-y-2 text-sm text-[var(--foreground-soft)]">
-                {data.insights.map((insight) => (
-                  <p key={insight}>{insight}</p>
-                ))}
-                {!data.insights.length ? (
-                  <p>No hay planes dentro del corte.</p>
-                ) : null}
-              </div>
-            </ReportPanel>
-            <ReportPanel
-              description="Cierres registrados dentro de la fecha efectiva del plan."
-              title="Cumplimiento del corte"
-            >
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-4xl font-semibold text-[var(--foreground)]">
-                    {formatReportPercent(data.summary.compliancePercent)}
-                  </p>
-                  <p className="mt-2 text-sm text-[var(--foreground-soft)]">
-                    Planes concluidos dentro de plazo
-                  </p>
+          <section ref={reportResultsRef} className="scroll-mt-24">
+            {dashboardQuery.isPending || !data ? (
+              <ReportLoading label="Calculando resultados del corte seleccionado…" />
+            ) : (
+              <>
+                <section className="grid min-w-0 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+                  <ReportPanel
+                    description="La fecha efectiva se toma de la ampliación aprobada cuando existe."
+                    title="Lectura del corte"
+                  >
+                    <ReportFilterSummary filters={filters} />
+                    <div className="mt-4 space-y-2 text-sm text-[var(--foreground-soft)]">
+                      {data.insights.map((insight) => (
+                        <p key={insight}>{insight}</p>
+                      ))}
+                      {!data.insights.length ? (
+                        <p>No hay planes dentro del corte.</p>
+                      ) : null}
+                    </div>
+                  </ReportPanel>
+                  <ReportPanel
+                    description="Cierres registrados dentro de la fecha efectiva del plan."
+                    title="Cumplimiento del corte"
+                  >
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <p className="text-4xl font-semibold text-[var(--foreground)]">
+                          {formatReportPercent(data.summary.compliancePercent)}
+                        </p>
+                        <p className="mt-2 text-sm text-[var(--foreground-soft)]">
+                          Planes concluidos dentro de plazo
+                        </p>
+                      </div>
+                      <CheckCircle2 className="h-10 w-10 text-[var(--success)]" />
+                    </div>
+                  </ReportPanel>
+                </section>
+
+                <section className="grid min-w-0 gap-6 xl:grid-cols-2">
+                  <ReportPanel
+                    description="Clasificación oficial del plan; no se reemplaza por el avance reportado."
+                    title="Distribución por estado del plan de acción"
+                  >
+                    <ReportBarList items={data.charts.progressDistribution} />
+                  </ReportPanel>
+                  <ReportPanel
+                    description="Vigente o vencido según la fecha efectiva del plan."
+                    title="Distribución por estado según plazo"
+                  >
+                    <ReportBarList items={data.charts.deadlineDistribution} />
+                  </ReportPanel>
+                  <ReportPanel
+                    description="Catálogo dinámico de niveles de riesgo."
+                    title="Distribución por riesgo"
+                  >
+                    <ReportDonut items={data.charts.riskDistribution} />
+                  </ReportPanel>
+                  <ReportPanel
+                    description="Indicador independiente del estado y del vencimiento."
+                    title="Reprogramación"
+                  >
+                    <ReportBarList
+                      items={data.charts.reprogrammedDistribution}
+                    />
+                  </ReportPanel>
+                  <ReportPanel
+                    description="Carga de planes por área responsable."
+                    title="Planes por área"
+                  >
+                    <ReportBarList items={data.charts.areaDistribution} />
+                  </ReportPanel>
+                  <ReportPanel
+                    description="Carga de planes por dueño del proceso."
+                    title="Planes por dueño del proceso"
+                  >
+                    <ReportBarList
+                      items={data.charts.processOwnerDistribution}
+                    />
+                  </ReportPanel>
+                  <ReportPanel
+                    description="Carga de planes por responsable de cada área."
+                    title="Planes por responsable de área"
+                  >
+                    <ReportBarList
+                      items={data.charts.areaResponsibleDistribution}
+                    />
+                  </ReportPanel>
+                  <ReportPanel
+                    className="xl:col-span-2"
+                    description="Carga asignada a cada ejecutor."
+                    title="Planes por ejecutor"
+                  >
+                    <ReportBarList items={data.charts.executorDistribution} />
+                  </ReportPanel>
+                </section>
+
+                <ReportPanel
+                  description={`${data.rows.length} plan${data.rows.length === 1 ? "" : "es"} dentro del mismo alcance de los indicadores.`}
+                  title="Planes de acción"
+                >
+                  <ActionPlanTable rows={data.rows} />
+                </ReportPanel>
+
+                <ReportPanel
+                  description="Accesos rápidos a los flujos relacionados."
+                  title="Siguientes acciones"
+                >
+                  <section className="grid gap-3 md:grid-cols-3">
+                    <ReportShortcut
+                      description="Elija columnas y descargue el resultado filtrado."
+                      href={generatorHref}
+                      icon={BarChart3}
+                      label="Generar reporte"
+                    />
+                    <ReportShortcut
+                      description="Revise por separado los planes vigentes y vencidos."
+                      href="/reportes/vigentes-vencidas"
+                      icon={ShieldAlert}
+                      label="Vigentes y vencidas"
+                    />
+                    {canViewAudit ? (
+                      <ReportShortcut
+                        description="Consulte la trazabilidad del ciclo de control."
+                        href="/reportes/auditoria"
+                        icon={FileSearch}
+                        label="Reportes de auditoría"
+                      />
+                    ) : null}
+                  </section>
+                </ReportPanel>
+                <div className="flex items-center justify-between gap-3 border-t border-[var(--border)] pt-2 text-xs text-[var(--muted)]">
+                  <span>
+                    Los filtros se conservan en la URL y se aplican al mismo
+                    tiempo a KPIs, gráficos, filas y exportaciones.
+                  </span>
+                  <Link
+                    className="inline-flex items-center gap-1 font-semibold text-[var(--primary)] hover:underline"
+                    href="/planes-accion"
+                  >
+                    Abrir planes <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
-                <CheckCircle2 className="h-10 w-10 text-[var(--success)]" />
-              </div>
-            </ReportPanel>
+              </>
+            )}
           </section>
-
-          <section className="grid min-w-0 gap-6 xl:grid-cols-2">
-            <ReportPanel
-              description="Clasificación oficial del plan; no se reemplaza por el avance reportado."
-              title="Distribución por estado de avance"
-            >
-              <ReportBarList items={data.charts.progressDistribution} />
-            </ReportPanel>
-            <ReportPanel
-              description="Vigente o vencido según la fecha actual efectiva."
-              title="Distribución por estado de plazo"
-            >
-              <ReportBarList items={data.charts.deadlineDistribution} />
-            </ReportPanel>
-            <ReportPanel
-              description="Catálogo dinámico de niveles de riesgo."
-              title="Distribución por riesgo"
-            >
-              <ReportDonut items={data.charts.riskDistribution} />
-            </ReportPanel>
-            <ReportPanel
-              description="Indicador independiente del estado y del vencimiento."
-              title="Reprogramación"
-            >
-              <ReportBarList items={data.charts.reprogrammedDistribution} />
-            </ReportPanel>
-            <ReportPanel
-              description="Carga de planes por área responsable."
-              title="Planes por área"
-            >
-              <ReportBarList items={data.charts.areaDistribution} />
-            </ReportPanel>
-            <ReportPanel
-              description="Carga de planes por dueño del proceso."
-              title="Planes por dueño del proceso"
-            >
-              <ReportBarList items={data.charts.processOwnerDistribution} />
-            </ReportPanel>
-            <ReportPanel
-              description="Carga de planes por responsable de cada área."
-              title="Planes por responsable de área"
-            >
-              <ReportBarList items={data.charts.areaResponsibleDistribution} />
-            </ReportPanel>
-            <ReportPanel
-              className="xl:col-span-2"
-              description="Carga asignada a cada ejecutor."
-              title="Planes por ejecutor"
-            >
-              <ReportBarList items={data.charts.executorDistribution} />
-            </ReportPanel>
-          </section>
-
-          <ReportPanel
-            description={`${data.rows.length} plan${data.rows.length === 1 ? "" : "es"} dentro del mismo alcance de los indicadores.`}
-            title="Planes de acción"
-          >
-            <ActionPlanTable rows={data.rows} />
-          </ReportPanel>
-
-          <ReportPanel
-            description="Accesos rápidos a los flujos relacionados."
-            title="Siguientes acciones"
-          >
-            <section className="grid gap-3 md:grid-cols-3">
-              <ReportShortcut
-                description="Elija columnas y descargue el resultado filtrado."
-                href="/reportes/generador"
-                icon={BarChart3}
-                label="Generar reporte"
-              />
-              <ReportShortcut
-                description="Revise por separado los planes vigentes y vencidos."
-                href="/reportes/vigentes-vencidas"
-                icon={ShieldAlert}
-                label="Vigentes y vencidas"
-              />
-              {canViewAudit ? (
-                <ReportShortcut
-                  description="Consulte la trazabilidad del ciclo de control."
-                  href="/reportes/auditoria"
-                  icon={FileSearch}
-                  label="Reportes de auditoría"
-                />
-              ) : null}
-            </section>
-          </ReportPanel>
-          <div className="flex items-center justify-between gap-3 border-t border-[var(--border)] pt-2 text-xs text-[var(--muted)]">
-            <span>
-              Los filtros se conservan en la URL y se aplican al mismo tiempo a
-              KPIs, gráficos, filas y exportaciones.
-            </span>
-            <Link
-              className="inline-flex items-center gap-1 font-semibold text-[var(--primary)] hover:underline"
-              href="/planes-accion"
-            >
-              Abrir planes <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
         </>
       )}
     </main>
@@ -465,8 +607,8 @@ function ActionPlanTable({ rows }: { rows: ReportActionPlanRow[] }) {
     );
   }
   return (
-    <div className="-mx-2 overflow-x-auto px-2">
-      <table className="min-w-[1060px] border-collapse text-left text-sm">
+    <div className="report-table-wrapper -mx-2 w-full max-w-full min-w-0 overflow-x-auto px-2">
+      <table className="w-max min-w-[1060px] border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-[var(--border-strong)]">
             {[
@@ -477,12 +619,12 @@ function ActionPlanTable({ rows }: { rows: ReportActionPlanRow[] }) {
               "Dueño del proceso",
               "Ejecutor",
               "Estado de observación",
-              "Estado de avance",
+              "Estado del plan de acción",
               "Avance oficial",
               "Avance reportado",
               "Fecha original",
               "Fecha actual",
-              "Estado de plazo",
+              "Estado según plazo",
               "Reprogramado",
               "Acción",
             ].map((label) => (

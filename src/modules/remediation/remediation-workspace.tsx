@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, ChevronRight, Pencil, Plus, Target } from "lucide-react";
+import { CalendarDays, ChevronRight, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 
+import { UserSearchSelect } from "@/components/ui/user-search-select";
 import { QUERY_KEYS } from "@/lib/constants";
-import { buildObservationUrl } from "@/lib/observation-links";
 import { extensionRequestService } from "@/services/extension-request-service";
 import { observationService } from "@/services/observation-service";
 import { remediationService } from "@/services/remediation-service";
@@ -18,6 +18,7 @@ import {
   type ActionPlanEditorValues,
 } from "./action-plan-editor";
 import { RemediationApprovalPanel } from "./remediation-approval-panel";
+import { formatRemediationDate } from "./presentation";
 
 const emptyForm = {
   description: "",
@@ -62,12 +63,39 @@ export function RemediationWorkspace({
     queryFn: observationService.getObservationOptions,
     queryKey: QUERY_KEYS.observationOptions,
   });
+  const executorOptions = useQuery({
+    enabled: Boolean(showForm && form.observationAreaId),
+    queryFn: () =>
+      remediationService.getActionPlanOptions(
+        `?observationId=${encodeURIComponent(observationId)}&observationAreaId=${encodeURIComponent(form.observationAreaId)}`,
+      ),
+    queryKey: [
+      "action-plan-executor-options",
+      observationId,
+      form.observationAreaId,
+    ],
+  });
   const plans = useQuery({
     queryFn: () =>
       remediationService.listActionPlans(
         `?filter.observationId=${encodeURIComponent(observationId)}&perPage=100`,
       ),
     queryKey: ["action-plans", observationId],
+  });
+  const editingPlan = plans.data?.data.find(
+    (plan) => plan.id === editingPlanId,
+  );
+  const editingExecutorOptions = useQuery({
+    enabled: Boolean(editingPlanId && editingPlan),
+    queryFn: () =>
+      remediationService.getActionPlanOptions(
+        `?observationId=${encodeURIComponent(observationId)}&observationAreaId=${encodeURIComponent(editingPlan!.observationAreaId)}`,
+      ),
+    queryKey: [
+      "action-plan-editor-executor-options",
+      observationId,
+      editingPlan?.observationAreaId,
+    ],
   });
   const activeExtension = useQuery({
     enabled: Boolean(activeExtensionId),
@@ -132,15 +160,29 @@ export function RemediationWorkspace({
   const rows = plans.data?.data ?? [];
 
   useEffect(() => {
-    const targetId = activeExtensionId
-      ? `extension-${activeExtensionId}`
-      : activePlanId
-        ? `action-plan-${activePlanId}`
-        : null;
+    const evidenceHash = window.location.hash === "#avances-evidencias";
+    const targetId = evidenceHash
+      ? "avances-evidencias"
+      : activeExtensionId
+        ? `extension-${activeExtensionId}`
+        : activePlanId
+          ? `action-plan-${activePlanId}`
+          : null;
     if (!targetId) return;
-    document
-      .getElementById(targetId)
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    if (evidenceHash) {
+      const stickyHeader = document.getElementById("observation-detail-sticky");
+      const offset = stickyHeader
+        ? stickyHeader.getBoundingClientRect().height + 16
+        : 16;
+      window.scrollTo({
+        behavior: "smooth",
+        top: window.scrollY + target.getBoundingClientRect().top - offset,
+      });
+      return;
+    }
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [activeExtensionId, activeExtension.data, activePlanId, plans.data]);
 
   return (
@@ -194,6 +236,10 @@ export function RemediationWorkspace({
           className="mt-6 grid gap-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-5 md:grid-cols-2"
           onSubmit={(event) => {
             event.preventDefault();
+            if (!form.observationAreaId || !form.responsibleUserId) {
+              setError("Seleccione un área y un ejecutor válido.");
+              return;
+            }
             create.mutate();
           }}
         >
@@ -220,24 +266,23 @@ export function RemediationWorkspace({
           </label>
           <label className="space-y-2 text-sm font-semibold">
             Ejecutor
-            <select
-              className="nibol-field"
-              required
-              value={form.responsibleUserId}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  responsibleUserId: event.target.value,
-                }))
+            <UserSearchSelect
+              id="action-plan-create-responsible"
+              onChange={(responsibleUserId) =>
+                setForm((current) => ({ ...current, responsibleUserId }))
               }
-            >
-              <option value="">Seleccione</option>
-              {options.data?.users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name} · {user.jobTitle ?? user.email}
-                </option>
-              ))}
-            </select>
+              placeholder={
+                executorOptions.isLoading
+                  ? "Cargando ejecutores…"
+                  : "Buscar ejecutor por nombre o correo"
+              }
+              users={executorOptions.data?.executorCandidates ?? []}
+              value={form.responsibleUserId}
+            />
+            <span className="block text-xs font-normal text-stone-500">
+              Solo se muestran usuarios activos con rol Ejecutor para el área
+              seleccionada.
+            </span>
           </label>
           <label className="space-y-2 text-sm font-semibold md:col-span-2">
             Descripción
@@ -333,7 +378,7 @@ export function RemediationWorkspace({
                 />
               ) : null}
               {areaPlans.length ? (
-                <div className="grid gap-3 lg:grid-cols-2">
+                <div className="space-y-3">
                   {areaPlans.map((plan) =>
                     editingPlanId === plan.id ? (
                       <ActionPlanEditor
@@ -356,52 +401,94 @@ export function RemediationWorkspace({
                         onSubmit={(input) =>
                           update.mutate({ id: plan.id, input })
                         }
-                        users={options.data?.users ?? []}
+                        users={[
+                          ...(editingExecutorOptions.data?.executorCandidates ??
+                            []),
+                          ...(editingExecutorOptions.data?.executorCandidates.some(
+                            (user) => user.id === plan.responsibleUser.id,
+                          )
+                            ? []
+                            : [plan.responsibleUser]),
+                        ]}
                       />
                     ) : (
                       <div
-                        className={`relative rounded-2xl border bg-white transition hover:border-amber-300 hover:shadow-sm ${activePlanId === plan.id || activeExtension.data?.actionPlan?.id === plan.id ? "border-[var(--primary)] bg-[var(--primary-soft)] ring-2 ring-[color:color-mix(in_srgb,var(--primary)_20%,transparent)]" : "border-stone-200"}`}
+                        className={`relative border bg-white transition hover:border-amber-300 hover:shadow-sm ${activePlanId === plan.id || activeExtension.data?.actionPlan?.id === plan.id ? "border-[var(--primary)] bg-[var(--primary-soft)] ring-2 ring-[color:color-mix(in_srgb,var(--primary)_20%,transparent)]" : "border-stone-200"}`}
                         id={`action-plan-${plan.id}`}
                         key={plan.id}
                       >
                         <Link
-                          className="group block p-5 pr-14"
-                          href={buildObservationUrl({
-                            observationId,
-                            planId: plan.id,
-                            tab: "plans",
-                          })}
+                          className="group grid gap-5 p-5 pr-14 lg:grid-cols-[minmax(0,1.6fr)_minmax(11rem,0.8fr)_minmax(12rem,0.9fr)_minmax(12rem,0.9fr)] lg:items-center"
+                          href={`/planes-accion/${plan.id}`}
                         >
-                          <div className="flex items-start justify-between gap-4">
-                            <div>
-                              <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">
-                                {plan.statusLabel}
-                              </p>
-                              <h5 className="mt-2 font-semibold text-stone-950">
-                                Plan de acción
-                              </h5>
-                              <p className="mt-2 line-clamp-2 text-sm leading-6 text-stone-600">
-                                {plan.description}
-                              </p>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold tracking-[0.16em] text-amber-700 uppercase">
+                              Plan de acción
+                            </p>
+                            <h5 className="mt-2 line-clamp-2 font-semibold text-stone-950">
+                              {plan.description}
+                            </h5>
+                            <p className="mt-2 text-xs text-stone-500">
+                              Área: {area.area.name}
+                            </p>
+                          </div>
+                          <div className="text-sm">
+                            <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
+                              Ejecutor
+                            </p>
+                            <p className="mt-2 font-semibold text-stone-950">
+                              {plan.responsibleUser.name}
+                            </p>
+                            <p className="mt-1 text-xs text-stone-500">
+                              {plan.progressEvaluationCount} evaluaciones ·{" "}
+                              {plan.evidenceCount} evidencias
+                            </p>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between gap-3 text-xs">
+                              <span className="font-semibold text-stone-500">
+                                Avance oficial
+                              </span>
+                              <span className="font-semibold text-stone-950">
+                                {plan.progressPercent}%
+                              </span>
                             </div>
-                            <ChevronRight className="h-5 w-5 text-stone-400 transition group-hover:translate-x-1 group-hover:text-amber-700" />
+                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stone-100">
+                              <div
+                                className="h-full bg-stone-950"
+                                style={{ width: `${plan.progressPercent}%` }}
+                              />
+                            </div>
                           </div>
-                          <div className="mt-4 flex flex-wrap gap-4 text-xs text-stone-600">
-                            <span className="flex items-center gap-1">
-                              <Target className="h-3.5 w-3.5" />
-                              {plan.progressPercent}%
-                            </span>
-                            <span className="flex items-center gap-1">
+                          <div className="text-sm lg:border-l lg:border-stone-200 lg:pl-5">
+                            <div className="flex items-center gap-1 text-xs text-stone-500">
                               <CalendarDays className="h-3.5 w-3.5" />
-                              {plan.currentDueDate.slice(0, 10)}
+                              Fecha efectiva
+                            </div>
+                            <p className="mt-2 font-semibold text-stone-950">
+                              {formatRemediationDate(plan.effectiveDueDate)}
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                              <span className="nibol-badge">
+                                {plan.statusLabel}
+                              </span>
+                              <span
+                                className={`nibol-badge ${plan.deadlineStatus === "VENCIDO" ? "border-rose-200 bg-rose-50 text-rose-800" : ""}`}
+                              >
+                                {plan.deadlineStatus === "VENCIDO"
+                                  ? "Vencido"
+                                  : "Vigente"}
+                              </span>
+                              {plan.reprogrammed ? (
+                                <span className="nibol-badge">
+                                  Reprogramado
+                                </span>
+                              ) : null}
+                            </div>
+                            <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-amber-800">
+                              Ver plan de acción
+                              <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" />
                             </span>
-                            <span>{plan.responsibleUser.name}</span>
-                          </div>
-                          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-100">
-                            <div
-                              className="h-full bg-amber-600"
-                              style={{ width: `${plan.progressPercent}%` }}
-                            />
                           </div>
                         </Link>
                         {activeExtension.data?.actionPlan?.id === plan.id ? (
@@ -429,7 +516,7 @@ export function RemediationWorkspace({
                         {canEditActionPlans ? (
                           <button
                             aria-label="Editar plan de acción"
-                            className="absolute top-4 right-4 rounded-lg p-2 text-stone-500 transition hover:bg-amber-50 hover:text-amber-800"
+                            className="absolute top-4 right-4 flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition hover:bg-amber-50 hover:text-amber-800"
                             onClick={() => {
                               setError(null);
                               setEditingPlanId(plan.id);

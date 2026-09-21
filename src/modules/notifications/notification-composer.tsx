@@ -121,13 +121,13 @@ export function NotificationComposer() {
             ) : null}
           </label>
 
-          <div className="grid gap-5 md:grid-cols-[1fr_12rem]">
+          <div className="grid gap-5">
             <label className="space-y-2">
               <span className="text-sm font-semibold text-stone-800">
-                Titulo
+                Título
               </span>
               <input
-                className="nibol-field"
+                className="nibol-field h-12 px-4 text-base"
                 placeholder="Cambio de rol"
                 {...form.register("title")}
                 disabled={createMutation.isPending}

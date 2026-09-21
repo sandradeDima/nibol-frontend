@@ -169,6 +169,7 @@ type ReportFilterBarProps = {
   compact?: boolean;
   dashboardOnly?: boolean;
   defaultCutoffDate?: string;
+  description?: string;
   draft: ReportFilters;
   onApply: () => void;
   onChange: (
@@ -177,7 +178,9 @@ type ReportFilterBarProps = {
   ) => void;
   onReset: () => void;
   options?: ReportOptions;
+  submitLabel?: string;
   showProgress?: boolean;
+  showActiveOnly?: boolean;
 };
 
 type DashboardFilterFieldsProps = {
@@ -222,22 +225,45 @@ function DashboardFilterFields({
           Indicadores calculados con corte a {formatReportDate(cutoffDate)}.
         </span>
       </label>
-      <label className="space-y-2">
+      <label className="min-w-0 space-y-2">
         <span className="report-field-label">Estado de observación</span>
-        <select
-          className="nibol-field h-11 text-sm"
-          onChange={(event) =>
-            updateFilter("statusId", event.target.value || undefined)
+        <SearchableSelect
+          multiple
+          id="dashboard-observation-status"
+          onChange={(value) =>
+            updateFilter(
+              "observationStatusIds",
+              value.length ? value : undefined,
+            )
           }
-          value={draft.statusId ?? ""}
-        >
-          <option value="">Todos los estados</option>
-          {options?.observationStatuses.map((status) => (
-            <option key={status.id} value={status.id}>
-              {status.name}
-            </option>
-          ))}
-        </select>
+          options={(options?.observationStatuses ?? []).map((status) => ({
+            id: status.id,
+            label: status.name,
+            search: status.key,
+          }))}
+          placeholder="Todos los estados"
+          showSelectionActions
+          showSelectedValues={false}
+          value={draft.observationStatusIds ?? []}
+        />
+      </label>
+      <label className="min-w-0 space-y-2">
+        <span className="report-field-label">Estado según plazo</span>
+        <SearchableSelect
+          multiple
+          id="dashboard-deadline-status"
+          onChange={(value) =>
+            updateFilter("deadlineStatuses", value.length ? value : undefined)
+          }
+          options={(options?.deadlineStatuses ?? []).map((status) => ({
+            id: status.key,
+            label: status.label,
+          }))}
+          placeholder="Todos los plazos"
+          showSelectionActions
+          showSelectedValues={false}
+          value={draft.deadlineStatuses ?? []}
+        />
       </label>
       {capabilities.area ? (
         <label className="space-y-2">
@@ -335,12 +361,15 @@ export function ReportFilterBar({
   compact = false,
   dashboardOnly = false,
   defaultCutoffDate,
+  description = "El mismo alcance alimenta los resultados y las exportaciones.",
   draft,
   onApply,
   onChange,
   onReset,
   options,
+  submitLabel = "Aplicar filtros",
   showProgress = false,
+  showActiveOnly = false,
 }: ReportFilterBarProps) {
   const capabilities =
     options?.filterCapabilities ??
@@ -518,6 +547,7 @@ export function ReportFilterBar({
     <form
       className={cn(
         "nibol-panel space-y-4 p-4 sm:p-5",
+        !dashboardOnly && "min-w-0",
         compact && "space-y-3 p-3 sm:p-4",
       )}
       onSubmit={submit}
@@ -534,7 +564,7 @@ export function ReportFilterBar({
             <p className="text-xs leading-5 text-[var(--muted)]">
               {compact
                 ? "El corte seleccionado actualiza KPIs, gráficos y exportaciones."
-                : "El mismo alcance alimenta los indicadores, gráficos, filas y exportaciones."}
+                : description}
             </p>
           </div>
         </div>
@@ -580,10 +610,10 @@ export function ReportFilterBar({
         className={cn(
           "grid min-w-0 gap-3",
           dashboardOnly
-            ? "sm:grid-cols-2 lg:grid-cols-6"
+            ? "sm:grid-cols-2 lg:grid-cols-6 2xl:grid-cols-7"
             : compact
-              ? "sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5"
-              : "md:grid-cols-2 xl:grid-cols-4",
+              ? "sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 [&>label]:min-w-0"
+              : "md:grid-cols-2 xl:grid-cols-4 [&>label]:min-w-0",
         )}
       >
         {dashboardOnly ? (
@@ -698,7 +728,9 @@ export function ReportFilterBar({
               </select>
             </label>
             <label className="space-y-2">
-              <span className="report-field-label">Estado de avance</span>
+              <span className="report-field-label">
+                Estado del plan de acción
+              </span>
               <select
                 className="nibol-field h-11 text-sm"
                 onChange={(event) =>
@@ -810,7 +842,7 @@ export function ReportFilterBar({
               </label>
             ) : null}
             <label className="space-y-2">
-              <span className="report-field-label">Estado de plazo</span>
+              <span className="report-field-label">Estado según plazo</span>
               <select
                 className="nibol-field h-11 text-sm"
                 onChange={(event) =>
@@ -919,6 +951,22 @@ export function ReportFilterBar({
               />
               Solo próximos a vencer
             </label>
+            {showActiveOnly ? (
+              <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-[var(--foreground-soft)]">
+                <input
+                  checked={draft.activeOnly === true}
+                  className="h-4 w-4 accent-[var(--primary)]"
+                  onChange={(event) =>
+                    onChange(
+                      "activeOnly",
+                      event.target.checked ? true : undefined,
+                    )
+                  }
+                  type="checkbox"
+                />
+                Solo pendientes
+              </label>
+            ) : null}
             <span className="text-xs leading-6 text-[var(--muted)]">
               Vencido se calcula con la fecha efectiva aprobada.
             </span>
@@ -937,7 +985,7 @@ export function ReportFilterBar({
               type="submit"
             >
               <ListFilter className="h-4 w-4" />
-              Aplicar filtros
+              {submitLabel}
             </button>
           </div>
         </div>
@@ -1009,17 +1057,21 @@ const KPI_ICONS: Record<string, ComponentType<{ className?: string }>> = {
 };
 
 export function ReportKpi({
+  active = false,
   description,
   href,
   icon = "total",
   label,
+  onClick,
   tone = "default",
   value,
 }: {
+  active?: boolean;
   description: string;
   href?: string;
   icon?: keyof typeof KPI_ICONS;
   label: string;
+  onClick?: () => void;
   tone?: "accent" | "danger" | "default";
   value: string;
 }) {
@@ -1033,6 +1085,12 @@ export function ReportKpi({
           : tone === "danger"
             ? "border-[color:color-mix(in_srgb,var(--accent)_28%,white)] bg-[var(--surface)]"
             : "border-[var(--border)] bg-[var(--surface)]",
+        active &&
+          (tone === "accent"
+            ? "ring-2 ring-white/70 ring-offset-2"
+            : "border-[var(--primary)] bg-[var(--primary-soft)] ring-1 ring-[var(--primary)]"),
+        onClick &&
+          "cursor-pointer hover:-translate-y-0.5 hover:shadow-[var(--shadow-panel)]",
       )}
     >
       <div className="flex items-start justify-between gap-4">
@@ -1088,7 +1146,16 @@ export function ReportKpi({
       ) : null}
     </article>
   );
-  return href ? (
+  return onClick ? (
+    <button
+      aria-pressed={active}
+      className="block h-full w-full appearance-none border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2"
+      onClick={onClick}
+      type="button"
+    >
+      {body}
+    </button>
+  ) : href ? (
     <Link className="block h-full" href={href}>
       {body}
     </Link>
@@ -1098,34 +1165,69 @@ export function ReportKpi({
 }
 
 export const REPORT_CHART_COLORS = {
-  CONCLUDED: "#16A34A",
+  CONCLUDED: "var(--success)",
   CON_AVANCE: "#F59E0B",
-  INICIADO: "#0EA5E9",
-  NOT_STARTED: "#FACC15",
-  STARTED: "#0EA5E9",
+  INICIADO: "var(--info)",
+  NOT_STARTED: "var(--muted)",
+  STARTED: "var(--info)",
   WITH_PROGRESS: "#F59E0B",
-  VENCIDO: "#D92D20",
+  VIGENTE: "var(--success)",
+  VENCIDO: "var(--accent)",
   SI: "#F59E0B",
-  NO: "#64748B",
+  NO: "var(--muted)",
+  CRITICAL: "#991B1B",
+  HIGH: "var(--accent)",
+  MEDIUM: "#FACC15",
+  LOW: "#16A34A",
 } as const;
 
-export const getReportChartColor = (
-  item: ReportChartItem,
-  index: number,
-): string =>
-  item.colorToken
-    ? getRiskLevelColor(item.colorToken)
-    : (REPORT_CHART_COLORS[item.key as keyof typeof REPORT_CHART_COLORS] ??
-      ["#0B7285", "#2563EB", "#7C3AED", "#64748B", "#B45309"][index % 5]!);
+export const getReportChartColor = (item: ReportChartItem): string => {
+  const key = item.key.trim().toUpperCase();
+  const label = item.label.trim().toUpperCase();
+  const riskToken = item.colorToken?.trim().toUpperCase();
+
+  if (riskToken && !riskToken.startsWith("#")) {
+    if (riskToken.includes("CRIT")) return REPORT_CHART_COLORS.CRITICAL;
+    if (riskToken === "VIGENTE") return REPORT_CHART_COLORS.VIGENTE;
+    if (riskToken === "VENCIDO") return REPORT_CHART_COLORS.VENCIDO;
+    if (riskToken === "SI") return REPORT_CHART_COLORS.SI;
+    if (riskToken === "NO") return REPORT_CHART_COLORS.NO;
+    if (riskToken === "HIGH" || riskToken === "ALTO")
+      return REPORT_CHART_COLORS.HIGH;
+    if (riskToken === "MEDIUM" || riskToken === "MEDIO")
+      return REPORT_CHART_COLORS.MEDIUM;
+    if (riskToken === "LOW" || riskToken === "BAJO")
+      return REPORT_CHART_COLORS.LOW;
+  }
+
+  if (item.colorToken) return getRiskLevelColor(item.colorToken);
+
+  if (key in REPORT_CHART_COLORS) {
+    return REPORT_CHART_COLORS[key as keyof typeof REPORT_CHART_COLORS];
+  }
+
+  if (key.includes("CRIT") || label.includes("CRIT"))
+    return REPORT_CHART_COLORS.CRITICAL;
+  if (key === "HIGH" || key === "ALTO" || label === "ALTO")
+    return REPORT_CHART_COLORS.HIGH;
+  if (key === "MEDIUM" || key === "MEDIO" || label === "MEDIO")
+    return REPORT_CHART_COLORS.MEDIUM;
+  if (key === "LOW" || key === "BAJO" || label === "BAJO")
+    return REPORT_CHART_COLORS.LOW;
+
+  return "var(--primary)";
+};
 
 export function ReportBarList({
   items,
+  showPercentage = false,
   suffix,
 }: {
   items: ReportChartItem[];
+  showPercentage?: boolean;
   suffix?: string;
 }) {
-  const max = Math.max(...items.map((item) => item.value), 0) || 1;
+  const max = Math.max(...items.map((item) => Math.max(item.value, 0)), 0);
   if (items.length === 0) {
     return (
       <div className="border border-dashed border-[var(--border)] bg-[var(--surface-soft)] px-4 py-8 text-center text-sm text-[var(--foreground-soft)]">
@@ -1135,24 +1237,28 @@ export function ReportBarList({
   }
   return (
     <div className="space-y-3">
-      {items.map((item, index) => {
+      {items.map((item) => {
+        const value = Math.max(item.value, 0);
+        const percentage = max > 0 && value > 0 ? (value / max) * 100 : 0;
         const row = (
-          <div className="space-y-2">
+          <div className="space-y-2" title={item.tooltip ?? item.label}>
             <div className="flex items-center justify-between gap-3">
               <span className="min-w-0 truncate text-sm font-medium text-[var(--foreground)]">
                 {item.label}
               </span>
               <span className="shrink-0 text-sm font-semibold text-[var(--foreground)]">
-                {formatReportNumber(item.value)}
+                {formatReportNumber(value)}
                 {suffix ?? ""}
+                {showPercentage ? ` · ${formatReportPercent(percentage)}` : ""}
               </span>
             </div>
-            <div className="h-2 overflow-hidden bg-[var(--surface-muted)]">
+            <div className="h-2 w-full">
               <div
-                className="h-full transition-[width]"
+                className="h-full rounded-[1px] transition-[width] duration-300 ease-out motion-reduce:transition-none"
                 style={{
-                  background: getReportChartColor(item, index),
-                  width: `${Math.max(6, (item.value / max) * 100)}%`,
+                  background: getReportChartColor(item),
+                  minWidth: value > 0 ? "2px" : 0,
+                  width: `${percentage}%`,
                 }}
               />
             </div>
@@ -1184,10 +1290,10 @@ export function ReportDonut({ items }: { items: ReportChartItem[] }) {
     );
   }
   let cursor = 0;
-  const segments = items.map((item, index) => {
+  const segments = items.map((item) => {
     const start = cursor;
     cursor += total === 0 ? 0 : (item.value / total) * 100;
-    return `${getReportChartColor(item, index)} ${start}% ${cursor}%`;
+    return `${getReportChartColor(item)} ${start}% ${cursor}%`;
   });
   return (
     <div className="grid gap-5 sm:grid-cols-[11rem_1fr] sm:items-center">
@@ -1210,14 +1316,14 @@ export function ReportDonut({ items }: { items: ReportChartItem[] }) {
         </div>
       </div>
       <div className="space-y-2">
-        {items.map((item, index) => {
+        {items.map((item) => {
           const row = (
             <div className="flex items-center justify-between gap-3 border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2.5">
               <span className="flex min-w-0 items-center gap-2 text-sm text-[var(--foreground)]">
                 <span
                   className="h-2.5 w-2.5 shrink-0"
                   style={{
-                    background: getReportChartColor(item, index),
+                    background: getReportChartColor(item),
                   }}
                 />
                 {item.label}
@@ -1273,7 +1379,7 @@ export function ReportTrend({
           Registradas
         </span>
         <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-5 bg-slate-400" />
+          <span className="h-2.5 w-5 bg-[var(--success)]" />
           Cerradas
         </span>
       </div>
@@ -1284,13 +1390,15 @@ export function ReportTrend({
               <div
                 className="w-3 bg-[var(--primary)] sm:w-5"
                 style={{
-                  height: `${Math.max(7, (point.created / max) * 100)}%`,
+                  height: `${point.created > 0 ? (point.created / max) * 100 : 0}%`,
+                  minHeight: point.created > 0 ? "2px" : 0,
                 }}
               />
               <div
-                className="w-3 bg-slate-400 sm:w-5"
+                className="w-3 bg-[var(--success)] sm:w-5"
                 style={{
-                  height: `${Math.max(7, (point.closed / max) * 100)}%`,
+                  height: `${point.closed > 0 ? (point.closed / max) * 100 : 0}%`,
+                  minHeight: point.closed > 0 ? "2px" : 0,
                 }}
               />
             </div>
@@ -1340,13 +1448,22 @@ export function ReportFilterSummary({ filters }: { filters: ReportFilters }) {
     ["Riesgo", filters.riskLevelId ? "Nivel seleccionado" : "Todos"],
     [
       "Estado de observación",
-      filters.statusId ? "Estado seleccionado" : "Todos",
+      filters.observationStatusIds?.length
+        ? `${filters.observationStatusIds.length} seleccionados`
+        : filters.statusId
+          ? "Estado seleccionado"
+          : "Todos",
     ],
     [
-      "Estado de avance",
+      "Estado del plan de acción",
       filters.progressStatus ? progressLabels[filters.progressStatus] : "Todos",
     ],
-    ["Estado de plazo", filters.deadlineStatus ?? "Todos"],
+    [
+      "Estado según plazo",
+      filters.deadlineStatuses?.length
+        ? filters.deadlineStatuses.join(", ")
+        : (filters.deadlineStatus ?? "Todos"),
+    ],
     [
       "Reprogramado",
       filters.reprogrammed === undefined
@@ -1355,19 +1472,20 @@ export function ReportFilterSummary({ filters }: { filters: ReportFilters }) {
           ? "Sí"
           : "No",
     ],
+    ["Atención", filters.activeOnly ? "Solo pendientes" : "Todos"],
     ["Ejecutor", filters.executorId ? "Ejecutor seleccionado" : "Todos"],
   ];
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
+    <div className="grid min-w-0 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-2">
       {entries.map(([label, value]) => (
         <div
-          className="border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2.5"
+          className="min-w-0 border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2.5"
           key={label}
         >
           <p className="text-[10px] font-semibold tracking-[0.15em] text-[var(--muted)] uppercase">
             {label}
           </p>
-          <p className="mt-1 text-sm font-semibold text-[var(--foreground)]">
+          <p className="mt-1 text-sm font-semibold break-words text-[var(--foreground)]">
             {value}
           </p>
         </div>
@@ -1391,8 +1509,8 @@ export function ReportDataTable({
     );
   }
   return (
-    <div className="-mx-2 overflow-x-auto px-2">
-      <table className="min-w-full border-collapse text-left text-sm">
+    <div className="report-table-wrapper -mx-2 w-full max-w-full min-w-0 overflow-x-auto px-2">
+      <table className="w-max min-w-full border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-[var(--border-strong)]">
             {columns.map((column) => (

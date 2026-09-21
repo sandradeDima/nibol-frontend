@@ -74,6 +74,7 @@ export interface ObservationTableRow {
     title: string;
   };
   currentDueDate: string;
+  deadlineStatus: "VIGENTE" | "VENCIDO" | "NO_APLICA";
   displayCode: string;
   id: string;
   isOverdue: boolean;
@@ -85,6 +86,8 @@ export interface ObservationTableRow {
   riskLevel: ObservationRiskLevel;
   sentAt: string | null;
   status: ObservationStatus;
+  completedTaskCount: number;
+  taskCount: number;
   title: string;
   updatedAt: string;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, ChevronRight, Pencil } from "lucide-react";
@@ -13,8 +13,6 @@ import type {
   DataTableFilterValue,
 } from "@/components/data-table/types";
 import { SearchField } from "@/components/ui/search-field";
-import { QUERY_KEYS } from "@/lib/constants";
-import { observationService } from "@/services/observation-service";
 import { remediationService } from "@/services/remediation-service";
 import { cn } from "@/utils";
 
@@ -30,23 +28,70 @@ const ACTION_PLAN_FILTER_QUERY_KEYS = [
   "filter.dueDateFrom",
   "filter.dueDateTo",
   "filter.observationId",
-  "filter.overdue",
-  "filter.progressStatus",
+  "filter.processOwnerUserId",
   "filter.reportNumber",
+  "filter.riskLevelId",
   "filter.responsibleUserId",
   "filter.status",
 ] as const;
 
-export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
+const DEFAULT_HIDDEN_FILTERS = [
+  "areaId",
+  "processOwnerUserId",
+  "areaResponsibleUserId",
+];
+
+const getFilterValues = (searchParams: URLSearchParams, id: string) =>
+  searchParams.get(`filter.${id}`)?.split(",").filter(Boolean) ?? [];
+
+const hiddenFiltersByRole: Record<string, string[]> = {
+  AREA_RESPONSIBLE: ["areaId", "processOwnerUserId", "areaResponsibleUserId"],
+  AUDITOR: [],
+  AUDIT_CHIEF: [],
+  EXECUTOR: ["areaId", "processOwnerUserId", "areaResponsibleUserId"],
+  PROCESS_OWNER: ["areaId", "processOwnerUserId"],
+  SYSTEM_ADMIN: [],
+};
+
+export function RemediationPlanTable({
+  canEdit,
+  roleCode,
+}: {
+  canEdit: boolean;
+  roleCode: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
-  const optionsQuery = useQuery({
-    queryFn: observationService.getObservationOptions,
-    queryKey: QUERY_KEYS.observationOptions,
+  const hiddenFilters =
+    hiddenFiltersByRole[roleCode ?? "EXECUTOR"] ?? DEFAULT_HIDDEN_FILTERS;
+  const visibleFilterIds = useMemo(
+    () =>
+      ACTION_PLAN_FILTER_QUERY_KEYS.map((key) =>
+        key.replace("filter.", ""),
+      ).filter((id) => !hiddenFilters.includes(id)),
+    [hiddenFilters],
+  );
+  const optionParams = useMemo(() => {
+    const next = new URLSearchParams();
+    for (const id of [
+      "areaId",
+      "areaResponsibleUserId",
+      "processOwnerUserId",
+    ]) {
+      const values = getFilterValues(searchParams, id);
+      if (values.length && visibleFilterIds.includes(id))
+        next.set(id, values.join(","));
+    }
+    return next.toString() ? `?${next.toString()}` : "";
+  }, [searchParams, visibleFilterIds]);
+  const planOptionsQuery = useQuery({
+    queryFn: () => remediationService.getActionPlanOptions(optionParams),
+    queryKey: ["action-plan-options", optionParams],
     staleTime: 60_000,
   });
+  const planOptions = planOptionsQuery.data;
   const filterDefinitions = useMemo<DataTableFilterConfig[]>(
     () => [
       {
@@ -56,38 +101,20 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
         type: "text",
       },
       {
-        id: "areaId",
-        label: "Área",
-        options: (optionsQuery.data?.areas ?? []).map((area) => ({
-          label: area.name,
-          value: area.id,
-        })),
-        placeholder: "Todas las áreas",
-        type: "select",
-      },
-      {
-        id: "areaResponsibleUserId",
-        label: "Responsable de área",
-        options: (optionsQuery.data?.users ?? []).map((user) => ({
-          label: user.name,
-          value: user.id,
-        })),
-        placeholder: "Todos los responsables",
-        type: "select",
-      },
-      {
-        id: "responsibleUserId",
-        label: "Ejecutor",
-        options: (optionsQuery.data?.users ?? []).map((user) => ({
-          label: user.name,
-          value: user.id,
-        })),
-        placeholder: "Todos los ejecutores",
+        id: "status",
+        label: "Estado del plan",
+        options: [
+          { label: "No iniciado", value: "NOT_STARTED" },
+          { label: "Iniciado", value: "STARTED" },
+          { label: "Con avance", value: "WITH_PROGRESS" },
+          { label: "Concluido", value: "CONCLUDED" },
+        ],
+        placeholder: "Todos los estados",
         type: "select",
       },
       {
         id: "deadlineStatus",
-        label: "Estado según plazo",
+        label: "Estado de plazo",
         options: [
           { label: "Vigente", value: "VIGENTE" },
           { label: "Vencido", value: "VENCIDO" },
@@ -97,26 +124,81 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
         type: "select",
       },
       {
-        id: "progressStatus",
-        label: "Estado según avance",
-        options: [
-          { label: "No iniciado", value: "NOT_STARTED" },
-          { label: "Iniciado", value: "STARTED" },
-          { label: "Con avance", value: "WITH_PROGRESS" },
-          { label: "Concluido", value: "CONCLUDED" },
-        ],
-        placeholder: "Todos los avances",
+        id: "riskLevelId",
+        label: "Nivel de riesgo",
+        options: (planOptions?.riskLevels ?? []).map((level) => ({
+          label: level.name,
+          value: level.id,
+        })),
+        placeholder: "Todos los niveles",
         type: "select",
       },
+      {
+        id: "areaId",
+        label: "Área",
+        options: (planOptions?.areas ?? []).map((area) => ({
+          label: area.name,
+          value: area.id,
+        })),
+        placeholder: "Todas las áreas",
+        type: "select",
+      },
+      {
+        id: "areaResponsibleUserId",
+        label: "Responsable de área",
+        options: (planOptions?.areaResponsibles ?? []).map((user) => ({
+          label: user.name,
+          value: user.id,
+        })),
+        placeholder: "Todos los responsables",
+        type: "select",
+      },
+      {
+        id: "processOwnerUserId",
+        label: "Dueño de proceso",
+        options: (planOptions?.processOwners ?? []).map((user) => ({
+          label: user.name,
+          value: user.id,
+        })),
+        placeholder: "Todos los dueños",
+        type: "select",
+      },
+      {
+        id: "responsibleUserId",
+        label: "Ejecutor",
+        options: (planOptions?.executors ?? []).map((user) => ({
+          label: user.name,
+          value: user.id,
+        })),
+        placeholder: "Todos los ejecutores",
+        type: "select",
+      },
+      {
+        id: "dueDateFrom",
+        label: "Vencimiento desde",
+        type: "date",
+      },
+      {
+        id: "dueDateTo",
+        label: "Vencimiento hasta",
+        type: "date",
+      },
     ],
-    [optionsQuery.data],
+    [planOptions],
+  );
+  const visibleFilterDefinitions = useMemo(
+    () =>
+      filterDefinitions.filter((filter) =>
+        visibleFilterIds.includes(filter.id),
+      ),
+    [filterDefinitions, visibleFilterIds],
   );
   const filterValues = useMemo<
     Record<string, DataTableFilterValue | undefined>
   >(
     () =>
       Object.fromEntries(
-        filterDefinitions.map((filter) => [
+        visibleFilterDefinitions.map((filter) => [
           filter.id,
           (() => {
             const value = searchParams.get(
@@ -128,16 +210,17 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
           })(),
         ]),
       ),
-    [filterDefinitions, searchParams],
+    [searchParams, visibleFilterDefinitions],
   );
   const filterQuery = useMemo(() => {
     const next = new URLSearchParams();
-    ACTION_PLAN_FILTER_QUERY_KEYS.forEach((key) => {
+    visibleFilterDefinitions.forEach((filter) => {
+      const key = `filter.${filter.queryKey ?? filter.id}`;
       const value = searchParams.get(key);
       if (value) next.set(key, value);
     });
     return next.toString();
-  }, [searchParams]);
+  }, [searchParams, visibleFilterDefinitions]);
   const params = useMemo(() => {
     const next = new URLSearchParams(filterQuery);
     next.set("page", "1");
@@ -150,7 +233,7 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
   }, [filterQuery, search]);
   const activeFilters = useMemo(
     () =>
-      filterDefinitions
+      visibleFilterDefinitions
         .map((filter) => {
           const value = searchParams.get(
             `filter.${filter.queryKey ?? filter.id}`,
@@ -165,7 +248,7 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
           return `${filter.label}: ${labels.join(", ")}`;
         })
         .filter((value): value is string => Boolean(value)),
-    [filterDefinitions, searchParams],
+    [searchParams, visibleFilterDefinitions],
   );
   const replaceFilters = (next: URLSearchParams) => {
     next.delete("page");
@@ -174,6 +257,46 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
       { scroll: false },
     );
   };
+  useEffect(() => {
+    if (!planOptions) return;
+    const next = new URLSearchParams(searchParams.toString());
+    let changed = false;
+    const clearInvalid = (id: string, validIds: string[]) => {
+      const key = `filter.${id}`;
+      const current = getFilterValues(searchParams, id);
+      const valid = current.filter((value) => validIds.includes(value));
+      if (valid.length === current.length) return;
+      if (valid.length) next.set(key, valid.join(","));
+      else next.delete(key);
+      changed = true;
+    };
+    hiddenFilters.forEach((id) => {
+      const key = `filter.${id}`;
+      if (next.has(key)) {
+        next.delete(key);
+        changed = true;
+      }
+    });
+    clearInvalid(
+      "processOwnerUserId",
+      planOptions.processOwners.map((user) => user.id),
+    );
+    clearInvalid(
+      "areaResponsibleUserId",
+      planOptions.areaResponsibles.map((user) => user.id),
+    );
+    clearInvalid(
+      "responsibleUserId",
+      planOptions.executors.map((user) => user.id),
+    );
+    if (changed) {
+      next.delete("page");
+      router.replace(
+        `${pathname}${next.toString() ? `?${next.toString()}` : ""}`,
+        { scroll: false },
+      );
+    }
+  }, [hiddenFilters, pathname, planOptions, router, searchParams]);
   const updateFilter = (
     filterId: string,
     value: DataTableFilterValue | undefined,
@@ -246,7 +369,7 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
         </div>
       ) : null}
       <DataTableFilters
-        filters={filterDefinitions}
+        filters={visibleFilterDefinitions}
         onChange={updateFilter}
         onReset={resetFilters}
         searchableSelects
@@ -281,7 +404,7 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
                 <div className="mt-2 flex items-center gap-2">
                   <div className="h-1.5 w-28 rounded-full bg-stone-200">
                     <div
-                      className="h-full rounded-full bg-amber-600"
+                      className="h-full rounded-full bg-stone-950"
                       style={{ width: `${plan.progressPercent}%` }}
                     />
                   </div>
@@ -324,12 +447,15 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
                   </p>
                 ) : null}
               </div>
-              <ChevronRight className="h-5 w-5 text-stone-400" />
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-800">
+                Ver detalle
+                <ChevronRight className="h-4 w-4 text-stone-400" />
+              </span>
             </Link>
             {canEdit ? (
               <Link
                 aria-label="Editar plan de acción"
-                className="absolute top-5 right-12 rounded-lg p-2 text-stone-500 transition hover:bg-amber-100 hover:text-amber-800"
+                className="absolute top-5 right-12 flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition hover:bg-amber-100 hover:text-amber-800"
                 href={`/planes-accion/${plan.id}?edit=1`}
                 title="Editar plan de acción"
               >

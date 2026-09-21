@@ -71,6 +71,22 @@ export interface ActionPlanDetail {
   updatedAt: string;
 }
 
+export interface ActionPlanOptionUser {
+  email: string;
+  id: string;
+  jobTitle: string | null;
+  name: string;
+}
+
+export interface ActionPlanFilterOptions {
+  areaResponsibles: ActionPlanOptionUser[];
+  areas: Array<{ id: string; name: string }>;
+  executorCandidates: ActionPlanOptionUser[];
+  executors: ActionPlanOptionUser[];
+  processOwners: ActionPlanOptionUser[];
+  riskLevels: Array<{ id: string; name: string }>;
+}
+
 export interface ActionPlanPayload {
   description: string;
   dueDate: string;

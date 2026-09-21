@@ -33,7 +33,6 @@ export default async function ExtensionRequestDetailPage({
           "deadline_extensions.request",
         )}
         currentUserId={authorization.userId}
-        isAdmin={authorization.isAdmin}
         requestId={id}
       />
     </main>

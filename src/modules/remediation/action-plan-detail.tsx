@@ -6,38 +6,30 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CalendarDays,
-  Check,
   CheckCircle2,
   ChevronDown,
   ClipboardCheck,
   Download,
-  FileText,
   History,
   MessageSquare,
   Pencil,
-  RotateCcw,
   Send,
+  Trash2,
   UserRound,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { ErrorState } from "@/components/ui/error-state";
-import { FilePicker } from "@/components/ui/file-picker";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { QUERY_KEYS } from "@/lib/constants";
 import { buildObservationUrl } from "@/lib/observation-links";
 import { extensionRequestService } from "@/services/extension-request-service";
 import { observationService } from "@/services/observation-service";
 import { progressService } from "@/services/progress-service";
 import { remediationService } from "@/services/remediation-service";
-import type {
-  ActionPlanStatus,
-  ActionPlanEvidenceItem,
-  ExtensionRequestDetail,
-  ProgressEvaluationItem,
-} from "@/types";
-import { cn, getApiErrorMessage, getUploadErrorMessage } from "@/utils";
+import type { ExtensionRequestDetail, ProgressEvaluationItem } from "@/types";
+import { cn, getApiErrorMessage } from "@/utils";
 
 import {
   ActionPlanEditor,
@@ -56,6 +48,10 @@ import {
   getProgressTypeClasses,
   getProgressTypeLabel,
 } from "../progress/presentation";
+import {
+  ProgressReviewDecisionPanel,
+  useProgressReviewDecision,
+} from "../progress/progress-review-decision";
 
 const extensionStatusLabels: Record<ExtensionRequestDetail["status"], string> =
   {
@@ -65,28 +61,6 @@ const extensionStatusLabels: Record<ExtensionRequestDetail["status"], string> =
     MANAGER_REJECTED: "Rechazada por Gerencia",
     SENT_TO_MANAGER: "Pendiente de Gerencia",
   };
-
-const evidenceStatusLabels: Record<
-  ActionPlanEvidenceItem["reviewStatus"],
-  string
-> = {
-  APPROVED: "Aprobado",
-  DRAFT: "Sin enviar",
-  PENDING: "En revisión",
-  REJECTED: "Rechazado",
-  RETURNED: "Con observaciones",
-};
-
-const evidenceStatusClasses: Record<
-  ActionPlanEvidenceItem["reviewStatus"],
-  string
-> = {
-  APPROVED: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  DRAFT: "border-stone-200 bg-stone-50 text-stone-700",
-  PENDING: "border-sky-200 bg-sky-50 text-sky-800",
-  REJECTED: "border-rose-200 bg-rose-50 text-rose-800",
-  RETURNED: "border-amber-200 bg-amber-50 text-amber-900",
-};
 
 const isPendingExtension = (status: ExtensionRequestDetail["status"]) =>
   status === "SENT_TO_MANAGER";
@@ -105,7 +79,7 @@ function DocumentRow({
   onDownload,
 }: {
   canDownload: boolean;
-  file: ActionPlanEvidenceItem | ProgressEvaluationItem["evidence"][number];
+  file: ProgressEvaluationItem["evidence"][number];
   onDownload: (file: { downloadPath: string; originalName: string }) => void;
 }) {
   return (
@@ -126,14 +100,6 @@ function DocumentRow({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            "inline-flex border px-2.5 py-1 text-[0.62rem] font-bold tracking-wide uppercase",
-            evidenceStatusClasses[file.reviewStatus],
-          )}
-        >
-          {evidenceStatusLabels[file.reviewStatus]}
-        </span>
         {canDownload ? (
           <button
             aria-label={`Descargar ${file.originalName}`}
@@ -150,89 +116,107 @@ function DocumentRow({
   );
 }
 
-function ApprovalActions({
+function PendingAdvanceReviewCard({
   canApprove,
   canReturn,
-  officialStatus,
-  isPending,
-  onAction,
+  canViewWorkflowTasks,
+  item,
+  onChanged,
 }: {
   canApprove: boolean;
   canReturn: boolean;
-  officialStatus: ActionPlanStatus;
-  isPending: boolean;
-  onAction: (action: "approve" | "return", status: ActionPlanStatus) => void;
+  canViewWorkflowTasks: boolean;
+  item: ProgressEvaluationItem;
+  onChanged: () => Promise<void>;
 }) {
-  const [status, setStatus] = useState<ActionPlanStatus>(officialStatus);
+  const detailQuery = useQuery({
+    queryFn: () => progressService.getProgressEvaluation(item.id),
+    queryKey: ["progress-evaluation", item.id],
+  });
+  const decision = useProgressReviewDecision({
+    canApprove,
+    canReturn,
+    item: detailQuery.data ?? null,
+    onDecision: () => onChanged(),
+  });
+
   return (
-    <div className="flex flex-wrap gap-2">
-      <label className="grid gap-1 text-xs font-semibold text-stone-600">
-        Estado oficial
-        <select
-          className="nibol-field min-w-44 px-2 py-1.5 text-xs"
-          value={status}
-          onChange={(event) =>
-            setStatus(event.target.value as ActionPlanStatus)
-          }
-        >
-          <option value="NOT_STARTED">No iniciado</option>
-          <option value="STARTED">Iniciado</option>
-          <option value="WITH_PROGRESS">Con avance</option>
-          <option value="CONCLUDED">Concluido</option>
-        </select>
-      </label>
-      {canApprove ? (
-        <button
-          className="nibol-btn-primary px-3 py-2 text-xs"
-          disabled={isPending}
-          onClick={() => onAction("approve", status)}
-          type="button"
-        >
-          <Check className="h-3.5 w-3.5" />
-          Aprobar
-        </button>
+    <div className="border border-sky-200 bg-sky-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold tracking-wider text-sky-800 uppercase">
+            Avance por revisar
+          </p>
+          <p className="mt-1 font-semibold text-stone-950">
+            {item.reportedProgressPercent ?? 0}% reportado ·{" "}
+            {getProgressTypeLabel(item.type)}
+          </p>
+        </div>
+        <span className="text-xs font-semibold text-sky-800">
+          {formatProgressDate(item.submittedAt, false)}
+        </span>
+      </div>
+      <p className="mt-2 text-xs leading-5 text-stone-600">
+        {item.submittedByUser.name}: {item.comment}
+      </p>
+      {detailQuery.isPending ? (
+        <p className="mt-4 text-xs text-sky-800">Cargando acciones…</p>
+      ) : detailQuery.isError ? (
+        <p className="mt-4 text-xs text-rose-700" role="alert">
+          {getApiErrorMessage(detailQuery.error)}
+        </p>
+      ) : detailQuery.data ? (
+        <ProgressReviewDecisionPanel
+          canApprove={canApprove}
+          canReturn={canReturn}
+          comment={decision.comment}
+          compact
+          error={decision.error}
+          isProcessing={decision.isProcessing}
+          item={detailQuery.data}
+          onApprove={() => decision.decide("approve")}
+          onCommentChange={decision.setComment}
+          onReturn={() => decision.decide("return")}
+          onStatusChange={decision.setSelectedStatus}
+          selectedStatus={decision.decisionStatus}
+        />
       ) : null}
-      {canReturn ? (
-        <button
-          className="nibol-btn-secondary px-3 py-2 text-xs"
-          disabled={isPending}
-          onClick={() => onAction("return", status)}
-          type="button"
+      {canViewWorkflowTasks ? (
+        <Link
+          className="nibol-btn-secondary mt-3 px-3 py-2 text-xs"
+          href="/aprobaciones/pendientes"
         >
-          <RotateCcw className="h-3.5 w-3.5" />
-          Devolver
-        </button>
+          Abrir bandeja de aprobaciones
+        </Link>
       ) : null}
     </div>
   );
 }
 
 export function ActionPlanDetailView({
-  canEdit,
-  canManageExtensions,
-  canApproveExtensions,
   canApproveProgress,
+  canDelete,
+  canEdit,
   canRequestExtension,
-  canRejectExtensions,
   canReturnProgress,
   canUploadEvidence,
   canViewObservation,
   canViewExtensions,
+  canViewWorkflowTasks,
   actionPlanId,
   currentUserId,
   initialEditing = false,
   isAdmin,
 }: {
-  canEdit: boolean;
-  canApproveExtensions: boolean;
   canApproveProgress: boolean;
-  canManageExtensions: boolean;
+  canDelete: boolean;
+  canEdit: boolean;
   canRequestExtension: boolean;
-  canRejectExtensions: boolean;
   canReturnProgress: boolean;
   canUploadEvidence: boolean;
   canViewObservation: boolean;
   canViewExtensions: boolean;
+  canViewWorkflowTasks: boolean;
   actionPlanId: string;
   currentUserId: string;
   initialEditing?: boolean;
@@ -241,6 +225,7 @@ export function ActionPlanDetailView({
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const [editing, setEditing] = useState(canEdit && initialEditing);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [extensionOpen, setExtensionOpen] = useState(
@@ -249,7 +234,6 @@ export function ActionPlanDetailView({
   const [extensionClassification, setExtensionClassification] = useState("");
   const [extensionDate, setExtensionDate] = useState("");
   const [extensionReason, setExtensionReason] = useState("");
-  const [planFiles, setPlanFiles] = useState<File[]>([]);
   const planQuery = useQuery({
     queryFn: () => remediationService.getActionPlan(actionPlanId),
     queryKey: ["action-plan", actionPlanId],
@@ -264,8 +248,8 @@ export function ActionPlanDetailView({
   const plan = planQuery.data;
   const canRequestExtensionForPlan = Boolean(
     canRequestExtension &&
-      plan &&
-      (isAdmin || plan.responsibleUser.id === currentUserId),
+    plan &&
+    (isAdmin || plan.responsibleUser.id === currentUserId),
   );
   const observationQuery = useQuery({
     enabled: Boolean(plan && editing),
@@ -274,10 +258,17 @@ export function ActionPlanDetailView({
       ? QUERY_KEYS.observationDetails(plan.observation.id)
       : ["action-plan", actionPlanId, "observation"],
   });
-  const optionsQuery = useQuery({
+  const executorOptionsQuery = useQuery({
     enabled: Boolean(plan && editing),
-    queryFn: observationService.getObservationOptions,
-    queryKey: QUERY_KEYS.observationOptions,
+    queryFn: () =>
+      remediationService.getActionPlanOptions(
+        `?observationId=${encodeURIComponent(plan!.observation.id)}&observationAreaId=${encodeURIComponent(plan!.observationAreaId)}`,
+      ),
+    queryKey: [
+      "action-plan-executor-options",
+      plan?.observation.id,
+      plan?.observationAreaId,
+    ],
   });
   const commentsQuery = useQuery({
     enabled: Boolean(plan && canViewObservation),
@@ -321,48 +312,13 @@ export function ActionPlanDetailView({
       await refresh();
     },
   });
-  const review = useMutation({
-    mutationFn: async ({
-      action,
-      id,
-      officialStatus,
-    }: {
-      action: "approve" | "return";
-      id: string;
-      officialStatus: ActionPlanStatus;
-    }) => {
-      const reviewComment =
-        action === "approve" ? undefined : "Revisión requerida";
-      return progressService.reviewProgressEvaluation(id, action, {
-        comment: reviewComment,
-        officialStatus,
-      });
-    },
+  const remove = useMutation({
+    mutationFn: () => remediationService.deleteActionPlan(actionPlanId),
     onError: (cause) => setError(getApiErrorMessage(cause)),
     onSuccess: async () => {
-      setError(null);
-      await refresh();
-    },
-  });
-  const reviewExtension = useMutation({
-    mutationFn: async ({
-      action,
-      id,
-    }: {
-      action: "managerApprove" | "managerReject";
-      id: string;
-    }) => {
-      const reviewComment = action.endsWith("Reject") ? "Rechazado" : undefined;
-      if (action === "managerApprove")
-        return extensionRequestService.managerApprove(id);
-      return extensionRequestService.managerReject(id, {
-        comment: reviewComment,
-      });
-    },
-    onError: (cause) => setError(getApiErrorMessage(cause)),
-    onSuccess: async () => {
-      setError(null);
-      await refresh();
+      setConfirmDelete(false);
+      await queryClient.invalidateQueries({ queryKey: ["action-plans"] });
+      window.location.assign("/planes-accion");
     },
   });
   const addComment = useMutation({
@@ -385,21 +341,6 @@ export function ActionPlanDetailView({
     mutationFn: (file: { downloadPath: string; originalName: string }) =>
       progressService.downloadEvidence(file),
     onError: (cause) => setError(getApiErrorMessage(cause)),
-  });
-  const uploadPlanEvidence = useMutation({
-    mutationFn: () =>
-      progressService.uploadEvidence(
-        `/action-plans/${actionPlanId}/evidence`,
-        planFiles,
-        "ACTION_PLAN",
-        "Evidencia cargada desde el plan de acción.",
-      ),
-    onError: (cause) => setError(getUploadErrorMessage(cause, planFiles)),
-    onSuccess: async () => {
-      setPlanFiles([]);
-      setError(null);
-      await refresh();
-    },
   });
   const requestExtension = useMutation({
     mutationFn: async () => {
@@ -442,8 +383,6 @@ export function ActionPlanDetailView({
       ),
     [actionPlanId, commentsQuery.data],
   );
-  const planEvidence = plan?.evidence ?? [];
-
   if (planQuery.isError) {
     return (
       <ErrorState
@@ -464,7 +403,7 @@ export function ActionPlanDetailView({
   );
   const maxExtensionDate = selectedExtensionClass
     ? (() => {
-        const date = new Date(plan.currentDueDate);
+        const date = new Date(plan.effectiveDueDate);
         date.setUTCDate(
           date.getUTCDate() + selectedExtensionClass.maxAdditionalDays,
         );
@@ -473,10 +412,10 @@ export function ActionPlanDetailView({
     : "";
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          className="nibol-btn-secondary px-4 py-2.5 text-sm"
+          className="nibol-btn-secondary shrink-0 px-4 py-2.5 text-sm whitespace-nowrap"
           href={buildObservationUrl({
             observationId: plan.observation.id,
             planId: plan.id,
@@ -487,6 +426,18 @@ export function ActionPlanDetailView({
           Volver a la observación
         </Link>
         <div className="flex flex-wrap items-center gap-2">
+          {canViewObservation && canUploadEvidence ? (
+            <Link
+              className="nibol-btn-primary shrink-0 px-3 py-2 text-sm whitespace-nowrap"
+              href={`${buildObservationUrl({
+                observationId: plan.observation.id,
+                planId: plan.id,
+                tab: "plans",
+              })}#avances-evidencias`}
+            >
+              Subir evidencias
+            </Link>
+          ) : null}
           {pendingCount ? (
             <span className="nibol-badge-accent px-3 py-2">
               {pendingCount} {pendingCount === 1 ? "pendiente" : "pendientes"}
@@ -494,7 +445,7 @@ export function ActionPlanDetailView({
           ) : null}
           {canEdit ? (
             <button
-              className="nibol-btn-secondary px-3 py-2 text-sm"
+              className="nibol-btn-secondary shrink-0 px-3 py-2 text-sm whitespace-nowrap"
               onClick={() => {
                 setError(null);
                 setEditing((value) => !value);
@@ -503,6 +454,16 @@ export function ActionPlanDetailView({
             >
               <Pencil className="h-4 w-4" />
               {editing ? "Cerrar edición" : "Editar plan"}
+            </button>
+          ) : null}
+          {canDelete ? (
+            <button
+              className="nibol-btn-secondary shrink-0 px-3 py-2 text-sm whitespace-nowrap text-rose-700"
+              onClick={() => setConfirmDelete(true)}
+              type="button"
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar plan
             </button>
           ) : null}
           <span
@@ -516,72 +477,76 @@ export function ActionPlanDetailView({
         </div>
       </div>
 
-      <section className="nibol-panel overflow-hidden">
-        <div className="bg-stone-950 p-6 text-white sm:p-8">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.2em] text-amber-400 uppercase">
-                {plan.observation.displayCode} · {plan.area.name}
-              </p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-                Plan de acción
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-300">
-                {plan.description}
-              </p>
+      <div className="sticky top-0 z-10 -mx-4 bg-[var(--background)] pb-1 sm:-mx-6 lg:-mx-8">
+        <section className="nibol-panel overflow-hidden">
+          <div className="bg-stone-950 p-6 text-white sm:p-8">
+            <div className="flex flex-wrap items-start justify-between gap-5">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.2em] text-amber-400 uppercase">
+                  {plan.observation.displayCode} · {plan.area.name}
+                </p>
+                <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+                  Plan de acción
+                </h1>
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-300">
+                  {plan.description}
+                </p>
+              </div>
+              <div className="min-w-36 border border-white/15 bg-white/5 p-4">
+                <p className="text-xs tracking-wider text-stone-400 uppercase">
+                  Avance oficial
+                </p>
+                <p className="mt-1 text-3xl font-semibold">
+                  {plan.progressPercent}%
+                </p>
+              </div>
             </div>
-            <div className="min-w-36 border border-white/15 bg-white/5 p-4">
-              <p className="text-xs tracking-wider text-stone-400 uppercase">
-                Avance oficial
-              </p>
-              <p className="mt-1 text-3xl font-semibold">
-                {plan.progressPercent}%
-              </p>
-            </div>
-          </div>
-          <div
-            aria-label={`Avance ${plan.progressPercent}%`}
-            aria-valuemax={100}
-            aria-valuemin={0}
-            aria-valuenow={plan.progressPercent}
-            className="mt-7 h-2 bg-white/15"
-            role="progressbar"
-          >
             <div
-              className="h-full bg-red-600 transition-[width] duration-500"
-              style={{ width: `${plan.progressPercent}%` }}
-            />
-          </div>
-          <div className="mt-2 flex justify-between text-xs text-stone-400">
-            <span>Inicio del seguimiento</span>
-            <span>{plan.progressEvaluationCount} evaluaciones registradas</span>
-          </div>
-        </div>
-        <div className="grid gap-px bg-stone-200 sm:grid-cols-2 lg:grid-cols-5">
-          {[
-            ["Ejecutor", plan.responsibleUser.name],
-            ["Estado", plan.statusLabel],
-            [
-              "Estado de plazo",
-              plan.deadlineStatus === "VENCIDO" ? "Vencido" : "Vigente",
-            ],
-            ["Fecha original", formatRemediationDate(plan.originalDueDate)],
-            ["Fecha efectiva", formatRemediationDate(plan.effectiveDueDate)],
-            ["Reprogramado", plan.reprogrammed ? "Sí" : "No"],
-            ["Documentos", `${plan.evidenceCount} asociados`],
-          ].map(([label, value]) => (
-            <div className="bg-white p-5" key={label}>
-              <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
-                {label}
-              </p>
-              <p className="mt-2 font-semibold">{value}</p>
+              aria-label={`Avance ${plan.progressPercent}%`}
+              aria-valuemax={100}
+              aria-valuemin={0}
+              aria-valuenow={plan.progressPercent}
+              className="mt-7 h-2 bg-white/15"
+              role="progressbar"
+            >
+              <div
+                className="h-full bg-white transition-[width] duration-500"
+                style={{ width: `${plan.progressPercent}%` }}
+              />
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="mt-2 flex justify-between text-xs text-stone-400">
+              <span>Inicio del seguimiento</span>
+              <span>
+                {plan.progressEvaluationCount} evaluaciones registradas
+              </span>
+            </div>
+          </div>
+          <div className="grid gap-px bg-stone-200 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              ["Ejecutor", plan.responsibleUser.name],
+              ["Estado", plan.statusLabel],
+              [
+                "Estado de plazo",
+                plan.deadlineStatus === "VENCIDO" ? "Vencido" : "Vigente",
+              ],
+              ["Fecha original", formatRemediationDate(plan.originalDueDate)],
+              ["Fecha efectiva", formatRemediationDate(plan.effectiveDueDate)],
+              ["Reprogramado", plan.reprogrammed ? "Sí" : "No"],
+              ["Documentos", `${plan.evidenceCount} asociados`],
+            ].map(([label, value]) => (
+              <div className="bg-white p-5" key={label}>
+                <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
+                  {label}
+                </p>
+                <p className="mt-2 font-semibold">{value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
 
       {editing ? (
-        observationQuery.data && optionsQuery.data ? (
+        observationQuery.data && executorOptionsQuery.data ? (
           <ActionPlanEditor
             areas={observationQuery.data.areas}
             error={error}
@@ -598,7 +563,14 @@ export function ActionPlanDetailView({
               setError(null);
             }}
             onSubmit={(input) => update.mutate(input)}
-            users={optionsQuery.data.users}
+            users={[
+              ...executorOptionsQuery.data.executorCandidates,
+              ...(executorOptionsQuery.data.executorCandidates.some(
+                (user) => user.id === plan.responsibleUser.id,
+              )
+                ? []
+                : [plan.responsibleUser]),
+            ]}
           />
         ) : (
           <section className="nibol-panel p-5 text-sm text-stone-500">
@@ -608,7 +580,7 @@ export function ActionPlanDetailView({
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <section className="nibol-panel p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-start gap-3">
@@ -734,25 +706,19 @@ export function ActionPlanDetailView({
                   ) : null}
                   {item.reviewStatus === "SENT_TO_AUDIT" ? (
                     <div className="mt-5 border-t border-stone-200 pt-4">
-                      {canApproveProgress || canReturnProgress ? (
-                        <ApprovalActions
-                          canApprove={canApproveProgress}
-                          canReturn={canReturnProgress}
-                          officialStatus={item.officialStatus}
-                          isPending={review.isPending}
-                          onAction={(action, officialStatus) =>
-                            review.mutate({
-                              action,
-                              id: item.id,
-                              officialStatus,
-                            })
-                          }
-                        />
-                      ) : (
+                      <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-xs font-semibold tracking-wide text-sky-800 uppercase">
                           Pendiente de revisión de Auditoría
                         </p>
-                      )}
+                        {canViewWorkflowTasks ? (
+                          <Link
+                            className="nibol-btn-secondary px-3 py-2 text-xs"
+                            href="/aprobaciones/pendientes"
+                          >
+                            Abrir bandeja
+                          </Link>
+                        ) : null}
+                      </div>
                     </div>
                   ) : null}
                 </article>
@@ -767,77 +733,6 @@ export function ActionPlanDetailView({
                   Aún no hay avances registrados para este plan.
                 </p>
               ) : null}
-            </div>
-          </section>
-
-          <section className="nibol-panel p-6">
-            <div className="flex items-start gap-3">
-              <FileText className="mt-0.5 h-5 w-5 text-amber-700" />
-              <div>
-                <p className="nibol-eyebrow">Repositorio del plan</p>
-                <h2 className="mt-2 text-xl font-semibold">
-                  Documentos asociados
-                </h2>
-                <p className="mt-1 text-sm text-stone-500">
-                  Evidencia cargada directamente al plan, disponible para
-                  consulta y descarga.
-                </p>
-              </div>
-            </div>
-            {canUploadEvidence ? (
-              <form
-                className="mt-5 border-t border-stone-200 pt-5"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  uploadPlanEvidence.mutate();
-                }}
-              >
-                <div className="grid gap-2 text-sm font-semibold">
-                  Cargar Evidencia
-                  <FilePicker
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                    files={planFiles}
-                    id="action-plan-evidence"
-                    onChange={(selected) =>
-                      setPlanFiles((current) => [...current, ...selected])
-                    }
-                    onRemove={(file) =>
-                      setPlanFiles((current) =>
-                        current.filter((candidate) => candidate !== file),
-                      )
-                    }
-                    required
-                  />
-                </div>
-                <button
-                  className="nibol-btn-primary mt-3 px-4 py-2 text-sm"
-                  disabled={uploadPlanEvidence.isPending || !planFiles.length}
-                  type="submit"
-                >
-                  <FileText className="h-4 w-4" />
-                  {uploadPlanEvidence.isPending
-                    ? "Cargando…"
-                    : "Cargar evidencia"}
-                </button>
-              </form>
-            ) : null}
-            <div className="mt-5">
-              {planEvidence.length ? (
-                <div className="divide-y divide-stone-200">
-                  {planEvidence.map((file) => (
-                    <DocumentRow
-                      canDownload={canViewObservation}
-                      file={file}
-                      key={file.id}
-                      onDownload={(value) => download.mutate(value)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500">
-                  No hay documentos asociados directamente al plan.
-                </p>
-              )}
             </div>
           </section>
 
@@ -912,7 +807,7 @@ export function ActionPlanDetailView({
           ) : null}
         </div>
 
-        <aside className="space-y-6">
+        <aside className="min-w-0 space-y-6">
           <section className="nibol-panel p-5" id="plazo">
             <div className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-5 w-5 text-amber-700" />
@@ -920,52 +815,22 @@ export function ActionPlanDetailView({
                 <p className="nibol-eyebrow">Bandeja contextual</p>
                 <h2 className="mt-2 text-xl font-semibold">Aprobaciones</h2>
                 <p className="mt-1 text-sm text-stone-500">
-                  Resuelva aquí las decisiones relacionadas con este plan.
+                  Consulte el estado y resuelva los pendientes en la bandeja
+                  central.
                 </p>
               </div>
             </div>
             {pendingCount ? (
               <div className="mt-5 space-y-3">
                 {pendingEvaluations.map((item) => (
-                  <div
-                    className="border border-sky-200 bg-sky-50 p-4"
+                  <PendingAdvanceReviewCard
+                    canApprove={canApproveProgress}
+                    canReturn={canReturnProgress}
+                    canViewWorkflowTasks={canViewWorkflowTasks}
                     key={`approval-${item.id}`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold tracking-wider text-sky-800 uppercase">
-                          Avance por revisar
-                        </p>
-                        <p className="mt-1 font-semibold text-stone-950">
-                          {item.reportedProgressPercent ?? 0}% reportado ·{" "}
-                          {getProgressTypeLabel(item.type)}
-                        </p>
-                      </div>
-                      <span className="text-xs font-semibold text-sky-800">
-                        {formatProgressDate(item.submittedAt, false)}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-xs leading-5 text-stone-600">
-                      {item.submittedByUser.name}: {item.comment}
-                    </p>
-                    {canApproveProgress || canReturnProgress ? (
-                      <div className="mt-3">
-                        <ApprovalActions
-                          canApprove={canApproveProgress}
-                          canReturn={canReturnProgress}
-                          officialStatus={item.officialStatus}
-                          isPending={review.isPending}
-                          onAction={(action, officialStatus) =>
-                            review.mutate({
-                              action,
-                              id: item.id,
-                              officialStatus,
-                            })
-                          }
-                        />
-                      </div>
-                    ) : null}
-                  </div>
+                    item={item}
+                    onChanged={refresh}
+                  />
                 ))}
                 {pendingExtensions.map((item) => (
                   <div
@@ -982,43 +847,13 @@ export function ActionPlanDetailView({
                     <p className="mt-2 text-xs leading-5 text-stone-600">
                       {item.reason}
                     </p>
-                    {canManageExtensions &&
-                    (isAdmin ||
-                      item.observationArea?.areaResponsible.id ===
-                        currentUserId) &&
-                    (canApproveExtensions || canRejectExtensions) ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {canApproveExtensions ? (
-                          <button
-                            className="nibol-btn-primary px-3 py-2 text-xs"
-                            disabled={reviewExtension.isPending}
-                            onClick={() =>
-                              reviewExtension.mutate({
-                                action: "managerApprove",
-                                id: item.id,
-                              })
-                            }
-                            type="button"
-                          >
-                            <Check className="h-3.5 w-3.5" /> Aprobar
-                          </button>
-                        ) : null}
-                        {canRejectExtensions ? (
-                          <button
-                            className="nibol-btn-secondary px-3 py-2 text-xs text-rose-700"
-                            disabled={reviewExtension.isPending}
-                            onClick={() =>
-                              reviewExtension.mutate({
-                                action: "managerReject",
-                                id: item.id,
-                              })
-                            }
-                            type="button"
-                          >
-                            <X className="h-3.5 w-3.5" /> Rechazar
-                          </button>
-                        ) : null}
-                      </div>
+                    {canViewWorkflowTasks ? (
+                      <Link
+                        className="nibol-btn-secondary mt-3 px-3 py-2 text-xs"
+                        href="/aprobaciones/pendientes"
+                      >
+                        Abrir bandeja de aprobaciones
+                      </Link>
                     ) : null}
                   </div>
                 ))}
@@ -1145,7 +980,7 @@ export function ActionPlanDetailView({
                       <div className="rounded-lg border border-amber-200 bg-white/70 p-3 text-xs text-stone-700">
                         <p>{selectedExtensionClass.description}</p>
                         <p className="mt-1">
-                          Fecha actual: {plan.currentDueDate.slice(0, 10)} ·
+                          Fecha actual: {plan.effectiveDueDate.slice(0, 10)} ·
                           Fecha máxima permitida: {maxExtensionDate}
                         </p>
                       </div>
@@ -1155,7 +990,7 @@ export function ActionPlanDetailView({
                       <input
                         className="nibol-field"
                         max={maxExtensionDate || undefined}
-                        min={plan.currentDueDate.slice(0, 10)}
+                        min={plan.effectiveDueDate.slice(0, 10)}
                         required
                         type="date"
                         value={extensionDate}
@@ -1241,6 +1076,16 @@ export function ActionPlanDetailView({
           {error}
         </p>
       ) : null}
+      <ConfirmDialog
+        confirmLabel="Eliminar plan"
+        description="Se dejará de mostrar este plan de acción. Sus avances, evidencias e historial se conservarán."
+        isLoading={remove.isPending}
+        onConfirm={async () => remove.mutateAsync()}
+        onOpenChange={setConfirmDelete}
+        open={confirmDelete}
+        title="¿Eliminar plan de acción?"
+        tone="danger"
+      />
     </div>
   );
 }

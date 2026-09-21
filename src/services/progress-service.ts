@@ -44,6 +44,9 @@ export const progressService = {
     >(`/progress-evaluations/${id}`, input);
     return response.data.data;
   },
+  async deleteProgressEvaluation(id: string) {
+    await apiClient.delete(`/progress-evaluations/${id}`);
+  },
   async submitProgressEvaluation(id: string) {
     const response = await apiClient.post<
       ApiSuccessResponse<ProgressEvaluationItem>

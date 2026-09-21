@@ -1,88 +1,18 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { ExtensionRequestReviewWorkspace } from "./extension-request-review-workspace";
 
-import { buildObservationUrl } from "@/lib/observation-links";
-import { extensionRequestService } from "@/services/extension-request-service";
-
-export function ExtensionRequestTable() {
-  const searchParams = useSearchParams();
-  const areaId = searchParams.get("filter.areaId");
-  const status = searchParams.get("filter.status");
-  const query = useQuery({
-    queryFn: () => {
-      const params = new URLSearchParams({ perPage: "100" });
-      if (areaId) params.set("filter.areaId", areaId);
-      if (status) params.set("filter.status", status);
-      return extensionRequestService.list(`?${params.toString()}`);
-    },
-    queryKey: ["extension-requests", "all", areaId, status],
-  });
+export function ExtensionRequestTable({
+  canApprove,
+  canReject,
+}: {
+  canApprove: boolean;
+  canReject: boolean;
+}) {
   return (
-    <section className="nibol-panel overflow-hidden">
-      <div className="divide-y divide-stone-200">
-        {query.data?.data.map((request) => (
-          <Link
-            className="grid gap-4 p-5 transition hover:bg-amber-50/40 md:grid-cols-[1.5fr_1fr_1fr_auto] md:items-center"
-            href={
-              request.observation?.id
-                ? buildObservationUrl({
-                    extensionId: request.id,
-                    observationId: request.observation.id,
-                    planId: request.actionPlan?.id ?? undefined,
-                    tab: "plans",
-                  })
-                : `/ampliaciones-plazo/${request.id}`
-            }
-            key={request.id}
-          >
-            <div>
-              <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">
-                {request.targetType === "ACTION_PLAN"
-                  ? "Plan de acción"
-                  : "Observación"}
-              </p>
-              <h3 className="mt-1 font-semibold">
-                {request.targetType === "ACTION_PLAN"
-                  ? "Plan de acción"
-                  : (request.observation?.displayCode ?? "Solicitud")}
-              </h3>
-              <p className="mt-1 line-clamp-1 text-sm text-stone-500">
-                {request.reason}
-              </p>
-            </div>
-            <div className="text-sm">
-              <p className="text-xs text-stone-500">Cambio de fecha</p>
-              <p className="mt-1">
-                {request.previousDueDate.slice(0, 10)} →{" "}
-                <strong>{request.proposedDueDate.slice(0, 10)}</strong>
-              </p>
-            </div>
-            <div>
-              <span className="nibol-badge">
-                {request.status.replaceAll("_", " ")}
-              </span>
-              <p className="mt-2 text-xs text-stone-500">
-                {request.requestedByUser.name}
-              </p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-stone-400" />
-          </Link>
-        ))}
-      </div>
-      {query.isLoading ? (
-        <p className="p-8 text-center text-sm text-stone-500">
-          Cargando solicitudes…
-        </p>
-      ) : null}
-      {!query.isLoading && !query.data?.data.length ? (
-        <p className="p-10 text-center text-sm text-stone-500">
-          No hay solicitudes de ampliación.
-        </p>
-      ) : null}
-    </section>
+    <ExtensionRequestReviewWorkspace
+      canApprove={canApprove}
+      canReject={canReject}
+    />
   );
 }

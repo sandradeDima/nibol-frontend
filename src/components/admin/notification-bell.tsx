@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { QUERY_KEYS } from "@/lib/constants";
+import { resolveNotificationTarget } from "@/lib/notification-links";
 import { NotificationTypeBadge } from "@/modules/notifications/notification-item";
 import { notificationService } from "@/services/notification-service";
 import { getApiErrorMessage } from "@/utils";
@@ -104,6 +105,7 @@ export function NotificationBell({ canView }: { canView: boolean }) {
   return (
     <div className="relative" ref={containerRef}>
       <button
+        aria-label="Abrir notificaciones"
         aria-expanded={open}
         className={cn(
           "relative inline-flex items-center gap-2 border px-4 py-3 text-sm font-semibold transition",
@@ -180,99 +182,102 @@ export function NotificationBell({ canView }: { canView: boolean }) {
             </div>
           ) : (
             <div className="mt-5 space-y-3">
-              {notifications.map((notification) => (
-                <article
-                  key={notification.id}
-                  className={cn(
-                    "border px-4 py-4",
-                    notification.isRead
-                      ? "border-[var(--border)] bg-[var(--surface)]"
-                      : "border-[color:color-mix(in_srgb,var(--accent)_18%,white)] bg-[var(--accent-soft)]",
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        "mt-1 h-2.5 w-2.5 shrink-0",
-                        notification.isRead
-                          ? "bg-[var(--border-strong)]"
-                          : "bg-[var(--accent)]",
-                      )}
-                    />
-                    <div className="min-w-0 flex-1 space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <NotificationTypeBadge type={notification.type} />
-                        {!notification.isRead ? (
-                          <span className="text-xs font-semibold tracking-[0.18em] text-[var(--accent)] uppercase">
-                            Sin leer
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-[var(--foreground)]">
-                          {notification.title}
-                        </p>
-                        <p className="text-sm leading-6 text-[var(--foreground-soft)]">
-                          {notification.message}
-                        </p>
-                        <time
-                          className="block text-xs text-[var(--muted)]"
-                          dateTime={notification.createdAt}
-                        >
-                          {formatDistanceToNow(
-                            new Date(notification.createdAt),
-                            { addSuffix: true },
-                          )}
-                        </time>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {!notification.isRead ? (
+              {notifications.map((notification) => {
+                const targetUrl = resolveNotificationTarget(notification);
+                return (
+                  <article
+                    key={notification.id}
+                    className={cn(
+                      "border px-4 py-4",
+                      notification.isRead
+                        ? "border-[var(--border)] bg-[var(--surface)]"
+                        : "border-[color:color-mix(in_srgb,var(--accent)_18%,white)] bg-[var(--accent-soft)]",
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={cn(
+                          "mt-1 h-2.5 w-2.5 shrink-0",
+                          notification.isRead
+                            ? "bg-[var(--border-strong)]"
+                            : "bg-[var(--accent)]",
+                        )}
+                      />
+                      <div className="min-w-0 flex-1 space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <NotificationTypeBadge type={notification.type} />
+                          {!notification.isRead ? (
+                            <span className="text-xs font-semibold tracking-[0.18em] text-[var(--accent)] uppercase">
+                              Sin leer
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-[var(--foreground)]">
+                            {notification.title}
+                          </p>
+                          <p className="text-sm leading-6 text-[var(--foreground-soft)]">
+                            {notification.message}
+                          </p>
+                          <time
+                            className="block text-xs text-[var(--muted)]"
+                            dateTime={notification.createdAt}
+                          >
+                            {formatDistanceToNow(
+                              new Date(notification.createdAt),
+                              { addSuffix: true },
+                            )}
+                          </time>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {!notification.isRead ? (
+                            <button
+                              className="nibol-btn-secondary px-3 py-2 text-xs"
+                              disabled={markReadMutation.isPending}
+                              onClick={() => {
+                                void markReadMutation.mutateAsync(
+                                  notification.id,
+                                );
+                              }}
+                              type="button"
+                            >
+                              Marcar como leida
+                            </button>
+                          ) : null}
+                          {targetUrl ? (
+                            <Link
+                              className="nibol-btn-secondary px-3 py-2 text-xs"
+                              href={targetUrl}
+                              onClick={() => {
+                                if (!notification.isRead)
+                                  void markReadMutation.mutateAsync(
+                                    notification.id,
+                                  );
+                                setOpen(false);
+                              }}
+                            >
+                              Abrir registro
+                            </Link>
+                          ) : null}
                           <button
                             className="nibol-btn-secondary px-3 py-2 text-xs"
-                            disabled={markReadMutation.isPending}
+                            disabled={deleteNotificationMutation.isPending}
                             onClick={() => {
-                              void markReadMutation.mutateAsync(
+                              void deleteNotificationMutation.mutateAsync(
                                 notification.id,
                               );
                             }}
                             type="button"
                           >
-                            Marcar como leida
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Eliminar
                           </button>
-                        ) : null}
-                        {notification.targetUrl ? (
-                          <Link
-                            className="nibol-btn-secondary px-3 py-2 text-xs"
-                            href={notification.targetUrl}
-                            onClick={() => {
-                              if (!notification.isRead)
-                                void markReadMutation.mutateAsync(
-                                  notification.id,
-                                );
-                              setOpen(false);
-                            }}
-                          >
-                            Abrir registro
-                          </Link>
-                        ) : null}
-                        <button
-                          className="nibol-btn-secondary px-3 py-2 text-xs"
-                          disabled={deleteNotificationMutation.isPending}
-                          onClick={() => {
-                            void deleteNotificationMutation.mutateAsync(
-                              notification.id,
-                            );
-                          }}
-                          type="button"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Eliminar
-                        </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           )}
 

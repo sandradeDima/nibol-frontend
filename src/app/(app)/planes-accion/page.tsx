@@ -14,6 +14,7 @@ export default async function ActionPlansPage() {
       />
       <RemediationPlanTable
         canEdit={authorization.permissions.includes("action_plans.edit")}
+        roleCode={authorization.roleCode}
       />
     </main>
   );

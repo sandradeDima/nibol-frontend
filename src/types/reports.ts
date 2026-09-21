@@ -21,6 +21,7 @@ export interface ReportFilters {
   dateFrom?: string;
   dateTo?: string;
   deadlineStatus?: "VIGENTE" | "VENCIDO";
+  deadlineStatuses?: Array<"VIGENTE" | "VENCIDO">;
   dueSoon?: boolean;
   dueSoonDays?: number;
   executorId?: string[];
@@ -41,6 +42,7 @@ export interface ReportFilters {
   responsibleUserId?: string;
   riskLevelId?: string;
   search?: string;
+  observationStatusIds?: string[];
   statusId?: string;
 }
 
@@ -87,23 +89,25 @@ export interface ReportActionPlanRow {
 
 export interface ReportCriticalObservation {
   area: { id: string; name: string };
+  deadlineStatus: "VIGENTE" | "VENCIDO";
   dueDate: string;
   href: string;
   id: string;
   progressPercent: number;
   riskLevel: { colorToken: string | null; name: string };
-  status: { key: string; name: string };
+  observationStatus: { key: string; name: string };
   title: string;
 }
 
 export interface ReportUpcomingActionPlan {
   actionPlanId: string;
+  deadlineStatus: "VIGENTE" | "VENCIDO";
   effectiveDueDate: string;
   executorName: string;
   href: string;
   observationCode: string;
+  observationStatus: string;
   progress: { code: "NI" | "I" | "CA" | "CO"; label: string; percent: number };
-  status: string;
   title: string;
 }
 
@@ -135,7 +139,13 @@ export interface ReportOptions {
     executor: boolean;
     processOwner: boolean;
   };
-  observationStatuses: Array<{ id: string; key: string; name: string }>;
+  deadlineStatuses: Array<{ key: "VIGENTE" | "VENCIDO"; label: string }>;
+  observationStatuses: Array<{
+    id: string;
+    isFinal: boolean;
+    key: string;
+    name: string;
+  }>;
   processOwners: ObservationUserSummary[];
   progressStatuses: Array<{
     code: "NI" | "I" | "CA" | "CO";
@@ -157,6 +167,7 @@ export interface ReportChartItem {
   href?: string;
   key: string;
   label: string;
+  tooltip?: string;
   value: number;
 }
 
