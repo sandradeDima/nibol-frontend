@@ -509,7 +509,10 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 border-t border-[var(--border)] pt-4 lg:grid-cols-[minmax(240px,0.8fr)_minmax(320px,1.2fr)]">
+        <div
+          className="mt-5 grid gap-3 border-t border-[var(--border)] pt-4 lg:grid-cols-[minmax(240px,0.8fr)_minmax(320px,1.2fr)]"
+          hidden={!activeCard}
+        >
           <label className="block min-w-0">
             <span className="mb-1.5 block text-xs font-bold tracking-[0.12em] text-[var(--muted)] uppercase">
               Área
@@ -606,7 +609,10 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         </section>
       </section>
 
-      <section className="nibol-panel overflow-visible p-4 sm:p-5">
+      <section
+        className="nibol-panel overflow-visible p-4 sm:p-5"
+        hidden={!activeCard}
+      >
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center bg-[var(--info-soft)] text-[var(--info)]">
@@ -673,7 +679,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
             </span>
             <SearchableSelect
               onChange={(value) => {
-                setActiveCard(null);
+                setActiveCard("TOTAL");
                 if (value === "PENDING" || value === "CONCLUDED") {
                   setObservationState(value);
                 } else {
@@ -778,7 +784,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         </div>
       ) : null}
 
-      <section className="nibol-panel overflow-hidden">
+      <section className="nibol-panel overflow-hidden" hidden={!activeCard}>
         <div className="flex flex-col gap-2 border-b border-[var(--border)] px-4 py-4 sm:px-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-start gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center bg-[var(--info-soft)] text-[var(--info)]">
@@ -887,6 +893,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           </div>
         )}
       </section>
+
       {activeCard ? (
         <section className="nibol-panel overflow-hidden" ref={resultsRef}>
           <RoleObservationResults

@@ -267,6 +267,7 @@ input[type="search"]::-webkit-search-results-decoration {
   font-weight: 700;
   letter-spacing: 0.18em;
   line-height: 1.2;
+  min-height: 2.4em;
   text-transform: uppercase;
 }
 
