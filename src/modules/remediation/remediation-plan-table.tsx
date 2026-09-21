@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, ChevronRight, Pencil } from "lucide-react";
@@ -12,6 +12,7 @@ import type {
   DataTableFilterConfig,
   DataTableFilterValue,
 } from "@/components/data-table/types";
+import { HighlightedText } from "@/components/ui/highlighted-text";
 import { SearchField } from "@/components/ui/search-field";
 import { remediationService } from "@/services/remediation-service";
 import { cn } from "@/utils";
@@ -35,46 +36,19 @@ const ACTION_PLAN_FILTER_QUERY_KEYS = [
   "filter.status",
 ] as const;
 
-const getFilterValues = (searchParams: URLSearchParams, id: string) =>
-  searchParams.get(`filter.${id}`)?.split(",").filter(Boolean) ?? [];
-
 export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
-  const visibleFilterIds = useMemo(
-    () =>
-      ACTION_PLAN_FILTER_QUERY_KEYS.map((key) => key.replace("filter.", "")),
-    [],
-  );
-  const optionParams = useMemo(() => {
-    const next = new URLSearchParams();
-    for (const id of [
-      "areaId",
-      "areaResponsibleUserId",
-      "processOwnerUserId",
-    ]) {
-      const values = getFilterValues(searchParams, id);
-      if (values.length && visibleFilterIds.includes(id))
-        next.set(id, values.join(","));
-    }
-    return next.toString() ? `?${next.toString()}` : "";
-  }, [searchParams, visibleFilterIds]);
   const planOptionsQuery = useQuery({
-    queryFn: () => remediationService.getActionPlanOptions(optionParams),
-    queryKey: ["action-plan-options", optionParams],
+    queryFn: () => remediationService.getActionPlanOptions(),
+    queryKey: ["action-plan-options"],
     staleTime: 60_000,
   });
   const planOptions = planOptionsQuery.data;
   const filterDefinitions = useMemo<DataTableFilterConfig[]>(
     () => [
-      {
-        id: "reportNumber",
-        label: "Número de informe",
-        placeholder: "Ej. AI-01-2026",
-        type: "text",
-      },
       {
         id: "status",
         label: "Estado del plan",
@@ -108,72 +82,15 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
         placeholder: "Todos los niveles",
         type: "select",
       },
-      {
-        id: "areaId",
-        label: "Área",
-        options: (planOptions?.areas ?? []).map((area) => ({
-          label: area.name,
-          value: area.id,
-        })),
-        placeholder: "Todas las áreas",
-        type: "select",
-      },
-      {
-        id: "areaResponsibleUserId",
-        label: "Responsable de área",
-        options: (planOptions?.areaResponsibles ?? []).map((user) => ({
-          label: user.name,
-          value: user.id,
-        })),
-        placeholder: "Todos los responsables",
-        type: "select",
-      },
-      {
-        id: "processOwnerUserId",
-        label: "Dueño de proceso",
-        options: (planOptions?.processOwners ?? []).map((user) => ({
-          label: user.name,
-          value: user.id,
-        })),
-        placeholder: "Todos los dueños",
-        type: "select",
-      },
-      {
-        id: "responsibleUserId",
-        label: "Ejecutor",
-        options: (planOptions?.executors ?? []).map((user) => ({
-          label: user.name,
-          value: user.id,
-        })),
-        placeholder: "Todos los ejecutores",
-        type: "select",
-      },
-      {
-        id: "dueDateFrom",
-        label: "Vencimiento desde",
-        type: "date",
-      },
-      {
-        id: "dueDateTo",
-        label: "Vencimiento hasta",
-        type: "date",
-      },
     ],
     [planOptions],
-  );
-  const visibleFilterDefinitions = useMemo(
-    () =>
-      filterDefinitions.filter((filter) =>
-        visibleFilterIds.includes(filter.id),
-      ),
-    [filterDefinitions, visibleFilterIds],
   );
   const filterValues = useMemo<
     Record<string, DataTableFilterValue | undefined>
   >(
     () =>
       Object.fromEntries(
-        visibleFilterDefinitions.map((filter) => [
+        filterDefinitions.map((filter) => [
           filter.id,
           (() => {
             const value = searchParams.get(
@@ -185,17 +102,17 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
           })(),
         ]),
       ),
-    [searchParams, visibleFilterDefinitions],
+    [filterDefinitions, searchParams],
   );
   const filterQuery = useMemo(() => {
     const next = new URLSearchParams();
-    visibleFilterDefinitions.forEach((filter) => {
+    filterDefinitions.forEach((filter) => {
       const key = `filter.${filter.queryKey ?? filter.id}`;
       const value = searchParams.get(key);
       if (value) next.set(key, value);
     });
     return next.toString();
-  }, [searchParams, visibleFilterDefinitions]);
+  }, [filterDefinitions, searchParams]);
   const params = useMemo(() => {
     const next = new URLSearchParams(filterQuery);
     next.set("page", "1");
@@ -208,7 +125,7 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
   }, [filterQuery, search]);
   const activeFilters = useMemo(
     () =>
-      visibleFilterDefinitions
+      filterDefinitions
         .map((filter) => {
           const value = searchParams.get(
             `filter.${filter.queryKey ?? filter.id}`,
@@ -223,7 +140,7 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
           return `${filter.label}: ${labels.join(", ")}`;
         })
         .filter((value): value is string => Boolean(value)),
-    [searchParams, visibleFilterDefinitions],
+    [filterDefinitions, searchParams],
   );
   const replaceFilters = (next: URLSearchParams) => {
     next.delete("page");
@@ -232,39 +149,6 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
       { scroll: false },
     );
   };
-  useEffect(() => {
-    if (!planOptions) return;
-    const next = new URLSearchParams(searchParams.toString());
-    let changed = false;
-    const clearInvalid = (id: string, validIds: string[]) => {
-      const key = `filter.${id}`;
-      const current = getFilterValues(searchParams, id);
-      const valid = current.filter((value) => validIds.includes(value));
-      if (valid.length === current.length) return;
-      if (valid.length) next.set(key, valid.join(","));
-      else next.delete(key);
-      changed = true;
-    };
-    clearInvalid(
-      "processOwnerUserId",
-      planOptions.processOwners.map((user) => user.id),
-    );
-    clearInvalid(
-      "areaResponsibleUserId",
-      planOptions.areaResponsibles.map((user) => user.id),
-    );
-    clearInvalid(
-      "responsibleUserId",
-      planOptions.executors.map((user) => user.id),
-    );
-    if (changed) {
-      next.delete("page");
-      router.replace(
-        `${pathname}${next.toString() ? `?${next.toString()}` : ""}`,
-        { scroll: false },
-      );
-    }
-  }, [pathname, planOptions, router, searchParams]);
   const updateFilter = (
     filterId: string,
     value: DataTableFilterValue | undefined,
@@ -337,7 +221,7 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
         </div>
       ) : null}
       <DataTableFilters
-        filters={visibleFilterDefinitions}
+        filters={filterDefinitions}
         onChange={updateFilter}
         onReset={resetFilters}
         searchableSelects
@@ -355,16 +239,23 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
             >
               <div>
                 <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">
-                  {plan.observation.displayCode} · {plan.area.name}
+                  <HighlightedText
+                    query={search}
+                    text={plan.observation.displayCode}
+                  />{" "}
+                  · <HighlightedText query={search} text={plan.area.name} />
                 </p>
                 <h3 className="mt-1 font-semibold text-stone-950">
                   Plan de acción
                 </h3>
                 <p className="mt-1 line-clamp-2 text-sm text-stone-500">
-                  {plan.description}
+                  <HighlightedText query={search} text={plan.description} />
                 </p>
                 <p className="mt-2 text-xs text-stone-500">
-                  {plan.responsibleUser.name}
+                  <HighlightedText
+                    query={search}
+                    text={plan.responsibleUser.name}
+                  />
                 </p>
               </div>
               <div>

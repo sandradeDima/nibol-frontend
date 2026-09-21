@@ -23,6 +23,7 @@ import type {
   DataTableFilterConfig,
   DataTableFilterValue,
 } from "@/components/data-table/types";
+import { HighlightedText } from "@/components/ui/highlighted-text";
 import { SearchField } from "@/components/ui/search-field";
 import { QUERY_KEYS } from "@/lib/constants";
 import { buildObservationUrl } from "@/lib/observation-links";
@@ -207,52 +208,6 @@ export function ObservationTable({
   const filterDefinitions = useMemo<DataTableFilterConfig[]>(
     () => [
       {
-        id: "title",
-        label: "Título",
-        placeholder: "Buscar por título",
-        type: "text",
-      },
-      {
-        id: "auditReportId",
-        label: "Informe de auditoría",
-        options: (optionsQuery.data?.auditReports ?? []).map((report) => ({
-          label: `${report.reportNumber} · ${report.title}`,
-          value: report.id,
-        })),
-        placeholder: "Todos los informes",
-        type: "select",
-      },
-      {
-        id: "areaId",
-        label: "Área",
-        options: (optionsQuery.data?.areas ?? []).map((area) => ({
-          label: area.name,
-          value: area.id,
-        })),
-        placeholder: "Todas las áreas",
-        type: "select",
-      },
-      {
-        id: "areaResponsibleUserId",
-        label: "Responsable de área",
-        options: (optionsQuery.data?.users ?? []).map((user) => ({
-          label: user.name,
-          value: user.id,
-        })),
-        placeholder: "Todos los responsables",
-        type: "select",
-      },
-      {
-        id: "actionPlanResponsibleUserId",
-        label: "Ejecutor",
-        options: (optionsQuery.data?.users ?? []).map((user) => ({
-          label: user.name,
-          value: user.id,
-        })),
-        placeholder: "Todos los ejecutores",
-        type: "select",
-      },
-      {
         id: "observationState",
         label: "Estado de observación",
         options: [
@@ -294,16 +249,6 @@ export function ObservationTable({
         })),
         placeholder: "Todos los niveles",
         type: "select",
-      },
-      {
-        id: "currentDueDateFrom",
-        label: "Fecha límite desde",
-        type: "date",
-      },
-      {
-        id: "currentDueDateTo",
-        label: "Fecha límite hasta",
-        type: "date",
       },
     ],
     [optionsQuery.data],
@@ -554,7 +499,7 @@ export function ObservationTable({
                     className="font-semibold break-words text-stone-950"
                     title={row.displayCode}
                   >
-                    {row.displayCode}
+                    <HighlightedText query={search} text={row.displayCode} />
                   </p>
                   <p className="mt-1 text-xs text-stone-500">
                     {formatObservationDate(row.auditReport.reportDate)}
@@ -565,13 +510,16 @@ export function ObservationTable({
                     className="line-clamp-2 font-semibold break-words text-stone-950"
                     title={row.title}
                   >
-                    {row.title}
+                    <HighlightedText query={search} text={row.title} />
                   </p>
                   <p
                     className="mt-1 line-clamp-2 text-[11px] break-words text-stone-500"
                     title={row.mainObservation.name}
                   >
-                    {row.mainObservation.name}
+                    <HighlightedText
+                      query={search}
+                      text={row.mainObservation.name}
+                    />
                   </p>
                 </td>
                 <td className="min-w-0 overflow-hidden px-2.5 py-3">
@@ -582,13 +530,13 @@ export function ObservationTable({
                     )}
                     style={getRiskLevelStyle(row.riskLevel.colorToken)}
                   >
-                    {row.riskLevel.name}
+                    <HighlightedText query={search} text={row.riskLevel.name} />
                   </span>
                   <p
                     className="mt-2 line-clamp-2 text-[11px] break-words text-stone-600"
                     title={row.risks.map((risk) => risk.name).join(", ")}
                   >
-                    {row.risks[0]?.name}
+                    <HighlightedText query={search} text={row.risks[0]?.name} />
                     {row.risks.length > 1 ? ` +${row.risks.length - 1}` : ""}
                   </p>
                 </td>
@@ -597,7 +545,10 @@ export function ObservationTable({
                     className="line-clamp-2 font-medium break-words"
                     title={row.areas.map((area) => area.area.name).join(", ")}
                   >
-                    {row.areas[0]?.area.name ?? "—"}
+                    <HighlightedText
+                      query={search}
+                      text={row.areas[0]?.area.name ?? "—"}
+                    />
                     {row.areas.length > 1 ? ` +${row.areas.length - 1}` : ""}
                   </p>
                   <p
@@ -609,7 +560,12 @@ export function ObservationTable({
                       )
                       .join(" · ")}
                   >
-                    {row.areas[0]?.areaResponsible.name ?? "Sin responsable"}
+                    <HighlightedText
+                      query={search}
+                      text={
+                        row.areas[0]?.areaResponsible.name ?? "Sin responsable"
+                      }
+                    />
                   </p>
                 </td>
                 <td className="min-w-0 overflow-hidden px-2.5 py-3">
@@ -711,17 +667,20 @@ export function ObservationTable({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-semibold text-stone-950">
-                  {row.displayCode}
+                  <HighlightedText query={search} text={row.displayCode} />
                 </p>
                 <p
                   className="line-clamp-2 text-sm font-medium text-stone-800"
                   title={row.title}
                 >
-                  {row.title}
+                  <HighlightedText query={search} text={row.title} />
                 </p>
                 <p className="text-xs break-words text-stone-500">
-                  {row.auditReport.reportNumber} ·{" "}
-                  {formatObservationDate(row.auditReport.reportDate)}
+                  <HighlightedText
+                    query={search}
+                    text={row.auditReport.reportNumber}
+                  />{" "}
+                  · {formatObservationDate(row.auditReport.reportDate)}
                 </p>
               </div>
               {canSend ? (
@@ -744,14 +703,21 @@ export function ObservationTable({
               <div>
                 <p className="text-stone-500">Riesgo</p>
                 <p className="truncate font-semibold">
-                  {row.riskLevel.name} · {row.risks[0]?.name ?? "—"}
+                  <HighlightedText query={search} text={row.riskLevel.name} /> ·{" "}
+                  <HighlightedText
+                    query={search}
+                    text={row.risks[0]?.name ?? "—"}
+                  />
                   {row.risks.length > 1 ? ` +${row.risks.length - 1}` : ""}
                 </p>
               </div>
               <div>
                 <p className="text-stone-500">Área</p>
                 <p className="truncate font-semibold">
-                  {row.areas[0]?.area.name ?? "—"}
+                  <HighlightedText
+                    query={search}
+                    text={row.areas[0]?.area.name ?? "—"}
+                  />
                   {row.areas.length > 1 ? ` +${row.areas.length - 1}` : ""}
                 </p>
               </div>
