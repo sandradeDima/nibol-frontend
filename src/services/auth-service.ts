@@ -30,6 +30,11 @@ const loginCallbackUrl = buildAppUrl("/");
 const verificationCallbackUrl = buildAppUrl("/login?verified=1");
 const resetCallbackUrl = buildAppUrl("/reset-password");
 
+type SocialSignInResponse = {
+  redirect: boolean;
+  url?: string;
+};
+
 const request = async <T>(promise: Promise<{ data: T }>): Promise<T> => {
   try {
     const response = await promise;
@@ -62,6 +67,24 @@ export const authService = {
         callbackURL: loginCallbackUrl,
       }),
     );
+  },
+
+  async loginWithMicrosoft(loginHint: string): Promise<void> {
+    const response = await request<SocialSignInResponse>(
+      authApi.post("/sign-in/social", {
+        callbackURL: loginCallbackUrl,
+        disableRedirect: true,
+        errorCallbackURL: buildAppUrl("/login"),
+        loginHint: loginHint.trim() || undefined,
+        provider: "microsoft",
+      }),
+    );
+
+    if (!response.url) {
+      throw new Error("No se pudo iniciar el acceso con Microsoft.");
+    }
+
+    window.location.assign(response.url);
   },
 
   async logout(): Promise<void> {

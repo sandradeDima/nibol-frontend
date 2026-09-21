@@ -225,6 +225,24 @@ function DashboardFilterFields({
           Indicadores calculados con corte a {formatReportDate(cutoffDate)}.
         </span>
       </label>
+      <label className="space-y-2">
+        <span className="report-field-label">Estado global</span>
+        <select
+          className="nibol-field h-11 text-sm"
+          onChange={(event) =>
+            updateFilter(
+              "globalStatus",
+              (event.target.value ||
+                undefined) as ReportFilters["globalStatus"],
+            )
+          }
+          value={draft.globalStatus ?? ""}
+        >
+          <option value="">Todos</option>
+          <option value="PENDING">Pendiente</option>
+          <option value="CLOSED">Cerrada</option>
+        </select>
+      </label>
       <label className="min-w-0 space-y-2">
         <span className="report-field-label">Estado de observación</span>
         <SearchableSelect
@@ -1452,6 +1470,14 @@ export function ReportFilterSummary({ filters }: { filters: ReportFilters }) {
         ? `${filters.observationStatusIds.length} seleccionados`
         : filters.statusId
           ? "Estado seleccionado"
+          : "Todos",
+    ],
+    [
+      "Estado global",
+      filters.globalStatus === "PENDING"
+        ? "Pendiente"
+        : filters.globalStatus === "CLOSED"
+          ? "Cerrada"
           : "Todos",
     ],
     [

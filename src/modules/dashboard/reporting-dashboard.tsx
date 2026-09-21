@@ -48,6 +48,7 @@ const DASHBOARD_FILTER_KEYS = [
   "areaId",
   "areaResponsibleId",
   "executorId",
+  "globalStatus",
   "processOwnerId",
   "observationStatusIds",
   "deadlineStatuses",
@@ -525,17 +526,11 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
   const applyObservationKpi = (kpi: ObservationKpi) => {
     const next = { ...filters } as Record<string, unknown>;
     delete next.activeOnly;
+    delete next.globalStatus;
     delete next.statusId;
     delete next.observationStatusIds;
-    if (kpi === "PENDING") next.activeOnly = true;
-    if (kpi === "CLOSED") {
-      const closedStatusIds =
-        optionsQuery.data?.observationStatuses
-          .filter((status) => status.isFinal)
-          .map((status) => status.id) ?? [];
-      if (!closedStatusIds.length) return;
-      next.observationStatusIds = closedStatusIds;
-    }
+    if (kpi === "PENDING") next.globalStatus = "PENDING";
+    if (kpi === "CLOSED") next.globalStatus = "CLOSED";
     applyFilters(next as ReportFilters);
     window.setTimeout(() => {
       document
@@ -545,22 +540,11 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
   };
 
   const observationKpiActive = (kpi: ObservationKpi) => {
-    if (kpi === "PENDING") return filters.activeOnly === true;
-    if (kpi === "CLOSED") {
-      const closedStatusIds =
-        optionsQuery.data?.observationStatuses
-          .filter((status) => status.isFinal)
-          .map((status) => status.id) ?? [];
-      return (
-        closedStatusIds.length > 0 &&
-        filters.observationStatusIds?.length === closedStatusIds.length &&
-        closedStatusIds.every(
-          (id) => filters.observationStatusIds?.includes(id) === true,
-        )
-      );
-    }
+    if (kpi === "PENDING") return filters.globalStatus === "PENDING";
+    if (kpi === "CLOSED") return filters.globalStatus === "CLOSED";
     return (
       !filters.activeOnly &&
+      !filters.globalStatus &&
       !filters.statusId &&
       !filters.observationStatusIds?.length
     );

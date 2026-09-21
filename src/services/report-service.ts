@@ -36,6 +36,7 @@ export const parseReportFilters = (
     "dateFrom",
     "dateTo",
     "deadlineStatus",
+    "globalStatus",
     "progressStatus",
     "responsibleUserId",
     "riskLevelId",

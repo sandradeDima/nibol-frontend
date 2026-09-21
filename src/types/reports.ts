@@ -25,6 +25,7 @@ export interface ReportFilters {
   dueSoon?: boolean;
   dueSoonDays?: number;
   executorId?: string[];
+  globalStatus?: "PENDING" | "CLOSED";
   hasEvidence?: boolean;
   hasExtension?: boolean;
   hasPlan?: boolean;

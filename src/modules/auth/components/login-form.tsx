@@ -24,7 +24,6 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
-  const [microsoftMessage, setMicrosoftMessage] = useState<string | null>(null);
   const invitedEmail = searchParams.get("email");
 
   const form = useForm<LoginValues>({
@@ -47,6 +46,7 @@ export function LoginForm() {
     });
   }, [form, invitedEmail]);
 
+  const oauthError = searchParams.get("error");
   const statusMessage =
     searchParams.get("verified") === "1"
       ? "Su correo fue verificado correctamente. Ya puede iniciar sesion."
@@ -59,11 +59,26 @@ export function LoginForm() {
             : null;
 
   const verificationError =
-    searchParams.get("error") === "TOKEN_EXPIRED"
+    oauthError === "TOKEN_EXPIRED"
       ? "Su enlace de verificacion vencio. Puede solicitar uno nuevo abajo."
-      : searchParams.get("error") === "INVALID_TOKEN"
+      : oauthError === "INVALID_TOKEN"
         ? "El enlace de verificacion no es valido. Puede solicitar uno nuevo abajo."
         : null;
+
+  const microsoftError =
+    oauthError === "signup_disabled"
+      ? "No existe un usuario autorizado con ese correo."
+      : oauthError === "account_not_linked"
+        ? "El correo local debe estar verificado para vincular Microsoft."
+        : oauthError === "email_not_found"
+          ? "Microsoft no devolvió un correo para esta cuenta."
+          : oauthError === "oauth_provider_not_found"
+            ? "El inicio de sesión con Microsoft no está configurado."
+            : oauthError &&
+                oauthError !== "TOKEN_EXPIRED" &&
+                oauthError !== "INVALID_TOKEN"
+              ? "No se pudo iniciar sesión con Microsoft. Intente nuevamente."
+              : null;
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
@@ -88,6 +103,10 @@ export function LoginForm() {
       setResendMessage(null);
       setResendError(error.message);
     },
+  });
+
+  const microsoftMutation = useMutation({
+    mutationFn: authService.loginWithMicrosoft,
   });
 
   const handleSubmit = form.handleSubmit(async (values) => {
@@ -135,8 +154,11 @@ export function LoginForm() {
         <AuthBanner tone="success">{resendMessage}</AuthBanner>
       ) : null}
       {resendError ? <AuthBanner tone="error">{resendError}</AuthBanner> : null}
-      {microsoftMessage ? (
-        <AuthBanner tone="info">{microsoftMessage}</AuthBanner>
+      {microsoftError ? (
+        <AuthBanner tone="error">{microsoftError}</AuthBanner>
+      ) : null}
+      {microsoftMutation.error ? (
+        <AuthBanner tone="error">{microsoftMutation.error.message}</AuthBanner>
       ) : null}
 
       <form className="space-y-4" onSubmit={handleSubmit}>
@@ -192,11 +214,8 @@ export function LoginForm() {
 
         <button
           className="nibol-btn-secondary w-full justify-center"
-          onClick={() => {
-            setMicrosoftMessage(
-              "Falta la configuración del inicio de sesión con Microsoft. Contacte al administrador.",
-            );
-          }}
+          disabled={loginMutation.isPending || microsoftMutation.isPending}
+          onClick={() => microsoftMutation.mutate(form.getValues("email"))}
           type="button"
         >
           <span aria-hidden="true" className="grid h-4 w-4 grid-cols-2 gap-px">
@@ -205,7 +224,9 @@ export function LoginForm() {
             <span className="bg-[#05a6f0]" />
             <span className="bg-[#ffba08]" />
           </span>
-          Ingresar con Microsoft
+          {microsoftMutation.isPending
+            ? "Redirigiendo..."
+            : "Ingresar con Microsoft"}
         </button>
       </form>
     </AuthShell>

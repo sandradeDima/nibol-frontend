@@ -35,43 +35,18 @@ const ACTION_PLAN_FILTER_QUERY_KEYS = [
   "filter.status",
 ] as const;
 
-const DEFAULT_HIDDEN_FILTERS = [
-  "areaId",
-  "processOwnerUserId",
-  "areaResponsibleUserId",
-];
-
 const getFilterValues = (searchParams: URLSearchParams, id: string) =>
   searchParams.get(`filter.${id}`)?.split(",").filter(Boolean) ?? [];
 
-const hiddenFiltersByRole: Record<string, string[]> = {
-  AREA_RESPONSIBLE: ["areaId", "processOwnerUserId", "areaResponsibleUserId"],
-  AUDITOR: [],
-  AUDIT_CHIEF: [],
-  EXECUTOR: ["areaId", "processOwnerUserId", "areaResponsibleUserId"],
-  PROCESS_OWNER: ["areaId", "processOwnerUserId"],
-  SYSTEM_ADMIN: [],
-};
-
-export function RemediationPlanTable({
-  canEdit,
-  roleCode,
-}: {
-  canEdit: boolean;
-  roleCode: string | null;
-}) {
+export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
-  const hiddenFilters =
-    hiddenFiltersByRole[roleCode ?? "EXECUTOR"] ?? DEFAULT_HIDDEN_FILTERS;
   const visibleFilterIds = useMemo(
     () =>
-      ACTION_PLAN_FILTER_QUERY_KEYS.map((key) =>
-        key.replace("filter.", ""),
-      ).filter((id) => !hiddenFilters.includes(id)),
-    [hiddenFilters],
+      ACTION_PLAN_FILTER_QUERY_KEYS.map((key) => key.replace("filter.", "")),
+    [],
   );
   const optionParams = useMemo(() => {
     const next = new URLSearchParams();
@@ -270,13 +245,6 @@ export function RemediationPlanTable({
       else next.delete(key);
       changed = true;
     };
-    hiddenFilters.forEach((id) => {
-      const key = `filter.${id}`;
-      if (next.has(key)) {
-        next.delete(key);
-        changed = true;
-      }
-    });
     clearInvalid(
       "processOwnerUserId",
       planOptions.processOwners.map((user) => user.id),
@@ -296,7 +264,7 @@ export function RemediationPlanTable({
         { scroll: false },
       );
     }
-  }, [hiddenFilters, pathname, planOptions, router, searchParams]);
+  }, [pathname, planOptions, router, searchParams]);
   const updateFilter = (
     filterId: string,
     value: DataTableFilterValue | undefined,

@@ -23,6 +23,7 @@ import type {
   DataTableFilterConfig,
   DataTableFilterValue,
 } from "@/components/data-table/types";
+import { SearchField } from "@/components/ui/search-field";
 import { QUERY_KEYS } from "@/lib/constants";
 import { buildObservationUrl } from "@/lib/observation-links";
 import { observationService } from "@/services/observation-service";
@@ -194,6 +195,7 @@ export function ObservationTable({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [pendingDelete, setPendingDelete] =
     useState<ObservationTableRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -337,10 +339,12 @@ export function ObservationTable({
     const next = new URLSearchParams(filterQuery);
     next.set("page", String(page));
     next.set("perPage", "20");
+    if (search.trim()) next.set("search", search.trim());
+    else next.delete("search");
     next.set("sortBy", "updatedAt");
     next.set("sortDirection", "desc");
     return next;
-  }, [filterQuery, page]);
+  }, [filterQuery, page, search]);
   const activeFilters = useMemo(
     () =>
       filterDefinitions
@@ -388,11 +392,13 @@ export function ObservationTable({
   const resetFilters = () => {
     const next = new URLSearchParams(searchParams.toString());
     OBSERVATION_FILTER_QUERY_KEYS.forEach((key) => next.delete(key));
+    next.delete("search");
+    setSearch("");
     replaceFilters(next);
   };
   const query = useQuery({
     queryFn: () => observationService.listObservations(`?${params.toString()}`),
-    queryKey: [...QUERY_KEYS.observations, filterQuery, page],
+    queryKey: [...QUERY_KEYS.observations, filterQuery, search.trim(), page],
   });
   const remove = useMutation({
     mutationFn: (id: string) => observationService.deleteObservation(id),
@@ -416,9 +422,39 @@ export function ObservationTable({
 
   return (
     <section className="nibol-panel overflow-visible">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 p-4">
+      <div className="space-y-3 border-b border-stone-200 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SearchField
+            className="w-full sm:max-w-md"
+            onChange={(value) => {
+              setSearch(value);
+              const next = new URLSearchParams(searchParams.toString());
+              if (value.trim()) next.set("search", value.trim());
+              else next.delete("search");
+              replaceFilters(next);
+            }}
+            placeholder="Buscar por informe, título, área o responsable"
+            value={search}
+          />
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-stone-500">
+              {pagination?.total ?? 0} observaciones
+            </p>
+            {canSend && selectedIds.length ? (
+              <button
+                className="nibol-btn-primary px-3 py-2 text-xs"
+                disabled={send.isPending}
+                onClick={() => send.mutate()}
+                type="button"
+              >
+                <Send className="h-3.5 w-3.5" />
+                Enviar observaciones a las áreas ({selectedIds.length})
+              </button>
+            ) : null}
+          </div>
+        </div>
         {activeFilters.length ? (
-          <div className="flex w-full flex-wrap items-center gap-2 text-xs text-stone-600">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-stone-600">
             <span className="font-semibold">Filtros activos:</span>
             {activeFilters.map((filter, index) => (
               <span
@@ -437,22 +473,6 @@ export function ObservationTable({
             </button>
           </div>
         ) : null}
-        <div className="flex items-center gap-3">
-          <p className="text-sm text-stone-500">
-            {pagination?.total ?? 0} observaciones
-          </p>
-          {canSend && selectedIds.length ? (
-            <button
-              className="nibol-btn-primary px-3 py-2 text-xs"
-              disabled={send.isPending}
-              onClick={() => send.mutate()}
-              type="button"
-            >
-              <Send className="h-3.5 w-3.5" />
-              Enviar observaciones a las áreas ({selectedIds.length})
-            </button>
-          ) : null}
-        </div>
       </div>
       <DataTableFilters
         filters={filterDefinitions}
