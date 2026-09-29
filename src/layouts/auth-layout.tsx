@@ -27,16 +27,27 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               </span>
             </div>
 
-            <div className="mx-auto flex max-w-xl flex-1 flex-col justify-center text-center lg:text-left">
-              <p className="nibol-eyebrow">Sistema corporativo</p>
-              <h1 className="font-display mt-5 text-5xl leading-none font-bold tracking-[-0.03em] text-[var(--foreground)] uppercase sm:text-6xl">
-                Seguimiento de riesgos
-              </h1>
-              <p className="mt-5 max-w-xl text-base leading-8 text-[var(--foreground-soft)]">
-                Plataforma interna para seguimiento de hallazgos, riesgos y
-                planes de acción con una interfaz alineada a la identidad
-                visual de NIBOL.
-              </p>
+            <div className="relative isolate mx-auto flex min-h-[18rem] max-w-[52rem] flex-1 flex-col justify-center overflow-hidden text-center lg:text-left">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute right-0 bottom-0 z-[-1] h-[44%] w-[38%] bg-[#eef2f6] [clip-path:polygon(100%_0,100%_100%,0_100%)]"
+              />
+              <div className="relative">
+                <p className="nibol-eyebrow text-[#7b8daa]">
+                  Sistema corporativo
+                </p>
+                <h1 className="font-display mt-5 text-[clamp(3rem,4vw,4.5rem)] leading-[0.96] font-extrabold tracking-[-0.035em] text-[var(--foreground-strong)] uppercase">
+                  <span className="block">Seguimiento de</span>
+                  <span className="block">hallazgos y planes de acción</span>
+                </h1>
+                <p className="mt-5 max-w-3xl text-[1.1rem] leading-[1.55] text-[#7b8daa]">
+                  Plataforma interna para seguimiento de hallazgos y planes de
+                  acción{" "}
+                  <span className="lg:block">
+                    con una interfaz alineada a la identidad visual de NIBOL.
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
 
