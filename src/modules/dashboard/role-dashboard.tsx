@@ -118,7 +118,6 @@ function StatusBadge({ status }: { status: RoleDashboardNodeStatus }) {
 
 function MetricCard({
   active,
-  detail,
   icon: Icon,
   label,
   onClick,
@@ -126,7 +125,6 @@ function MetricCard({
   value,
 }: {
   active?: boolean;
-  detail: string;
   icon: LucideIcon;
   label: string;
   onClick: () => void;
@@ -134,10 +132,26 @@ function MetricCard({
   value: number;
 }) {
   const toneClasses = {
-    concluded: "bg-[var(--success-soft)] text-[var(--success)]",
-    overdue: "bg-[var(--warning-soft)] text-[var(--warning)]",
-    pending: "bg-[var(--accent-soft)] text-[var(--accent)]",
-    total: "bg-[var(--info-soft)] text-[var(--info)]",
+    concluded: {
+      card: "border-emerald-200 bg-emerald-50",
+      icon: "bg-[var(--success)] text-white",
+      value: "text-[var(--success)]",
+    },
+    overdue: {
+      card: "border-amber-200 bg-amber-50",
+      icon: "bg-[var(--warning)] text-white",
+      value: "text-amber-700",
+    },
+    pending: {
+      card: "border-red-200 bg-red-50",
+      icon: "bg-[var(--accent)] text-white",
+      value: "text-[var(--accent)]",
+    },
+    total: {
+      card: "border-blue-200 bg-blue-50",
+      icon: "bg-[var(--info)] text-white",
+      value: "text-[var(--info)]",
+    },
   } as const;
   const compactLabel = label === "Total de observaciones" ? "Total" : label;
 
@@ -145,9 +159,9 @@ function MetricCard({
     <button
       aria-pressed={active}
       className={cn(
-        "nibol-panel flex h-full min-h-[156px] items-start gap-3 px-3 py-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--primary)] hover:shadow-[var(--shadow-panel)] 2xl:gap-4 2xl:px-5 2xl:py-5",
-        active &&
-          "border-[color-mix(in_srgb,var(--primary)_42%,var(--border))] bg-[var(--info-soft)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_10%,transparent)]",
+        "flex h-full min-h-[156px] items-start gap-3 border px-3 py-4 text-left shadow-[var(--shadow-panel)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-panel-strong)] 2xl:gap-4 2xl:px-5 2xl:py-5",
+        toneClasses[tone].card,
+        active && "ring-2 ring-[var(--info)] ring-offset-2",
       )}
       onClick={onClick}
       type="button"
@@ -155,20 +169,24 @@ function MetricCard({
       <div
         className={cn(
           "flex h-12 w-12 shrink-0 items-center justify-center 2xl:h-14 2xl:w-14",
-          toneClasses[tone],
+          toneClasses[tone].icon,
         )}
       >
         <Icon aria-hidden="true" className="h-6 w-6" />
       </div>
-      <div className="flex h-full min-w-0 flex-col justify-between">
-        <p className="font-display text-[0.62rem] leading-tight font-bold tracking-[0.12em] break-words text-[var(--muted)] uppercase 2xl:text-[0.68rem] 2xl:tracking-[0.16em]">
+      <div className="flex h-full min-w-0 flex-col">
+        <p className="font-display text-[0.62rem] leading-tight font-bold tracking-[0.12em] break-words text-[var(--info)] uppercase 2xl:text-[0.68rem] 2xl:tracking-[0.16em]">
           <span className="2xl:hidden">{compactLabel}</span>
           <span className="hidden 2xl:inline">{label}</span>
         </p>
-        <p className="font-display mt-2 text-5xl leading-none font-bold tracking-[-0.05em] text-[var(--foreground)]">
+        <p
+          className={cn(
+            "font-display my-auto text-6xl leading-none font-bold tracking-[-0.05em] 2xl:text-7xl",
+            toneClasses[tone].value,
+          )}
+        >
           {value}
         </p>
-        <p className="mt-2 text-xs text-[var(--muted)]">{detail}</p>
       </div>
     </button>
   );
@@ -567,7 +585,6 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
       <section className="grid items-stretch gap-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_1.35fr]">
         <MetricCard
           active={activeCard === "TOTAL"}
-          detail={hasFilters ? "Resultado del filtro" : "Alcance total del rol"}
           icon={ClipboardList}
           label="Total de observaciones"
           onClick={() => toggleCard("TOTAL")}
@@ -576,9 +593,6 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         />
         <MetricCard
           active={activeCard === "PENDING"}
-          detail={
-            hasFilters ? "Pendientes del filtro" : "Requieren seguimiento"
-          }
           icon={AlertTriangle}
           label="Pendientes"
           onClick={() => toggleCard("PENDING")}
@@ -587,9 +601,6 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         />
         <MetricCard
           active={activeCard === "CLOSED"}
-          detail={
-            hasFilters ? "Concluidas del filtro" : "Estado final registrado"
-          }
           icon={CheckCircle2}
           label="Concluidas"
           onClick={() => toggleCard("CLOSED")}
@@ -598,7 +609,6 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         />
         <MetricCard
           active={activeCard === "OVERDUE"}
-          detail="Pendientes fuera de plazo"
           icon={AlertTriangle}
           label="Vencidas"
           onClick={() => toggleCard("OVERDUE")}

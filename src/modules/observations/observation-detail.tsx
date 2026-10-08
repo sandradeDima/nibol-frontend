@@ -268,12 +268,12 @@ export function ObservationDetail({
               ["Estado", observation.status.name, "status"],
               ["Progreso", `${observation.progressPercent}%`, ""],
               [
-                "Fecha original",
+                "Fecha de compromiso",
                 formatObservationDate(observation.originalDueDate),
                 "",
               ],
               [
-                "Fecha actual",
+                "Fecha de observación",
                 formatObservationDate(observation.currentDueDate),
                 "",
               ],
