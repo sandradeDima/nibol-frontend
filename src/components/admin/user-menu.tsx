@@ -96,7 +96,7 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
                 open ? "text-slate-200" : "text-[var(--muted)]",
               )}
             >
-              {authorization.roles.join(", ") || "Sin rol asignado"}
+              {session.user.jobTitle || "Sin cargo asignado"}
             </p>
           </div>
 
@@ -123,18 +123,11 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
                 </div>
                 <div className="space-y-2">
                   <p className="text-xs font-semibold tracking-[0.2em] text-[var(--muted)] uppercase">
-                    Acceso
+                    Cargo
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {authorization.roles.map((role) => (
-                      <span
-                        key={role}
-                        className="nibol-badge nibol-badge-primary"
-                      >
-                        {role}
-                      </span>
-                    ))}
-                  </div>
+                  <span className="nibol-badge nibol-badge-primary">
+                    {session.user.jobTitle || "Sin cargo asignado"}
+                  </span>
                 </div>
               </div>
             </div>

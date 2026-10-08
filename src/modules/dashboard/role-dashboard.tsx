@@ -14,9 +14,7 @@ import {
   ClipboardList,
   Eye,
   FileCheck2,
-  FileUp,
   ListFilter,
-  Pencil,
   RefreshCw,
   UserRound,
 } from "lucide-react";
@@ -72,11 +70,9 @@ const statusIcon = {
 } as const;
 
 const quickActionIcons = {
+  OVERDUE_PLANS: AlertTriangle,
   REQUEST_EXTENSION: CalendarClock,
-  SEND_PROGRESS: ArrowUpRight,
-  UPDATE_PLAN: Pencil,
-  UPLOAD_EVIDENCE: FileUp,
-  VIEW_TIMELINE: CalendarClock,
+  UPCOMING_PLANS: CalendarClock,
 } as const;
 
 const optionList = (options: RoleDashboardData["areas"]) =>
@@ -126,6 +122,7 @@ function MetricCard({
   icon: Icon,
   label,
   onClick,
+  tone,
   value,
 }: {
   active?: boolean;
@@ -133,27 +130,42 @@ function MetricCard({
   icon: LucideIcon;
   label: string;
   onClick: () => void;
+  tone: "concluded" | "overdue" | "pending" | "total";
   value: number;
 }) {
+  const toneClasses = {
+    concluded: "bg-[var(--success-soft)] text-[var(--success)]",
+    overdue: "bg-[var(--warning-soft)] text-[var(--warning)]",
+    pending: "bg-[var(--accent-soft)] text-[var(--accent)]",
+    total: "bg-[var(--info-soft)] text-[var(--info)]",
+  } as const;
+  const compactLabel = label === "Total de observaciones" ? "Total" : label;
+
   return (
     <button
       aria-pressed={active}
       className={cn(
-        "nibol-panel flex min-h-[132px] items-center gap-4 px-5 py-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--primary)] hover:shadow-[var(--shadow-panel)]",
+        "nibol-panel flex min-h-[156px] items-start gap-3 px-3 py-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--primary)] hover:shadow-[var(--shadow-panel)] 2xl:gap-4 2xl:px-5 2xl:py-5",
         active &&
           "border-[color-mix(in_srgb,var(--primary)_42%,var(--border))] bg-[var(--info-soft)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_10%,transparent)]",
       )}
       onClick={onClick}
       type="button"
     >
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-[var(--info-soft)] text-[var(--info)]">
+      <div
+        className={cn(
+          "flex h-12 w-12 shrink-0 items-center justify-center 2xl:h-14 2xl:w-14",
+          toneClasses[tone],
+        )}
+      >
         <Icon aria-hidden="true" className="h-6 w-6" />
       </div>
       <div className="min-w-0">
-        <p className="text-[0.68rem] font-bold tracking-[0.16em] text-[var(--muted)] uppercase">
-          {label}
+        <p className="font-display break-words text-[0.62rem] leading-tight font-bold tracking-[0.12em] text-[var(--muted)] uppercase 2xl:text-[0.68rem] 2xl:tracking-[0.16em]">
+          <span className="2xl:hidden">{compactLabel}</span>
+          <span className="hidden 2xl:inline">{label}</span>
         </p>
-        <p className="font-display mt-1 text-4xl leading-none font-bold tracking-[-0.04em] text-[var(--foreground)]">
+        <p className="font-display mt-2 text-5xl leading-none font-bold tracking-[-0.05em] text-[var(--foreground)]">
           {value}
         </p>
         <p className="mt-2 text-xs text-[var(--muted)]">{detail}</p>
@@ -186,12 +198,12 @@ function PriorityList({ items }: { items: RoleDashboardPriority[] }) {
 
 function QuickActionList({ items }: { items: RoleDashboardQuickAction[] }) {
   return (
-    <div className="mt-4 grid gap-2">
+    <div className="mt-4 grid min-w-0 gap-2">
       {items.map((item) => {
         const Icon = quickActionIcons[item.code];
         return (
           <Link
-            className="group flex items-center gap-3 border border-white/10 bg-white/5 px-3.5 py-2.5 transition hover:bg-white/10"
+            className="group flex min-w-0 items-center gap-3 border border-white/10 bg-white/5 px-3.5 py-2.5 transition hover:bg-white/10"
             href={item.href}
             key={item.code}
           >
@@ -249,6 +261,7 @@ function HierarchySummary({
 
 function HierarchyRow({
   expand,
+  filledIcon = false,
   icon: Icon,
   label,
   meta,
@@ -257,6 +270,7 @@ function HierarchyRow({
   level,
 }: {
   expand?: { label: string; onToggle: () => void; open: boolean };
+  filledIcon?: boolean;
   href: string;
   icon: typeof Building2;
   label: string;
@@ -292,8 +306,16 @@ function HierarchyRow({
             />
           </button>
         ) : null}
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center text-[var(--info)]">
-          <Icon aria-hidden="true" className="h-4 w-4" />
+        <span
+          className={cn(
+            "flex h-7 w-7 shrink-0 items-center justify-center text-[var(--info)]",
+            filledIcon && "bg-[var(--info-soft)]",
+          )}
+        >
+          <Icon
+            aria-hidden="true"
+            className={cn("h-4 w-4", filledIcon && "fill-current")}
+          />
         </span>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-[var(--foreground)]">
@@ -542,13 +564,14 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         </div>
       </section>
 
-      <section className="grid gap-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_1.35fr]">
+      <section className="grid items-start gap-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_1.35fr]">
         <MetricCard
           active={activeCard === "TOTAL"}
           detail={hasFilters ? "Resultado del filtro" : "Alcance total del rol"}
           icon={ClipboardList}
           label="Total de observaciones"
           onClick={() => toggleCard("TOTAL")}
+          tone="total"
           value={view.summary.totalObservations}
         />
         <MetricCard
@@ -559,6 +582,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           icon={AlertTriangle}
           label="Pendientes"
           onClick={() => toggleCard("PENDING")}
+          tone="pending"
           value={view.summary.pendingObservations}
         />
         <MetricCard
@@ -569,6 +593,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           icon={CheckCircle2}
           label="Concluidas"
           onClick={() => toggleCard("CLOSED")}
+          tone="concluded"
           value={view.summary.concludedObservations}
         />
         <MetricCard
@@ -577,9 +602,10 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           icon={AlertTriangle}
           label="Vencidas"
           onClick={() => toggleCard("OVERDUE")}
+          tone="overdue"
           value={view.summary.overdueObservations}
         />
-        <section className="nibol-panel-dark min-h-[132px] px-5 py-4">
+        <section className="nibol-panel-dark min-w-0 min-h-[132px] px-5 py-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[0.68rem] font-bold tracking-[0.16em] text-white/55 uppercase">
@@ -1120,6 +1146,7 @@ function ResponsibleRow({
         level={1}
         meta="Responsable de área"
         summary={<HierarchySummary status={node.status} total={node.total} />}
+        filledIcon
       />
       {!collapsed
         ? node.executors.map((executor) => (
@@ -1165,6 +1192,7 @@ function ExecutorRow({
       level={roleCode === "PROCESS_OWNER" ? 2 : 1}
       meta="Ejecutor"
       summary={<HierarchySummary status={node.status} total={node.total} />}
+      filledIcon
     />
   );
 }

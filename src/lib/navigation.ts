@@ -10,13 +10,13 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
   {
     group: "Principal",
     icon: "LayoutDashboard",
-    label: "Dashboard",
+    label: "Inicio",
     route: "/dashboard",
   },
   {
     group: "Principal",
     icon: "ChartNoAxesCombined",
-    label: "Dashboard de reportería",
+    label: "Tablero - Avance de planes",
     permission: "reports.view",
     route: "/dashboard/reporteria",
   },
@@ -313,7 +313,7 @@ const routeLabelMap = new Map(
 
 routeLabelMap.set("/dashboard/auditoria", "Dashboard Auditoría");
 routeLabelMap.set("/dashboard/area", "Dashboard Área");
-routeLabelMap.set("/dashboard/reporteria", "Dashboard de reportería");
+routeLabelMap.set("/dashboard/reporteria", "Tablero - Avance de planes");
 routeLabelMap.set("/reportes", "Reportes");
 routeLabelMap.set("/reportes/generador", "Generador de reportes");
 routeLabelMap.set("/reportes/vigentes-vencidas", "Vigentes y vencidas");
@@ -352,7 +352,7 @@ export const buildBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
     return [
       {
         href: "/dashboard",
-        label: "Dashboard",
+        label: "Inicio",
       },
     ];
   }
@@ -364,7 +364,7 @@ export const buildBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
   return [
     {
       href: "/dashboard",
-      label: "Dashboard",
+      label: "Inicio",
     },
     ...pathSegments.map((segment, index) => {
       const href =

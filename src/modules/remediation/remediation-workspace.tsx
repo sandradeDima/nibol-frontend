@@ -3,7 +3,16 @@
 import { useEffect, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, ChevronRight, Pencil, Plus } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  Clock3,
+  Eye,
+  Pencil,
+  Plus,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import Link from "next/link";
 
 import { UserSearchSelect } from "@/components/ui/user-search-select";
@@ -11,14 +20,17 @@ import { QUERY_KEYS } from "@/lib/constants";
 import { extensionRequestService } from "@/services/extension-request-service";
 import { observationService } from "@/services/observation-service";
 import { remediationService } from "@/services/remediation-service";
-import { getApiErrorMessage } from "@/utils";
+import { cn, getApiErrorMessage } from "@/utils";
 
 import {
   ActionPlanEditor,
   type ActionPlanEditorValues,
 } from "./action-plan-editor";
 import { RemediationApprovalPanel } from "./remediation-approval-panel";
-import { formatRemediationDate } from "./presentation";
+import {
+  formatRemediationDate,
+  getActionPlanStatusClasses,
+} from "./presentation";
 
 const emptyForm = {
   description: "",
@@ -413,81 +425,104 @@ export function RemediationWorkspace({
                       />
                     ) : (
                       <div
-                        className={`relative border bg-white transition hover:border-amber-300 hover:shadow-sm ${activePlanId === plan.id || activeExtension.data?.actionPlan?.id === plan.id ? "border-[var(--primary)] bg-[var(--primary-soft)] ring-2 ring-[color:color-mix(in_srgb,var(--primary)_20%,transparent)]" : "border-stone-200"}`}
+                        className={cn(
+                          "relative border bg-white transition hover:border-amber-300 hover:shadow-sm",
+                          activePlanId === plan.id ||
+                            activeExtension.data?.actionPlan?.id === plan.id
+                            ? "border-[var(--primary)] bg-[var(--primary-soft)] ring-2 ring-[color:color-mix(in_srgb,var(--primary)_20%,transparent)]"
+                            : "border-stone-200",
+                        )}
                         id={`action-plan-${plan.id}`}
                         key={plan.id}
                       >
                         <Link
-                          className="group grid gap-5 p-5 pr-14 lg:grid-cols-[minmax(0,1.6fr)_minmax(11rem,0.8fr)_minmax(12rem,0.9fr)_minmax(12rem,0.9fr)] lg:items-center"
+                          className="group grid gap-6 p-5 pr-16 lg:grid-cols-[minmax(0,1.25fr)_minmax(15rem,0.8fr)_auto] lg:items-stretch lg:pr-5"
                           href={`/planes-accion/${plan.id}`}
                         >
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold tracking-[0.16em] text-amber-700 uppercase">
-                              Plan de acción
-                            </p>
-                            <h5 className="mt-2 line-clamp-2 font-semibold text-stone-950">
-                              {plan.description}
-                            </h5>
-                            <p className="mt-2 text-xs text-stone-500">
-                              Área: {area.area.name}
-                            </p>
-                          </div>
-                          <div className="text-sm">
-                            <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
-                              Ejecutor
-                            </p>
-                            <p className="mt-2 font-semibold text-stone-950">
-                              {plan.responsibleUser.name}
-                            </p>
-                            <p className="mt-1 text-xs text-stone-500">
-                              {plan.progressEvaluationCount} evaluaciones ·{" "}
-                              {plan.evidenceCount} evidencias
-                            </p>
-                          </div>
-                          <div>
-                            <div className="flex items-center justify-between gap-3 text-xs">
-                              <span className="font-semibold text-stone-500">
-                                Avance oficial
-                              </span>
-                              <span className="font-semibold text-stone-950">
-                                {plan.progressPercent}%
-                              </span>
+                          <div className="flex min-w-0 gap-4">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-[var(--surface-muted)] text-[var(--primary)]">
+                              <ShieldCheck className="h-6 w-6" />
                             </div>
-                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stone-100">
-                              <div
-                                className="h-full bg-stone-950"
-                                style={{ width: `${plan.progressPercent}%` }}
-                              />
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold tracking-[0.16em] text-amber-700 uppercase">
+                                Plan de acción
+                              </p>
+                              <p className="mt-2 text-lg leading-7 font-semibold break-words whitespace-pre-wrap text-stone-950">
+                                {plan.description}
+                              </p>
+                              <p className="mt-3 text-sm break-words text-stone-500">
+                                Área: {area.area.name}
+                              </p>
                             </div>
                           </div>
-                          <div className="text-sm lg:border-l lg:border-stone-200 lg:pl-5">
-                            <div className="flex items-center gap-1 text-xs text-stone-500">
-                              <CalendarDays className="h-3.5 w-3.5" />
-                              Fecha efectiva
-                            </div>
-                            <p className="mt-2 font-semibold text-stone-950">
-                              {formatRemediationDate(plan.effectiveDueDate)}
-                            </p>
-                            <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                              <span className="nibol-badge">
+                          <div className="grid gap-4 border-t border-stone-200 pt-5 text-sm lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
+                            <div className="flex items-start justify-between gap-3">
+                              <UserRound className="mt-0.5 h-5 w-5 shrink-0 text-stone-500" />
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
+                                  Ejecutor
+                                </p>
+                                <p className="mt-1 font-semibold break-words text-stone-950">
+                                  {plan.responsibleUser.name}
+                                </p>
+                                <p className="mt-1 text-xs break-words text-stone-500">
+                                  {plan.progressEvaluationCount} evaluaciones ·{" "}
+                                  {plan.evidenceCount} evidencias
+                                </p>
+                              </div>
+                              <span
+                                className={cn(
+                                  "inline-flex shrink-0 border px-2.5 py-1 text-xs font-semibold",
+                                  getActionPlanStatusClasses(plan.status),
+                                )}
+                              >
                                 {plan.statusLabel}
                               </span>
-                              <span
-                                className={`nibol-badge ${plan.deadlineStatus === "VENCIDO" ? "border-rose-200 bg-rose-50 text-rose-800" : ""}`}
-                              >
-                                {plan.deadlineStatus === "VENCIDO"
-                                  ? "Vencido"
-                                  : "Vigente"}
-                              </span>
-                              {plan.reprogrammed ? (
-                                <span className="nibol-badge">
-                                  Reprogramado
-                                </span>
-                              ) : null}
                             </div>
-                            <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-amber-800">
+                            <div className="flex items-start gap-3">
+                              <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-stone-500" />
+                              <div>
+                                <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
+                                  Fecha de compromiso
+                                </p>
+                                <p className="mt-1 font-semibold text-stone-950">
+                                  {formatRemediationDate(plan.effectiveDueDate)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-stone-500" />
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
+                                  Estado
+                                </p>
+                                <div className="mt-1 flex flex-wrap gap-2">
+                                  <span
+                                    className={cn(
+                                      "inline-flex border px-2.5 py-1 text-xs font-semibold",
+                                      plan.deadlineStatus === "VENCIDO"
+                                        ? "border-rose-200 bg-rose-50 text-rose-800"
+                                        : "border-emerald-200 bg-emerald-50 text-emerald-800",
+                                    )}
+                                  >
+                                    {plan.deadlineStatus === "VENCIDO"
+                                      ? "Vencido"
+                                      : "Vigente"}
+                                  </span>
+                                </div>
+                                {plan.reprogrammed ? (
+                                  <p className="mt-1 text-xs font-medium text-amber-700">
+                                    Reprogramado
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center lg:justify-end">
+                            <span className="nibol-btn-primary w-full justify-center px-4 py-3 text-sm lg:w-auto">
+                              <Eye className="h-4 w-4" />
                               Ver plan de acción
-                              <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" />
+                              <ChevronRight className="h-4 w-4 transition group-hover:translate-x-1" />
                             </span>
                           </div>
                         </Link>

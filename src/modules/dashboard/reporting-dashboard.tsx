@@ -558,12 +558,12 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
     setExportError(null);
     try {
       const blob = await reportService.downloadReport(filters, format, {
-        reportName: "Dashboard de reportería NIBOL",
+        reportName: "Tablero - Avance de planes NIBOL",
         type: "ACTION_PLANS",
       });
       triggerDownload(
         blob,
-        `dashboard-reporteria-${format === "excel" ? "nibol.xlsx" : "nibol.pdf"}`,
+        `tablero-avance-de-planes-${format === "excel" ? "nibol.xlsx" : "nibol.pdf"}`,
       );
     } catch {
       setExportError(
@@ -597,7 +597,7 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
         }
         compact
         description="Resumen y seguimiento de observaciones de auditoría."
-        eyebrow="Dashboard de reportería"
+        eyebrow="Tablero - Avance de planes"
         title="Observaciones"
       />
 

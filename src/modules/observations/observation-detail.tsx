@@ -7,6 +7,8 @@ import {
   ArrowLeft,
   CalendarClock,
   CheckCircle2,
+  Download,
+  Eye,
   FileText,
   Pencil,
   Send,
@@ -20,7 +22,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { QUERY_KEYS } from "@/lib/constants";
+import { apiClient } from "@/services/api-client";
 import { observationService } from "@/services/observation-service";
+import { progressService } from "@/services/progress-service";
 import { cn, getApiErrorMessage } from "@/utils";
 
 import { ObservationCollaborationWorkspace } from "../progress/observation-collaboration-workspace";
@@ -46,6 +50,7 @@ type Props = {
   canSend: boolean;
   canSubmitRecommended: boolean;
   canSubmitProgress: boolean;
+  canUploadObservationEvidence: boolean;
   canUploadEvidence: boolean;
   canViewRecommended: boolean;
   currentUserId: string;
@@ -107,6 +112,7 @@ export function ObservationDetail({
   canSend,
   canSubmitRecommended,
   canSubmitProgress,
+  canUploadObservationEvidence,
   canUploadEvidence,
   canViewRecommended,
   currentUserId,
@@ -147,6 +153,10 @@ export function ObservationDetail({
   const query = useQuery({
     queryFn: () => observationService.getObservationById(observationId),
     queryKey: QUERY_KEYS.observationDetails(observationId),
+  });
+  const observationEvidence = useQuery({
+    queryFn: () => progressService.getObservationEvidence(observationId),
+    queryKey: ["observation-evidence", observationId],
   });
   const closeReadiness = useQuery({
     enabled: canClose,
@@ -483,51 +493,123 @@ export function ObservationDetail({
                   </p>
                 </div>
               </div>
-              <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                {observation.areas.map((assignment) => (
-                  <article
-                    className="rounded-2xl border border-stone-200 bg-stone-50 p-5"
-                    key={assignment.id}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <h4 className="font-semibold text-stone-950">
-                        {assignment.area.name}
-                      </h4>
-                      <span className="nibol-badge">
-                        {assignment.progressPercent}% avance
-                      </span>
-                    </div>
-                    <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-                      <div>
-                        <dt className="text-stone-500">Dueño del proceso</dt>
-                        <dd className="mt-1 font-semibold">
-                          {assignment.processOwner.name}
-                        </dd>
-                        <dd className="text-xs text-stone-500">
-                          {assignment.processOwner.jobTitle ??
-                            assignment.processOwner.email}
-                        </dd>
+              <div className="mt-5 space-y-4">
+                {observation.areas.map((assignment) => {
+                  const documents = (observationEvidence.data ?? []).filter(
+                    (file) =>
+                      file.context === "FINDING" &&
+                      file.observationArea?.id === assignment.id,
+                  );
+
+                  return (
+                    <article
+                      className="grid gap-5 border border-stone-200 bg-stone-50 p-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]"
+                      key={assignment.id}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <h4 className="font-semibold break-words text-stone-950">
+                            {assignment.area.name}
+                          </h4>
+                          <span className="nibol-badge shrink-0">
+                            {assignment.progressPercent}% avance
+                          </span>
+                        </div>
+                        <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+                          <div className="min-w-0">
+                            <dt className="text-stone-500">
+                              Dueño del proceso
+                            </dt>
+                            <dd className="mt-1 font-semibold break-words">
+                              {assignment.processOwner.name}
+                            </dd>
+                            <dd className="text-xs break-words text-stone-500">
+                              {assignment.processOwner.jobTitle ??
+                                assignment.processOwner.email}
+                            </dd>
+                          </div>
+                          <div className="min-w-0">
+                            <dt className="text-stone-500">
+                              Responsable del área
+                            </dt>
+                            <dd className="mt-1 font-semibold break-words">
+                              {assignment.areaResponsible.name}
+                            </dd>
+                            <dd className="text-xs break-words text-stone-500">
+                              {assignment.areaResponsible.jobTitle ??
+                                assignment.areaResponsible.email}
+                            </dd>
+                          </div>
+                        </dl>
                       </div>
-                      <div>
-                        <dt className="text-stone-500">Responsable del área</dt>
-                        <dd className="mt-1 font-semibold">
-                          {assignment.areaResponsible.name}
-                        </dd>
-                        <dd className="text-xs text-stone-500">
-                          {assignment.areaResponsible.jobTitle ??
-                            assignment.areaResponsible.email}
-                        </dd>
+                      <div className="min-w-0 border-t border-stone-200 pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5">
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="font-semibold text-stone-950">
+                            Evidencias adjuntas
+                          </h4>
+                          <span className="shrink-0 text-xs text-stone-500">
+                            {documents.length} documento
+                            {documents.length === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          {observationEvidence.isPending ? (
+                            <p className="border border-dashed border-stone-300 bg-white p-3 text-xs text-stone-500">
+                              Cargando documentos…
+                            </p>
+                          ) : documents.length ? (
+                            documents.map((file) => {
+                              const fileUrl = `${apiClient.defaults.baseURL}${file.downloadPath}`;
+                              return (
+                                <div
+                                  className="flex flex-wrap items-center gap-3 border border-stone-200 bg-white p-3"
+                                  key={file.id}
+                                >
+                                  <FileText className="h-5 w-5 shrink-0 text-stone-500" />
+                                  <p className="min-w-0 flex-1 text-sm font-semibold break-words text-stone-900">
+                                    {file.originalName}
+                                  </p>
+                                  <div className="flex shrink-0 items-center gap-2">
+                                    <a
+                                      aria-label={`Ver ${file.originalName}`}
+                                      className="nibol-btn-secondary px-2.5 py-2 text-xs"
+                                      href={fileUrl}
+                                      rel="noreferrer"
+                                      target="_blank"
+                                    >
+                                      <Eye className="h-3.5 w-3.5" />
+                                      Ver
+                                    </a>
+                                    <a
+                                      aria-label={`Descargar ${file.originalName}`}
+                                      className="nibol-btn-secondary px-2.5 py-2 text-xs"
+                                      download={file.originalName}
+                                      href={fileUrl}
+                                    >
+                                      <Download className="h-3.5 w-3.5" />
+                                      Descargar
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <p className="border border-dashed border-stone-300 bg-white p-3 text-xs text-stone-500">
+                              No hay documentos de respaldo para esta área.
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </dl>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
               </div>
             </section>
             <ObservationCollaborationWorkspace
               activeEvidenceId={activeEvidenceId}
               canDeleteEvidence={canDeleteEvidence}
               canSubmitProgress={canSubmitProgress}
-              canUploadEvidence={canUploadEvidence}
+              canUploadEvidence={canUploadObservationEvidence}
               currentUserId={currentUserId}
               observationAreas={observation.areas.map((area) => ({
                 id: area.id,

@@ -3,6 +3,7 @@ export interface AuthUser {
   emailVerified: boolean;
   id: string;
   image?: string | null;
+  jobTitle?: string | null;
   name: string;
 }
 
