@@ -225,6 +225,14 @@ export function ProfileSettings() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-[1.4rem] border border-stone-200/90 bg-white/80 px-4 py-4">
               <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
+                Cargo
+              </p>
+              <p className="mt-2 text-sm font-medium text-stone-900">
+                {profile.jobTitle || "Sin cargo asignado"}
+              </p>
+            </div>
+            <div className="rounded-[1.4rem] border border-stone-200/90 bg-white/80 px-4 py-4">
+              <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
                 Email
               </p>
               <p className="mt-2 text-sm font-medium text-stone-900">
@@ -355,18 +363,24 @@ export function ProfileSettings() {
                 type="password"
                 {...passwordForm.register(
                   field.field as
-                    "currentPassword" | "newPassword" | "confirmPassword",
+                    | "currentPassword"
+                    | "newPassword"
+                    | "confirmPassword",
                 )}
               />
               {passwordForm.formState.errors[
                 field.field as
-                  "currentPassword" | "newPassword" | "confirmPassword"
+                  | "currentPassword"
+                  | "newPassword"
+                  | "confirmPassword"
               ] ? (
                 <span className="text-sm text-rose-700">
                   {
                     passwordForm.formState.errors[
                       field.field as
-                        "currentPassword" | "newPassword" | "confirmPassword"
+                        | "currentPassword"
+                        | "newPassword"
+                        | "confirmPassword"
                     ]?.message
                   }
                 </span>

@@ -145,7 +145,7 @@ function MetricCard({
     <button
       aria-pressed={active}
       className={cn(
-        "nibol-panel flex min-h-[156px] items-start gap-3 px-3 py-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--primary)] hover:shadow-[var(--shadow-panel)] 2xl:gap-4 2xl:px-5 2xl:py-5",
+        "nibol-panel flex h-full min-h-[156px] items-start gap-3 px-3 py-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--primary)] hover:shadow-[var(--shadow-panel)] 2xl:gap-4 2xl:px-5 2xl:py-5",
         active &&
           "border-[color-mix(in_srgb,var(--primary)_42%,var(--border))] bg-[var(--info-soft)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_10%,transparent)]",
       )}
@@ -160,8 +160,8 @@ function MetricCard({
       >
         <Icon aria-hidden="true" className="h-6 w-6" />
       </div>
-      <div className="min-w-0">
-        <p className="font-display break-words text-[0.62rem] leading-tight font-bold tracking-[0.12em] text-[var(--muted)] uppercase 2xl:text-[0.68rem] 2xl:tracking-[0.16em]">
+      <div className="flex h-full min-w-0 flex-col justify-between">
+        <p className="font-display text-[0.62rem] leading-tight font-bold tracking-[0.12em] break-words text-[var(--muted)] uppercase 2xl:text-[0.68rem] 2xl:tracking-[0.16em]">
           <span className="2xl:hidden">{compactLabel}</span>
           <span className="hidden 2xl:inline">{label}</span>
         </p>
@@ -564,7 +564,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         </div>
       </section>
 
-      <section className="grid items-start gap-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_1.35fr]">
+      <section className="grid items-stretch gap-3 xl:grid-cols-[repeat(4,minmax(0,1fr))_1.35fr]">
         <MetricCard
           active={activeCard === "TOTAL"}
           detail={hasFilters ? "Resultado del filtro" : "Alcance total del rol"}
@@ -605,7 +605,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           tone="overdue"
           value={view.summary.overdueObservations}
         />
-        <section className="nibol-panel-dark min-w-0 min-h-[132px] px-5 py-4">
+        <section className="nibol-panel-dark min-h-[132px] min-w-0 px-5 py-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[0.68rem] font-bold tracking-[0.16em] text-white/55 uppercase">

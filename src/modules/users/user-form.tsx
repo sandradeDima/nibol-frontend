@@ -192,6 +192,9 @@ export function UserForm(props: UserFormProps) {
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.roleOptions,
         }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.profile,
+        }),
       ]);
 
       router.push(`/users/${user.id}`);

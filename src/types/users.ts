@@ -60,6 +60,7 @@ export interface UserProfile {
   createdAt: string;
   email: string;
   id: string;
+  jobTitle: string | null;
   lastLoginAt: string | null;
   name: string;
   roles: string[];

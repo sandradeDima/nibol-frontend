@@ -6,7 +6,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CalendarClock,
-  CheckCircle2,
   Download,
   Eye,
   FileText,
@@ -101,7 +100,6 @@ const remainingLabel = (dateValue: string) => {
 
 export function ObservationDetail({
   canAssignRecommendedExecutor,
-  canClose,
   canCreateActionPlans,
   canCreateRecommended,
   canDeleteEvidence,
@@ -120,7 +118,6 @@ export function ObservationDetail({
 }: Props) {
   const queryClient = useQueryClient();
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [confirmClose, setConfirmClose] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -158,12 +155,6 @@ export function ObservationDetail({
     queryFn: () => progressService.getObservationEvidence(observationId),
     queryKey: ["observation-evidence", observationId],
   });
-  const closeReadiness = useQuery({
-    enabled: canClose,
-    queryFn: () => observationService.getObservationActionItems(observationId),
-    queryKey: QUERY_KEYS.observationActionItems(observationId),
-    staleTime: 30_000,
-  });
   const remove = useMutation({
     mutationFn: () => observationService.deleteObservation(observationId),
     onError: (cause) => setError(getApiErrorMessage(cause)),
@@ -172,20 +163,6 @@ export function ObservationDetail({
         queryKey: QUERY_KEYS.observations,
       });
       window.location.assign("/observaciones");
-    },
-  });
-  const close = useMutation({
-    mutationFn: () => observationService.closeObservation(observationId),
-    onError: (cause) => setError(getApiErrorMessage(cause)),
-    onSuccess: async () => {
-      setConfirmClose(false);
-      setError(null);
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.observationDetails(observationId),
-        }),
-        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.observations }),
-      ]);
     },
   });
   const send = useMutation({
@@ -227,12 +204,6 @@ export function ObservationDetail({
         Cargando detalle…
       </section>
     );
-  const canCloseObservation = Boolean(
-    canClose &&
-    !observation.status.isFinal &&
-    closeReadiness.data?.some((item) => item.actionType === "REQUEST_CLOSURE"),
-  );
-
   return (
     <div className="space-y-6">
       <div
@@ -266,17 +237,6 @@ export function ObservationDetail({
                   <ArrowLeft className="h-4 w-4" />
                   Volver
                 </Link>
-                {canCloseObservation ? (
-                  <button
-                    className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
-                    id="cierre-observacion"
-                    onClick={() => setConfirmClose(true)}
-                    type="button"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Concluir
-                  </button>
-                ) : null}
                 {canSend &&
                 !observation.sentAt &&
                 !observation.status.isFinal ? (
@@ -711,15 +671,6 @@ export function ObservationDetail({
         open={confirmDelete}
         title="¿Eliminar observación?"
         tone="danger"
-      />
-      <ConfirmDialog
-        confirmLabel="Concluir observación"
-        description="El sistema validará que todos los planes estén concluidos y que no existan evaluaciones pendientes."
-        isLoading={close.isPending}
-        onConfirm={async () => close.mutateAsync()}
-        onOpenChange={setConfirmClose}
-        open={confirmClose}
-        title="¿Aprobar el cierre?"
       />
     </div>
   );

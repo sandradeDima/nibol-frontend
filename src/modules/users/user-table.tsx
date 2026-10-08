@@ -60,6 +60,15 @@ const userColumns: ColumnDef<UserTableRow>[] = [
     header: "Rol",
   },
   {
+    accessorKey: "jobTitle",
+    cell: ({ row }) => (
+      <span className="text-stone-700">
+        {row.original.jobTitle || "Sin cargo asignado"}
+      </span>
+    ),
+    header: "Cargo",
+  },
+  {
     accessorKey: "isActive",
     cell: ({ row }) => (
       <span
@@ -141,6 +150,11 @@ export function UserTable() {
           header: "Roles",
           key: "roles",
           value: (row) => row.roles.join(", "),
+        },
+        {
+          header: "Cargo",
+          key: "jobTitle",
+          value: (row) => row.jobTitle ?? "",
         },
         {
           header: "Estado",

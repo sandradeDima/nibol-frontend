@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -10,12 +10,14 @@ import {
   ChevronDown,
   ClipboardCheck,
   Download,
+  Eye,
   History,
   MessageSquare,
   Pencil,
   Send,
   Trash2,
   UserRound,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -41,7 +43,6 @@ import {
   getActionPlanStatusLabel,
 } from "./presentation";
 import {
-  formatFileSize,
   formatProgressDate,
   getProgressStatusClasses,
   getProgressStatusLabel,
@@ -77,10 +78,12 @@ function DocumentRow({
   canDownload,
   file,
   onDownload,
+  onPreview,
 }: {
   canDownload: boolean;
   file: ProgressEvaluationItem["evidence"][number];
   onDownload: (file: { downloadPath: string; originalName: string }) => void;
+  onPreview: (file: { downloadPath: string; originalName: string }) => void;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 py-4 last:border-b-0">
@@ -92,24 +95,26 @@ function DocumentRow({
           <p className="truncate text-sm font-semibold text-stone-950">
             {file.originalName}
           </p>
-          <p className="mt-1 text-xs text-stone-500">
-            {formatFileSize(file.sizeBytes)} ·{" "}
-            {formatProgressDate(file.createdAt, false)}
-            {file.description ? ` · ${file.description}` : ""}
-          </p>
         </div>
       </div>
       <div className="flex items-center gap-2">
         {canDownload ? (
-          <button
-            aria-label={`Descargar ${file.originalName}`}
-            className="nibol-btn-secondary px-2.5 py-2 text-xs"
-            onClick={() => onDownload(file)}
-            title="Descargar documento"
-            type="button"
-          >
-            <Download className="h-3.5 w-3.5" />
-          </button>
+          <>
+            <button
+              className="nibol-btn-secondary px-3 py-2 text-xs"
+              onClick={() => onPreview(file)}
+              type="button"
+            >
+              <Eye className="h-3.5 w-3.5" /> Ver
+            </button>
+            <button
+              className="nibol-btn-secondary px-3 py-2 text-xs"
+              onClick={() => onDownload(file)}
+              type="button"
+            >
+              <Download className="h-3.5 w-3.5" /> Descargar
+            </button>
+          </>
         ) : null}
       </div>
     </div>
@@ -227,6 +232,9 @@ export function ActionPlanDetailView({
   const [editing, setEditing] = useState(canEdit && initialEditing);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ name: string; url: string } | null>(
+    null,
+  );
   const [comment, setComment] = useState("");
   const [extensionOpen, setExtensionOpen] = useState(
     searchParams.get("extension") === "1",
@@ -342,6 +350,28 @@ export function ActionPlanDetailView({
       progressService.downloadEvidence(file),
     onError: (cause) => setError(getApiErrorMessage(cause)),
   });
+  const openPreview = useMutation({
+    mutationFn: async (file: {
+      downloadPath: string;
+      originalName: string;
+    }) => ({
+      name: file.originalName,
+      url: await progressService.previewEvidence(file.downloadPath),
+    }),
+    onError: (cause) => setError(getApiErrorMessage(cause)),
+    onSuccess: setPreview,
+  });
+  useEffect(() => {
+    if (!preview) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreview(null);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      URL.revokeObjectURL(preview.url);
+    };
+  }, [preview]);
   const requestExtension = useMutation({
     mutationFn: async () => {
       if (!extensionClassification || !extensionDate || !extensionReason.trim())
@@ -413,73 +443,65 @@ export function ActionPlanDetailView({
 
   return (
     <div className="min-w-0 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          className="nibol-btn-secondary shrink-0 px-4 py-2.5 text-sm whitespace-nowrap"
-          href={buildObservationUrl({
-            observationId: plan.observation.id,
-            planId: plan.id,
-            tab: "plans",
-          })}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Volver a la observación
-        </Link>
-        <div className="flex flex-wrap items-center gap-2">
-          {canViewObservation && canUploadEvidence ? (
-            <Link
-              className="nibol-btn-primary shrink-0 px-3 py-2 text-sm whitespace-nowrap"
-              href={`${buildObservationUrl({
-                observationId: plan.observation.id,
-                planId: plan.id,
-                tab: "plans",
-              })}#avances-evidencias`}
-            >
-              Subir evidencias
-            </Link>
-          ) : null}
-          {pendingCount ? (
-            <span className="nibol-badge-accent px-3 py-2">
-              {pendingCount} {pendingCount === 1 ? "pendiente" : "pendientes"}
-            </span>
-          ) : null}
-          {canEdit ? (
-            <button
-              className="nibol-btn-secondary shrink-0 px-3 py-2 text-sm whitespace-nowrap"
-              onClick={() => {
-                setError(null);
-                setEditing((value) => !value);
-              }}
-              type="button"
-            >
-              <Pencil className="h-4 w-4" />
-              {editing ? "Cerrar edición" : "Editar plan"}
-            </button>
-          ) : null}
-          {canDelete ? (
-            <button
-              className="nibol-btn-secondary shrink-0 px-3 py-2 text-sm whitespace-nowrap text-rose-700"
-              onClick={() => setConfirmDelete(true)}
-              type="button"
-            >
-              <Trash2 className="h-4 w-4" />
-              Eliminar plan
-            </button>
-          ) : null}
-          <span
-            className={cn(
-              "inline-flex border px-3 py-2 text-xs font-bold tracking-wide uppercase",
-              getActionPlanStatusClasses(plan.status),
-            )}
-          >
-            {plan.statusLabel}
-          </span>
-        </div>
-      </div>
-
       <div className="sticky top-0 z-10 -mx-4 bg-[var(--background)] pb-1 sm:-mx-6 lg:-mx-8">
         <section className="nibol-panel overflow-hidden">
           <div className="bg-stone-950 p-6 text-white sm:p-8">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <Link
+                className="nibol-btn-secondary shrink-0 bg-white px-4 py-2.5 text-sm whitespace-nowrap"
+                href={buildObservationUrl({
+                  observationId: plan.observation.id,
+                  planId: plan.id,
+                  tab: "plans",
+                })}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver a la observación
+              </Link>
+              <div className="flex flex-wrap items-center gap-2">
+                {canViewObservation && canUploadEvidence ? (
+                  <Link
+                    className="nibol-btn-primary shrink-0 px-3 py-2 text-sm whitespace-nowrap"
+                    href={`${buildObservationUrl({
+                      observationId: plan.observation.id,
+                      planId: plan.id,
+                      tab: "plans",
+                    })}#avances-evidencias`}
+                  >
+                    Subir evidencias
+                  </Link>
+                ) : null}
+                {pendingCount ? (
+                  <span className="nibol-badge-accent px-3 py-2">
+                    {pendingCount}{" "}
+                    {pendingCount === 1 ? "pendiente" : "pendientes"}
+                  </span>
+                ) : null}
+                {canEdit ? (
+                  <button
+                    className="nibol-btn-secondary shrink-0 bg-white px-3 py-2 text-sm whitespace-nowrap"
+                    onClick={() => {
+                      setError(null);
+                      setEditing((value) => !value);
+                    }}
+                    type="button"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    {editing ? "Cerrar edición" : "Editar plan"}
+                  </button>
+                ) : null}
+                {canDelete ? (
+                  <button
+                    className="nibol-btn-secondary shrink-0 bg-white px-3 py-2 text-sm whitespace-nowrap text-rose-700"
+                    onClick={() => setConfirmDelete(true)}
+                    type="button"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Eliminar plan
+                  </button>
+                ) : null}
+              </div>
+            </div>
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div>
                 <p className="text-xs font-semibold tracking-[0.2em] text-amber-400 uppercase">
@@ -521,7 +543,7 @@ export function ActionPlanDetailView({
               </span>
             </div>
           </div>
-          <div className="grid gap-px bg-stone-200 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-px bg-stone-200 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
             {[
               ["Ejecutor", plan.responsibleUser.name],
               ["Estado", plan.statusLabel],
@@ -529,16 +551,24 @@ export function ActionPlanDetailView({
                 "Estado de plazo",
                 plan.deadlineStatus === "VENCIDO" ? "Vencido" : "Vigente",
               ],
-              ["Fecha original", formatRemediationDate(plan.originalDueDate)],
-              ["Fecha efectiva", formatRemediationDate(plan.effectiveDueDate)],
+              [
+                "Fecha de compromiso",
+                formatRemediationDate(plan.originalDueDate),
+              ],
+              [
+                "Fecha de reprogramación",
+                formatRemediationDate(plan.effectiveDueDate),
+              ],
               ["Reprogramado", plan.reprogrammed ? "Sí" : "No"],
               ["Documentos", `${plan.evidenceCount} asociados`],
             ].map(([label, value]) => (
-              <div className="bg-white p-5" key={label}>
-                <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
+              <div className="min-w-0 bg-white px-3 py-4" key={label}>
+                <p className="text-[0.65rem] leading-4 font-semibold tracking-wide text-stone-500 uppercase">
                   {label}
                 </p>
-                <p className="mt-2 font-semibold">{value}</p>
+                <p className="mt-2 text-sm font-semibold break-words">
+                  {value}
+                </p>
               </div>
             ))}
           </div>
@@ -676,6 +706,7 @@ export function ActionPlanDetailView({
                             file={file}
                             key={file.id}
                             onDownload={(value) => download.mutate(value)}
+                            onPreview={(value) => openPreview.mutate(value)}
                           />
                         ))}
                       </div>
@@ -1075,6 +1106,36 @@ export function ActionPlanDetailView({
         >
           {error}
         </p>
+      ) : null}
+      {preview ? (
+        <div
+          aria-label={`Vista previa de ${preview.name}`}
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/75 p-4"
+          role="dialog"
+        >
+          <div className="flex h-[min(90vh,56rem)] w-[min(96vw,70rem)] flex-col bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-stone-200 p-3">
+              <p className="min-w-0 truncate text-sm font-semibold">
+                {preview.name}
+              </p>
+              <button
+                autoFocus
+                aria-label="Cerrar vista previa"
+                className="nibol-btn-secondary px-3 py-2 text-xs"
+                onClick={() => setPreview(null)}
+                type="button"
+              >
+                <X className="h-4 w-4" /> Cerrar
+              </button>
+            </div>
+            <iframe
+              className="min-h-0 flex-1"
+              src={preview.url}
+              title={preview.name}
+            />
+          </div>
+        </div>
       ) : null}
       <ConfirmDialog
         confirmLabel="Eliminar plan"

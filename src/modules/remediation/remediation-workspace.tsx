@@ -364,10 +364,19 @@ export function RemediationWorkspace({
                     {area.areaResponsible.name} · responsable del área
                   </p>
                 </div>
-                <span className="nibol-badge">
-                  {areaPlans.length}{" "}
-                  {areaPlans.length === 1 ? "plan" : "planes"}
-                </span>
+                <div className="flex items-center gap-2">
+                  {areaPlans.length ? (
+                    <span className="nibol-badge">
+                      {areaPlans.every((plan) => plan.status === "CONCLUDED")
+                        ? "Concluido"
+                        : "Pendiente"}
+                    </span>
+                  ) : null}
+                  <span className="nibol-badge">
+                    {areaPlans.length}{" "}
+                    {areaPlans.length === 1 ? "plan" : "planes"}
+                  </span>
+                </div>
               </div>
               {canViewRecommended && remediationPlans.isPending ? (
                 <div className="mb-4 h-28 animate-pulse bg-[var(--surface-muted)]" />
@@ -456,7 +465,7 @@ export function RemediationWorkspace({
                             </div>
                           </div>
                           <div className="grid gap-4 border-t border-stone-200 pt-5 text-sm lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3">
                               <UserRound className="mt-0.5 h-5 w-5 shrink-0 text-stone-500" />
                               <div className="min-w-0">
                                 <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
@@ -472,7 +481,7 @@ export function RemediationWorkspace({
                               </div>
                               <span
                                 className={cn(
-                                  "inline-flex shrink-0 border px-2.5 py-1 text-xs font-semibold",
+                                  "ml-auto inline-flex shrink-0 border px-2.5 py-1 text-xs font-semibold",
                                   getActionPlanStatusClasses(plan.status),
                                 )}
                               >

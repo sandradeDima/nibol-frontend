@@ -5,12 +5,15 @@ import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Menu, X } from "lucide-react";
 import * as IconSet from "lucide-react";
 
 import { Breadcrumbs } from "@/components/admin/breadcrumbs";
 import { GlobalSearch } from "@/components/admin/global-search";
 import { UserMenu } from "@/components/admin/user-menu";
+import { QUERY_KEYS } from "@/lib/constants";
+import { userService } from "@/services/user-service";
 import { LogoutButton } from "@/components/auth/logout-button";
 import type { AuthSession, AuthorizationSummary, SidebarItem } from "@/types";
 import { cn } from "@/utils";
@@ -243,7 +246,7 @@ function SidebarSummary({
             {session.user.name}
           </p>
           <p className="text-xs leading-5 text-slate-400">
-            {authorization.roles.join(" • ") || "Usuario autenticado"}
+            {session.user.jobTitle || "Sin cargo asignado"}
           </p>
         </div>
       ) : null}
@@ -270,6 +273,13 @@ export function AdminShell({
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const [desktopHovered, setDesktopHovered] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const profile = useQuery({
+    queryFn: userService.getProfile,
+    queryKey: QUERY_KEYS.profile,
+  });
+  const currentSession = profile.data
+    ? { ...session, user: { ...session.user, jobTitle: profile.data.jobTitle } }
+    : session;
   const sidebarExpanded = !desktopCollapsed || desktopHovered;
   const isObservationDetail =
     pathname !== "/observaciones/nueva" &&
@@ -322,7 +332,7 @@ export function AdminShell({
             <SidebarSummary
               authorization={authorization}
               collapsed={!sidebarExpanded}
-              session={session}
+              session={currentSession}
             />
           </div>
         </aside>
@@ -373,7 +383,7 @@ export function AdminShell({
                 <SidebarSummary
                   authorization={authorization}
                   collapsed={false}
-                  session={session}
+                  session={currentSession}
                 />
               </div>
             </aside>
@@ -434,7 +444,10 @@ export function AdminShell({
                     className="hidden w-[min(31rem,34vw)] lg:block"
                     navigationItems={navigationItems}
                   />
-                  <UserMenu authorization={authorization} session={session} />
+                  <UserMenu
+                    authorization={authorization}
+                    session={currentSession}
+                  />
                 </div>
               </div>
 

@@ -189,7 +189,7 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
             else next.delete("search");
             replaceFilters(next);
           }}
-          placeholder="Buscar por informe, título, área o responsable"
+          placeholder="Buscar por informe, título, área, responsable o ejecutor"
           value={search}
         />
         <div className="flex items-center gap-3">

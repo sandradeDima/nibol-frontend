@@ -108,6 +108,12 @@ export const progressService = {
     anchor.click();
     URL.revokeObjectURL(url);
   },
+  async previewEvidence(downloadPath: string) {
+    const response = await apiClient.get<Blob>(downloadPath, {
+      responseType: "blob",
+    });
+    return URL.createObjectURL(response.data);
+  },
   async getObservationEvidence(observationId: string) {
     const response = await apiClient.get<
       ApiSuccessResponse<EvidenceFileItem[]>

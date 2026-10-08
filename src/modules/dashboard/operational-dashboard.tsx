@@ -48,13 +48,13 @@ function MetricCard({
   value: number;
 }) {
   const content = (
-    <article className="flex h-full flex-col justify-between gap-3 border border-[var(--border)] bg-white p-4 transition hover:border-[var(--primary)] hover:shadow-sm">
+    <article className="flex h-full flex-col justify-between gap-4 border border-[var(--border)] bg-white p-5 transition hover:border-[var(--primary)] hover:shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.18em] text-[var(--muted)] uppercase">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+          <p className="mt-3 text-4xl font-semibold tracking-tight text-[var(--foreground)]">
             {value}
           </p>
         </div>
@@ -156,7 +156,7 @@ export function OperationalDashboard({
       />
 
       <section className="grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid h-full gap-3 sm:grid-cols-3">
           {cards.map((card) => (
             <MetricCard key={card.label} {...card} />
           ))}

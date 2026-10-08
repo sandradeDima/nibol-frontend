@@ -73,7 +73,7 @@ export function ObservationActionPanel({
             </h3>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--foreground-soft)]">
               Revise lo que falta para mantener el hallazgo en control,
-              completar su respaldo y solicitar el cierre.
+              completar su respaldo y concluir los planes de acción.
             </p>
           </div>
         </div>
