@@ -133,24 +133,20 @@ function MetricCard({
 }) {
   const toneClasses = {
     concluded: {
-      card: "border-emerald-200 bg-emerald-50",
+      card: "border-emerald-200",
       icon: "bg-[var(--success)] text-white",
-      value: "text-[var(--success)]",
     },
     overdue: {
-      card: "border-amber-200 bg-amber-50",
+      card: "border-amber-200",
       icon: "bg-[var(--warning)] text-white",
-      value: "text-amber-700",
     },
     pending: {
-      card: "border-red-200 bg-red-50",
+      card: "border-red-200",
       icon: "bg-[var(--accent)] text-white",
-      value: "text-[var(--accent)]",
     },
     total: {
-      card: "border-blue-200 bg-blue-50",
+      card: "border-blue-200",
       icon: "bg-[var(--info)] text-white",
-      value: "text-[var(--info)]",
     },
   } as const;
   const compactLabel = label === "Total de observaciones" ? "Total" : label;
@@ -159,7 +155,7 @@ function MetricCard({
     <button
       aria-pressed={active}
       className={cn(
-        "flex h-full min-h-[156px] items-start gap-3 border px-3 py-4 text-left shadow-[var(--shadow-panel)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-panel-strong)] 2xl:gap-4 2xl:px-5 2xl:py-5",
+        "flex h-full min-h-[156px] items-start gap-3 border bg-white px-3 py-4 text-left shadow-[var(--shadow-panel)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-panel-strong)] 2xl:gap-4 2xl:px-5 2xl:py-5",
         toneClasses[tone].card,
         active && "ring-2 ring-[var(--info)] ring-offset-2",
       )}
@@ -179,12 +175,7 @@ function MetricCard({
           <span className="2xl:hidden">{compactLabel}</span>
           <span className="hidden 2xl:inline">{label}</span>
         </p>
-        <p
-          className={cn(
-            "font-display my-auto text-6xl leading-none font-bold tracking-[-0.05em] 2xl:text-7xl",
-            toneClasses[tone].value,
-          )}
-        >
+        <p className="font-display my-auto text-6xl leading-none font-bold tracking-[-0.05em] text-black 2xl:text-7xl">
           {value}
         </p>
       </div>
