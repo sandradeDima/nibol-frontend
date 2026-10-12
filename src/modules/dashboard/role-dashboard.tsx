@@ -80,6 +80,15 @@ const optionList = (options: RoleDashboardData["areas"]) =>
 
 type RoleDashboardCard = "CLOSED" | "OVERDUE" | "PENDING" | "TOTAL";
 
+type ListSelection = {
+  areaId: string;
+  responsibleId?: string;
+  executorId?: string;
+  label: string;
+  paramsKey: string;
+  card: RoleDashboardCard;
+};
+
 const buildObservationHref = (
   roleCode: RoleDashboardData["roleCode"],
   areaId: string,
@@ -238,16 +247,34 @@ function QuickActionList({ items }: { items: RoleDashboardQuickAction[] }) {
   );
 }
 
-function HierarchyAction({ href }: { href: string }) {
+function HierarchyAction({
+  href,
+  label,
+  onList,
+}: {
+  href: string;
+  label: string;
+  onList: () => void;
+}) {
   return (
-    <Link
-      className="inline-flex items-center justify-end gap-1.5 text-xs font-bold text-[var(--info)] transition hover:text-[var(--primary)] hover:underline"
-      href={href}
-    >
-      <Eye aria-hidden="true" className="h-3.5 w-3.5" />
-      Ver detalle
-      <ChevronRight aria-hidden="true" className="h-3.5 w-3.5" />
-    </Link>
+    <div className="flex items-center gap-3 lg:justify-end">
+      <Link
+        className="inline-flex items-center gap-1.5 text-xs font-bold whitespace-nowrap text-[var(--info)] transition hover:text-[var(--primary)] hover:underline"
+        href={href}
+      >
+        <Eye aria-hidden="true" className="h-3.5 w-3.5" />
+        Ver detalle
+        <ChevronRight aria-hidden="true" className="h-3.5 w-3.5" />
+      </Link>
+      <button
+        aria-label={`Listar observaciones de ${label}`}
+        className="text-xs font-bold text-[var(--info)] transition hover:text-[var(--primary)] hover:underline"
+        onClick={onList}
+        type="button"
+      >
+        Listar
+      </button>
+    </div>
   );
 }
 
@@ -277,6 +304,7 @@ function HierarchyRow({
   summary,
   href,
   level,
+  onList,
 }: {
   expand?: { label: string; onToggle: () => void; open: boolean };
   filledIcon?: boolean;
@@ -285,12 +313,13 @@ function HierarchyRow({
   label: string;
   level: number;
   meta: string;
+  onList: () => void;
   summary: ReactNode;
 }) {
   return (
     <div
       className={cn(
-        "grid gap-x-4 gap-y-2 border-t border-[var(--border)] px-4 py-3.5 sm:px-5 lg:grid-cols-[minmax(0,1fr)_150px_120px] lg:items-center lg:gap-y-0",
+        "grid gap-x-4 gap-y-2 border-t border-[var(--border)] px-4 py-3.5 sm:px-5 lg:grid-cols-[minmax(0,1fr)_150px_190px] lg:items-center lg:gap-y-0",
         level > 0 && "bg-[var(--surface-soft)]",
       )}
     >
@@ -337,7 +366,7 @@ function HierarchyRow({
       </div>
       <div>{summary}</div>
       <div className="col-span-2 lg:col-span-1">
-        <HierarchyAction href={href} />
+        <HierarchyAction href={href} label={label} onList={onList} />
       </div>
     </div>
   );
@@ -372,8 +401,12 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         ),
       ),
   );
+  const hierarchyRef = useRef<HTMLElement | null>(null);
   const resultsRef = useRef<HTMLElement | null>(null);
   const [activeCard, setActiveCard] = useState<RoleDashboardCard | null>(null);
+  const [listSelection, setListSelection] = useState<ListSelection | null>(
+    null,
+  );
 
   const params = useMemo<RoleDashboardQuery>(
     () => ({
@@ -419,6 +452,37 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
     queryKey: ["dashboard", "role", paramsKey],
   });
   const view = query.data ?? data;
+  const selectedList =
+    listSelection?.paramsKey === paramsKey && listSelection.card === activeCard
+      ? listSelection
+      : null;
+  const listQuery = useQuery({
+    enabled: Boolean(selectedList),
+    queryFn: () =>
+      dashboardService.getRoleDashboard({
+        ...params,
+        areaId: selectedList!.areaId,
+        areaResponsibleUserId: selectedList?.responsibleId
+          ? [selectedList.responsibleId]
+          : params.areaResponsibleUserId,
+        executorId:
+          view.roleCode === "EXECUTOR"
+            ? undefined
+            : selectedList?.executorId &&
+                selectedList.executorId !== "unassigned"
+              ? [selectedList.executorId]
+              : params.executorId,
+      }),
+    queryKey: [
+      "dashboard",
+      "role",
+      "list",
+      paramsKey,
+      selectedList?.areaId,
+      selectedList?.responsibleId,
+      selectedList?.executorId,
+    ],
+  });
   const responsibleOptions = optionList(view.filters.responsibles);
   const executorOptions = optionList(view.filters.executors);
   const areaOptions = optionList(view.areas);
@@ -433,15 +497,17 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
   const isExecutor = view.roleCode === "EXECUTOR";
 
   const resultRows = useMemo(() => {
-    if (!activeCard) return [];
-    return view.observations.filter((row) => {
+    if (!activeCard || !selectedList) return [];
+    return (listQuery.data?.observations ?? []).filter((row) => {
+      if (selectedList.executorId === "unassigned" && row.executorNames.length)
+        return false;
       const isFinal = row.status.isFinal ?? row.status.key === "CONCLUIDO";
       if (activeCard === "TOTAL") return true;
       if (activeCard === "PENDING") return !isFinal;
       if (activeCard === "CLOSED") return isFinal;
       return row.isOverdue;
     });
-  }, [activeCard, view.observations]);
+  }, [activeCard, listQuery.data, selectedList]);
 
   const toggleArea = (id: string) => {
     setCollapsedAreas((current) => {
@@ -464,6 +530,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
 
   const clearFilters = () => {
     setActiveCard(null);
+    setListSelection(null);
     setAreaId("");
     setAreaResponsibleUserIds([]);
     setExecutorIds([]);
@@ -481,9 +548,9 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
       view.filters.executors.find((option) => option.id === id)?.name ?? id,
   );
 
-  const focusResults = () => {
+  const focusSection = (target: React.RefObject<HTMLElement | null>) => {
     window.requestAnimationFrame(() => {
-      resultsRef.current?.scrollIntoView({
+      target.current?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
@@ -491,13 +558,42 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
   };
 
   const toggleCard = (card: RoleDashboardCard) => {
+    setListSelection(null);
     if (activeCard === card) {
       setActiveCard(null);
+      setObservationState("");
       return;
     }
     setActiveCard(card);
-    setObservationState("");
-    focusResults();
+    setObservationState(
+      card === "PENDING" ? "PENDING" : card === "CLOSED" ? "CONCLUDED" : "",
+    );
+    focusSection(hierarchyRef);
+  };
+
+  const listNode = (
+    areaId: string,
+    label: string,
+    responsibleId?: string,
+    executorId?: string,
+  ) => {
+    if (!activeCard) return;
+    if (
+      selectedList?.areaId === areaId &&
+      selectedList.responsibleId === responsibleId &&
+      selectedList.executorId === executorId
+    ) {
+      void listQuery.refetch();
+    }
+    setListSelection({
+      areaId,
+      responsibleId,
+      executorId,
+      label,
+      paramsKey,
+      card: activeCard,
+    });
+    focusSection(resultsRef);
   };
 
   return (
@@ -550,6 +646,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
             </span>
             <SearchableSelect
               onChange={(value) => {
+                setListSelection(null);
                 setAreaId(value);
                 setAreaResponsibleUserIds([]);
                 setExecutorIds([]);
@@ -565,7 +662,10 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
               Buscar
             </span>
             <SearchField
-              onChange={setSearch}
+              onChange={(value) => {
+                setListSelection(null);
+                setSearch(value);
+              }}
               placeholder="Buscar por área, responsable, ejecutor o descripción…"
               value={search}
             />
@@ -580,7 +680,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           label="Total de observaciones"
           onClick={() => toggleCard("TOTAL")}
           tone="total"
-          value={view.summary.totalObservations}
+          value={view.globalSummary.totalObservations}
         />
         <MetricCard
           active={activeCard === "PENDING"}
@@ -588,7 +688,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           label="Pendientes"
           onClick={() => toggleCard("PENDING")}
           tone="pending"
-          value={view.summary.pendingObservations}
+          value={view.globalSummary.pendingObservations}
         />
         <MetricCard
           active={activeCard === "CLOSED"}
@@ -596,7 +696,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           label="Concluidas"
           onClick={() => toggleCard("CLOSED")}
           tone="concluded"
-          value={view.summary.concludedObservations}
+          value={view.globalSummary.concludedObservations}
         />
         <MetricCard
           active={activeCard === "OVERDUE"}
@@ -674,6 +774,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
                 disabled={!responsibleOptions.length}
                 multiple
                 onChange={(values) => {
+                  setListSelection(null);
                   setAreaResponsibleUserIds(values);
                   setExecutorIds([]);
                 }}
@@ -692,7 +793,10 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
               <SearchableSelect
                 disabled={!executorOptions.length}
                 multiple
-                onChange={setExecutorIds}
+                onChange={(values) => {
+                  setListSelection(null);
+                  setExecutorIds(values);
+                }}
                 options={executorOptions}
                 placeholder="Todos los ejecutores"
                 showSelectedValues={false}
@@ -706,12 +810,14 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
             </span>
             <SearchableSelect
               onChange={(value) => {
-                setActiveCard("TOTAL");
                 if (value === "PENDING" || value === "CONCLUDED") {
+                  setActiveCard(value === "PENDING" ? "PENDING" : "CLOSED");
                   setObservationState(value);
                 } else {
+                  setActiveCard("TOTAL");
                   setObservationState("");
                 }
+                setListSelection(null);
               }}
               options={[
                 { id: "PENDING", label: "Pendientes" },
@@ -732,7 +838,10 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
             {areaName ? (
               <FilterChip
                 label="Área"
-                onRemove={() => setAreaId("")}
+                onRemove={() => {
+                  setListSelection(null);
+                  setAreaId("");
+                }}
                 value={areaName}
               />
             ) : null}
@@ -740,11 +849,12 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
               <FilterChip
                 label="Responsable"
                 key={areaResponsibleUserIds[index]}
-                onRemove={() =>
+                onRemove={() => {
+                  setListSelection(null);
                   setAreaResponsibleUserIds((current) =>
                     current.filter((_, currentIndex) => currentIndex !== index),
-                  )
-                }
+                  );
+                }}
                 value={name}
               />
             ))}
@@ -752,18 +862,23 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
               <FilterChip
                 label="Ejecutor"
                 key={executorIds[index]}
-                onRemove={() =>
+                onRemove={() => {
+                  setListSelection(null);
                   setExecutorIds((current) =>
                     current.filter((_, currentIndex) => currentIndex !== index),
-                  )
-                }
+                  );
+                }}
                 value={name}
               />
             ))}
             {observationState ? (
               <FilterChip
                 label="Estado"
-                onRemove={() => setObservationState("")}
+                onRemove={() => {
+                  setListSelection(null);
+                  setActiveCard("TOTAL");
+                  setObservationState("");
+                }}
                 value={
                   observationState === "PENDING" ? "Pendientes" : "Concluidas"
                 }
@@ -772,7 +887,10 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
             {search.trim() ? (
               <FilterChip
                 label="Búsqueda"
-                onRemove={() => setSearch("")}
+                onRemove={() => {
+                  setListSelection(null);
+                  setSearch("");
+                }}
                 value={search.trim()}
               />
             ) : null}
@@ -811,7 +929,11 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         </div>
       ) : null}
 
-      <section className="nibol-panel overflow-hidden" hidden={!activeCard}>
+      <section
+        className="nibol-panel scroll-mt-24 overflow-hidden"
+        hidden={!activeCard}
+        ref={hierarchyRef}
+      >
         <div className="flex flex-col gap-2 border-b border-[var(--border)] px-4 py-4 sm:px-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-start gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center bg-[var(--info-soft)] text-[var(--info)]">
@@ -834,7 +956,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
               : `${view.hierarchy.length} áreas visibles`}
           </p>
         </div>
-        <div className="hidden grid-cols-[minmax(0,1fr)_150px_120px] gap-4 bg-[var(--surface-soft)] px-5 py-2.5 text-[0.65rem] font-bold tracking-[0.13em] text-[var(--muted)] uppercase lg:grid">
+        <div className="hidden grid-cols-[minmax(0,1fr)_150px_190px] gap-4 bg-[var(--surface-soft)] px-5 py-2.5 text-[0.65rem] font-bold tracking-[0.13em] text-[var(--muted)] uppercase lg:grid">
           <span>
             {isProcessOwner
               ? "Área / Responsable / Ejecutor"
@@ -843,7 +965,11 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           <span className="text-right">Cantidad</span>
           <span className="text-right">Acción</span>
         </div>
-        {view.hierarchy.length ? (
+        {query.isPending ? (
+          <div className="px-5 py-12 text-center text-sm text-[var(--foreground-soft)]">
+            Cargando jerarquía…
+          </div>
+        ) : view.hierarchy.length ? (
           <div>
             {view.hierarchy.map((area) => {
               const areaOpen = !collapsedAreas.has(area.id);
@@ -868,6 +994,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
                     label={area.name}
                     level={0}
                     meta="Área"
+                    onList={() => listNode(area.id, area.name)}
                     summary={
                       <HierarchySummary
                         status={area.status}
@@ -889,6 +1016,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
                               onToggle={() =>
                                 toggleResponsible(area.id, responsible.id)
                               }
+                              onList={listNode}
                               roleCode={view.roleCode}
                               search={search.trim() || undefined}
                             />
@@ -898,6 +1026,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
                               areaId={area.id}
                               key={executor.id}
                               node={executor}
+                              onList={listNode}
                               roleCode={view.roleCode}
                               search={search.trim() || undefined}
                             />
@@ -921,12 +1050,17 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         )}
       </section>
 
-      {activeCard ? (
-        <section className="nibol-panel overflow-hidden" ref={resultsRef}>
+      {selectedList && activeCard ? (
+        <section
+          className="nibol-panel scroll-mt-24 overflow-hidden"
+          ref={resultsRef}
+        >
           <RoleObservationResults
             activeCard={activeCard}
-            isFetching={query.isFetching}
+            isError={listQuery.isError}
+            isFetching={listQuery.isFetching}
             items={resultRows}
+            label={selectedList.label}
           />
         </section>
       ) : null}
@@ -936,12 +1070,16 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
 
 function RoleObservationResults({
   activeCard,
+  isError,
   isFetching,
   items,
+  label,
 }: {
   activeCard: RoleDashboardCard;
+  isError: boolean;
   isFetching: boolean;
   items: RoleDashboardObservationRow[];
+  label: string;
 }) {
   const titles: Record<RoleDashboardCard, string> = {
     CLOSED: "Observaciones concluidas",
@@ -956,7 +1094,7 @@ function RoleObservationResults({
         <div>
           <p className="nibol-eyebrow">Resultado seleccionado</p>
           <h2 className="mt-1 text-lg font-semibold text-[var(--foreground)]">
-            {titles[activeCard]}
+            {titles[activeCard]} · {label}
           </h2>
           <p className="mt-1 text-xs text-[var(--foreground-soft)]">
             {items.length} observaciones dentro del alcance y jerarquía
@@ -967,7 +1105,15 @@ function RoleObservationResults({
           {isFetching ? "Actualizando…" : "Filtrado en el tablero"}
         </span>
       </div>
-      {items.length ? (
+      {isError && !items.length ? (
+        <div className="px-5 py-10 text-center text-sm text-[var(--accent)]">
+          No se pudo cargar esta lista. Vuelve a pulsar Listar para reintentar.
+        </div>
+      ) : isFetching && !items.length ? (
+        <div className="px-5 py-10 text-center text-sm text-[var(--foreground-soft)]">
+          Cargando observaciones…
+        </div>
+      ) : items.length ? (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[60rem] text-left text-xs">
             <thead className="bg-[var(--surface-soft)] text-[0.65rem] font-bold tracking-[0.12em] text-[var(--muted)] uppercase">
@@ -1111,6 +1257,7 @@ function ResponsibleRow({
   collapsed,
   node,
   onToggle,
+  onList,
   roleCode,
   search,
 }: {
@@ -1118,6 +1265,12 @@ function ResponsibleRow({
   collapsed: boolean;
   node: RoleDashboardResponsibleNode;
   onToggle: () => void;
+  onList: (
+    areaId: string,
+    label: string,
+    responsibleId?: string,
+    executorId?: string,
+  ) => void;
   roleCode: RoleDashboardData["roleCode"];
   search?: string;
 }) {
@@ -1146,6 +1299,7 @@ function ResponsibleRow({
         label={node.name}
         level={1}
         meta="Responsable de área"
+        onList={() => onList(areaId, node.name, node.id)}
         summary={<HierarchySummary status={node.status} total={node.total} />}
         filledIcon
       />
@@ -1155,6 +1309,7 @@ function ResponsibleRow({
               areaId={areaId}
               key={executor.id}
               node={executor}
+              onList={onList}
               responsibleId={node.id}
               roleCode={roleCode}
               search={search}
@@ -1168,12 +1323,19 @@ function ResponsibleRow({
 function ExecutorRow({
   areaId,
   node,
+  onList,
   responsibleId,
   roleCode,
   search,
 }: {
   areaId: string;
   node: RoleDashboardExecutorNode;
+  onList: (
+    areaId: string,
+    label: string,
+    responsibleId?: string,
+    executorId?: string,
+  ) => void;
   responsibleId?: string;
   roleCode: RoleDashboardData["roleCode"];
   search?: string;
@@ -1192,6 +1354,7 @@ function ExecutorRow({
       label={node.name}
       level={roleCode === "PROCESS_OWNER" ? 2 : 1}
       meta="Ejecutor"
+      onList={() => onList(areaId, node.name, responsibleId, node.id)}
       summary={<HierarchySummary status={node.status} total={node.total} />}
       filledIcon
     />

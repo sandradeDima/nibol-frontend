@@ -4,6 +4,7 @@ import type {
   CreateNotificationInput,
   NotificationListResult,
   AppNotification,
+  AutomaticAlertEmailPreview,
   AutomaticNotificationRule,
   DeadlineReminderConfig,
   DeadlineReminderPolicy,
@@ -109,6 +110,13 @@ export const notificationService = {
     const response = await apiClient.get<
       ApiSuccessResponse<AutomaticNotificationRule[]>
     >("/automatic-jobs/rules");
+    return response.data.data;
+  },
+
+  async previewDeadlineReminderEmail(): Promise<AutomaticAlertEmailPreview> {
+    const response = await apiClient.get<
+      ApiSuccessResponse<AutomaticAlertEmailPreview>
+    >("/automatic-jobs/deadline-reminders/email-preview");
     return response.data.data;
   },
 

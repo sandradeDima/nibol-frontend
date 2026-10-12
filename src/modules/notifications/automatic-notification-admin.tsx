@@ -17,6 +17,7 @@ import {
 import { QUERY_KEYS } from "@/lib/constants";
 import { notificationService } from "@/services/notification-service";
 import type {
+  AutomaticNotificationRule,
   DeadlineReminderPolicy,
   DeadlineReminderRole,
 } from "@/types";
@@ -33,6 +34,12 @@ const ROLE_HELP: Record<DeadlineReminderRole, string> = {
   EXECUTOR: "Planes actualmente asignados al ejecutor.",
   PROCESS_OWNER: "Planes de las áreas y procesos bajo su responsabilidad.",
 };
+
+const REMINDER_BUCKET_LABELS = {
+  DUE_TODAY: "Vence hoy",
+  OVERDUE: "Vencido",
+  UPCOMING: "Próximo",
+} as const;
 
 type PolicyDraft = Omit<DeadlineReminderPolicy, "createdAt" | "role">;
 
@@ -85,6 +92,74 @@ const statusLabel: Record<string, string> = {
   SUCCESS: "Exitosa",
 };
 
+const ALERT_CATEGORY_RULES = [
+  {
+    description: "Incluir planes cuya fecha límite ya venció.",
+    key: "include_reminder_overdue",
+    name: "Planes vencidos",
+  },
+  {
+    description: "Incluir planes que vencen en la fecha de corte.",
+    key: "include_reminder_due_today",
+    name: "Planes que vencen hoy",
+  },
+  {
+    description:
+      "Incluir planes con vencimiento dentro de la ventana configurada por rol.",
+    key: "include_reminder_upcoming",
+    name: "Próximos vencimientos",
+  },
+] as const;
+
+const DELIVERY_RULES = [
+  {
+    description:
+      "Crear avisos dentro de la campana y la bandeja de notificaciones.",
+    key: "notify_in_app",
+    name: "Notificaciones dentro de NIBOL",
+  },
+  {
+    description: "Enviar los avisos automáticos por correo electrónico.",
+    key: "notify_by_email",
+    name: "Correo electrónico",
+  },
+] as const;
+
+const findAutomaticRule = (rules: AutomaticNotificationRule[], key: string) =>
+  rules.find((rule) => rule.key === key);
+
+function AutomaticRuleToggle({
+  checked,
+  disabled,
+  onChange,
+  rule,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  onChange: (checked: boolean) => void;
+  rule: { description: string; key: string; name: string };
+}) {
+  return (
+    <label className="flex cursor-pointer items-start justify-between gap-4 border border-[var(--border)] px-4 py-3">
+      <span>
+        <span className="block text-sm font-medium text-[var(--foreground)]">
+          {rule.name}
+        </span>
+        <span className="mt-1 block text-xs leading-5 text-[var(--muted)]">
+          {rule.description}
+        </span>
+      </span>
+      <input
+        checked={checked}
+        className="mt-1 h-4 w-4 shrink-0 accent-[var(--primary)]"
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+        type="checkbox"
+      />
+    </label>
+  );
+}
+
 function PolicyCard({
   canEdit,
   drafts,
@@ -130,7 +205,7 @@ function PolicyCard({
             }
             type="checkbox"
           />
-          Activo
+          Enviar recordatorios
         </label>
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-3">
@@ -203,10 +278,15 @@ export function AutomaticNotificationAdmin({
   const [drafts, setDrafts] = useState<
     Partial<Record<DeadlineReminderRole, PolicyDraft>>
   >({});
-  const [previewRole, setPreviewRole] = useState<DeadlineReminderRole>(
-    "AREA_RESPONSIBLE",
-  );
+  const [previewRole, setPreviewRole] =
+    useState<DeadlineReminderRole>("AREA_RESPONSIBLE");
   const [previewDate, setPreviewDate] = useState(getDateKey);
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const automaticRulesQuery = useQuery({
+    enabled: canExecute,
+    queryFn: notificationService.listAutomaticRules,
+    queryKey: [...QUERY_KEYS.notifications, "automatic-rules"],
+  });
   const configQuery = useQuery({
     enabled: canExecute,
     queryFn: notificationService.getDeadlineReminderConfig,
@@ -221,6 +301,9 @@ export function AutomaticNotificationAdmin({
       }),
     queryKey: [...QUERY_KEYS.notifications, "deadline-reminder-executions"],
   });
+  const previewMutation = useMutation({
+    mutationFn: notificationService.previewDeadlineReminders,
+  });
   const updateMutation = useMutation({
     mutationFn: ({
       input,
@@ -231,13 +314,26 @@ export function AutomaticNotificationAdmin({
     }) => notificationService.updateDeadlineReminderPolicy(role, input),
     onSuccess: async () => {
       setDrafts({});
+      previewMutation.reset();
       await queryClient.invalidateQueries({
         queryKey: [...QUERY_KEYS.notifications, "deadline-reminder-config"],
       });
     },
   });
-  const previewMutation = useMutation({
-    mutationFn: notificationService.previewDeadlineReminders,
+  const automaticRuleMutation = useMutation({
+    mutationFn: ({ key, value }: { key: string; value: string }) =>
+      notificationService.updateAutomaticRule(key, value),
+    onSuccess: async () => {
+      previewMutation.reset();
+      await queryClient.invalidateQueries({
+        queryKey: [...QUERY_KEYS.notifications, "automatic-rules"],
+      });
+    },
+  });
+  const emailPreviewQuery = useQuery({
+    enabled: canExecute && showEmailPreview,
+    queryFn: notificationService.previewDeadlineReminderEmail,
+    queryKey: [...QUERY_KEYS.notifications, "automatic-email-preview"],
   });
   const runMutation = useMutation({
     mutationFn: notificationService.runDeadlineReminders,
@@ -247,19 +343,26 @@ export function AutomaticNotificationAdmin({
           queryKey: [...QUERY_KEYS.notifications, "deadline-reminder-config"],
         }),
         queryClient.invalidateQueries({
-          queryKey: [...QUERY_KEYS.notifications, "deadline-reminder-executions"],
+          queryKey: [
+            ...QUERY_KEYS.notifications,
+            "deadline-reminder-executions",
+          ],
         }),
       ]);
     },
   });
 
   const config = configQuery.data;
+  const automaticRules = automaticRulesQuery.data ?? [];
   const executions = executionsQuery.data?.data ?? [];
   const latest = executions[0];
   const error =
+    automaticRulesQuery.error ||
     configQuery.error ||
     executionsQuery.error ||
     updateMutation.error ||
+    automaticRuleMutation.error ||
+    emailPreviewQuery.error ||
     previewMutation.error ||
     runMutation.error;
   const updateDraft = (
@@ -273,6 +376,36 @@ export function AutomaticNotificationAdmin({
       ...current,
       [role]: { ...getDraft(policy, current), [field]: value },
     }));
+  };
+  const renderRuleToggle = (rule: {
+    description: string;
+    key: string;
+    name: string;
+  }) => {
+    const configured = findAutomaticRule(automaticRules, rule.key);
+    return (
+      <AutomaticRuleToggle
+        checked={
+          configured?.active === false
+            ? configured.defaultValue === "true"
+            : (configured?.value ?? "true") === "true"
+        }
+        disabled={
+          !canExecute ||
+          automaticRulesQuery.isPending ||
+          automaticRulesQuery.isError ||
+          automaticRuleMutation.isPending
+        }
+        key={rule.key}
+        onChange={(checked) =>
+          automaticRuleMutation.mutate({
+            key: rule.key,
+            value: String(checked),
+          })
+        }
+        rule={rule}
+      />
+    );
   };
 
   return (
@@ -302,7 +435,9 @@ export function AutomaticNotificationAdmin({
             {formatDate(latest?.finishedAt)}
           </p>
           <p className="mt-2 text-sm text-[var(--muted)]">
-            {latest ? statusLabel[latest.status] ?? latest.status : "Aún no ejecutado"}
+            {latest
+              ? (statusLabel[latest.status] ?? latest.status)
+              : "Aún no ejecutado"}
           </p>
         </div>
         <div className="nibol-panel p-5">
@@ -326,6 +461,38 @@ export function AutomaticNotificationAdmin({
       ) : null}
 
       <section className="nibol-panel p-6">
+        <div>
+          <p className="nibol-eyebrow">Recordatorios programados</p>
+          <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
+            Alertas y canales
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+            Elija qué tipos de planes incluir y cómo entregar los recordatorios.
+            Las políticas por rol determinan quién los recibe y con qué
+            frecuencia.
+          </p>
+        </div>
+        <div className="mt-5 grid gap-6 xl:grid-cols-2">
+          <div>
+            <h3 className="font-semibold text-[var(--foreground)]">
+              Contenido de las alertas
+            </h3>
+            <div className="mt-3 grid gap-2">
+              {ALERT_CATEGORY_RULES.map(renderRuleToggle)}
+            </div>
+          </div>
+          <div>
+            <h3 className="font-semibold text-[var(--foreground)]">
+              Canales de entrega
+            </h3>
+            <div className="mt-3 grid gap-2">
+              {DELIVERY_RULES.map(renderRuleToggle)}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="nibol-panel p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="nibol-eyebrow">Configuración de recordatorios</p>
@@ -333,14 +500,19 @@ export function AutomaticNotificationAdmin({
               Plazos por rol
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted)]">
-              El corte es calendario: se evalúan vencidos, vencimientos del
-              día y la ventana próxima. No es un contador desde la creación o
+              El corte es calendario: se evalúan vencidos, vencimientos del día
+              y la ventana próxima. No es un contador desde la creación o
               asignación del plan.
             </p>
           </div>
           <button
             className="nibol-btn-secondary p-2"
-            onClick={() => void Promise.all([configQuery.refetch(), executionsQuery.refetch()])}
+            onClick={() =>
+              void Promise.all([
+                configQuery.refetch(),
+                executionsQuery.refetch(),
+              ])
+            }
             type="button"
           >
             <RefreshCw className="h-4 w-4" />
@@ -384,8 +556,13 @@ export function AutomaticNotificationAdmin({
               Previsualizar o ejecutar
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              La previsualización no crea notificaciones ni consume la
-              idempotencia. Ejecutar ahora queda registrado como MANUAL.
+              Consulte los destinatarios y planes que incluiría el correo para
+              el rol elegido. La previsualización no envía alertas; ejecutar
+              ahora sí queda registrado como MANUAL.
+            </p>
+            <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+              La lista respeta los filtros de contenido activos; las políticas
+              por rol y los canales determinan si se entrega el recordatorio.
             </p>
           </div>
           <div className="mt-6 grid gap-4">
@@ -393,9 +570,10 @@ export function AutomaticNotificationAdmin({
               Rol
               <select
                 className="nibol-field mt-2"
-                onChange={(event) =>
-                  setPreviewRole(event.target.value as DeadlineReminderRole)
-                }
+                onChange={(event) => {
+                  previewMutation.reset();
+                  setPreviewRole(event.target.value as DeadlineReminderRole);
+                }}
                 value={previewRole}
               >
                 {ROLE_ORDER.map((role) => (
@@ -409,7 +587,10 @@ export function AutomaticNotificationAdmin({
               Fecha de corte para QA
               <input
                 className="nibol-field mt-2"
-                onChange={(event) => setPreviewDate(event.target.value)}
+                onChange={(event) => {
+                  previewMutation.reset();
+                  setPreviewDate(event.target.value);
+                }}
                 type="date"
                 value={previewDate}
               />
@@ -427,7 +608,9 @@ export function AutomaticNotificationAdmin({
                 type="button"
               >
                 <Eye className="h-4 w-4" />
-                {previewMutation.isPending ? "Calculando..." : "Previsualizar"}
+                {previewMutation.isPending
+                  ? "Calculando..."
+                  : "Ver qué se enviaría"}
               </button>
               <button
                 className="nibol-btn-primary"
@@ -463,23 +646,106 @@ export function AutomaticNotificationAdmin({
                   </div>
                 ))}
               </div>
-              <div className="mt-4 space-y-2">
-                {previewMutation.data.recipients.slice(0, 8).map((recipient) => (
-                  <div
-                    className="flex flex-wrap items-center justify-between gap-2 border border-[var(--border)] px-3 py-2 text-sm"
-                    key={recipient.recipient.id}
-                  >
-                    <span className="font-medium text-[var(--foreground)]">
-                      {recipient.recipient.name}
-                    </span>
-                    <span className="text-[var(--muted)]">
-                      {recipient.plans.length} planes · {recipient.recipient.email}
-                    </span>
-                  </div>
-                ))}
+              <p className="mt-4 text-xs text-[var(--muted)]">
+                {!previewMutation.data.policy.enabled
+                  ? "Los recordatorios están desactivados para este rol."
+                  : !previewMutation.data.channels.notifyByEmail &&
+                      !previewMutation.data.channels.notifyInApp
+                    ? "No se entregará ningún aviso: todos los canales están desactivados."
+                    : `Entrega activa: ${[
+                        previewMutation.data.channels.notifyByEmail
+                          ? "correo electrónico"
+                          : null,
+                        previewMutation.data.channels.notifyInApp
+                          ? "dentro de NIBOL"
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" y ")}.`}
+              </p>
+              <div className="mt-4 max-h-96 space-y-2 overflow-y-auto">
+                {previewMutation.data.recipients.length === 0 ? (
+                  <p className="border border-dashed border-[var(--border)] px-4 py-6 text-center text-sm text-[var(--muted)]">
+                    No hay planes que coincidan con el rol, la fecha y los
+                    filtros activos.
+                  </p>
+                ) : (
+                  previewMutation.data.recipients.map((recipient) => (
+                    <div
+                      className="border border-[var(--border)] px-3 py-2 text-sm"
+                      key={recipient.recipient.id}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-medium text-[var(--foreground)]">
+                          {recipient.recipient.name}
+                        </span>
+                        <span className="text-[var(--muted)]">
+                          {recipient.plans.length} planes ·{" "}
+                          {recipient.recipient.email}
+                        </span>
+                      </div>
+                      <ul className="mt-2 space-y-1 border-t border-[var(--border)] pt-2 text-xs text-[var(--muted)]">
+                        {recipient.plans.map((plan) => (
+                          <li key={plan.actionPlanId}>
+                            {REMINDER_BUCKET_LABELS[plan.bucket]} ·{" "}
+                            {plan.observation} · {plan.plan} ·{" "}
+                            {plan.effectiveDueDate}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           ) : null}
+          <div className="mt-6 border-t border-[var(--border)] pt-5">
+            <p className="text-sm font-semibold text-[var(--foreground)]">
+              Ejemplo de correo
+            </p>
+            <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
+              Muestra con datos ficticios; el correo no se envía.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                className="nibol-btn-secondary px-3 py-2 text-xs"
+                onClick={() => setShowEmailPreview(true)}
+                type="button"
+              >
+                Ver ejemplo del correo
+              </button>
+              {showEmailPreview ? (
+                <button
+                  className="nibol-btn-secondary px-3 py-2 text-xs"
+                  onClick={() => setShowEmailPreview(false)}
+                  type="button"
+                >
+                  Cerrar ejemplo
+                </button>
+              ) : null}
+            </div>
+            {showEmailPreview ? (
+              <div className="mt-4 border border-[var(--border)] bg-white p-3">
+                <p className="mb-3 text-sm font-medium text-[var(--foreground)]">
+                  {emailPreviewQuery.data?.subject ??
+                    "Recordatorio de vencimientos"}
+                </p>
+                {emailPreviewQuery.isPending ? (
+                  <p className="py-8 text-center text-sm text-[var(--muted)]">
+                    Preparando ejemplo...
+                  </p>
+                ) : emailPreviewQuery.data ? (
+                  <iframe
+                    className="h-[34rem] w-full border border-[var(--border)]"
+                    referrerPolicy="no-referrer"
+                    sandbox=""
+                    srcDoc={emailPreviewQuery.data.html}
+                    title="Vista previa del correo automático"
+                  />
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <div className="nibol-panel p-6">
@@ -506,10 +772,13 @@ export function AutomaticNotificationAdmin({
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-[var(--foreground)]">
-                        {execution.runType === "MANUAL" ? "Manual" : "Programada"}
+                        {execution.runType === "MANUAL"
+                          ? "Manual"
+                          : "Programada"}
                       </p>
                       <p className="mt-1 text-xs text-[var(--muted)]">
-                        Corte: {formatExecutionDate(execution.scheduledFor)} · Inicio: {formatDate(execution.startedAt)}
+                        Corte: {formatExecutionDate(execution.scheduledFor)} ·
+                        Inicio: {formatDate(execution.startedAt)}
                       </p>
                     </div>
                     <span className="nibol-badge nibol-badge-success">

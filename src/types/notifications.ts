@@ -52,6 +52,12 @@ export interface AutomaticNotificationRule {
   valueType: string;
 }
 
+export interface AutomaticAlertEmailPreview {
+  html: string;
+  subject: string;
+  template: "deadlineReminder";
+}
+
 export type DeadlineReminderRole =
   | "AREA_RESPONSIBLE"
   | "EXECUTOR"
@@ -114,6 +120,10 @@ export interface DeadlineReminderConfig {
 }
 
 export interface DeadlineReminderPreview {
+  channels: {
+    notifyByEmail: boolean;
+    notifyInApp: boolean;
+  };
   cutoffDate: string;
   policy: DeadlineReminderPolicy;
   recipients: DeadlineReminderRecipient[];
