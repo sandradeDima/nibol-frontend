@@ -44,10 +44,6 @@ export default async function ObservationDetailPage({
         canSubmitRecommended={authorization.permissions.includes(
           "recommended_action_plans.submit_to_audit",
         )}
-        canUploadObservationEvidence={authorization.roleCode === "AUDITOR"}
-        canUploadEvidence={authorization.permissions.includes(
-          "evidence.create",
-        )}
         canViewRecommended={authorization.permissions.includes(
           "recommended_action_plans.view",
         )}

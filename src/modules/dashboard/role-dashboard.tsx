@@ -46,6 +46,7 @@ import {
 } from "../observations/presentation";
 
 const roleLabels = {
+  SYSTEM_ADMIN: "Administrador",
   AUDITOR: "Auditor",
   AUDIT_CHIEF: "Jefe auditor",
   AREA_RESPONSIBLE: "Responsable de área",
@@ -54,6 +55,7 @@ const roleLabels = {
 } as const;
 
 const rolesWithResponsibleHierarchy = new Set<RoleDashboardData["roleCode"]>([
+  "SYSTEM_ADMIN",
   "PROCESS_OWNER",
   "AUDITOR",
   "AUDIT_CHIEF",
@@ -714,7 +716,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
           label="Vencidas"
           onClick={() => toggleCard("OVERDUE")}
           tone="overdue"
-          value={view.summary.overdueObservations}
+          value={view.globalSummary.overdueObservations}
         />
         <section className="nibol-panel-dark min-h-[132px] min-w-0 px-5 py-4">
           <div className="flex items-start justify-between gap-3">

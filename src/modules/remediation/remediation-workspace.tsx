@@ -292,8 +292,7 @@ export function RemediationWorkspace({
               value={form.responsibleUserId}
             />
             <span className="block text-xs font-normal text-stone-500">
-              Solo se muestran usuarios activos con rol Ejecutor para el área
-              seleccionada.
+              Solo se muestran usuarios activos.
             </span>
           </label>
           <label className="space-y-2 text-sm font-semibold md:col-span-2">

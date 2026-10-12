@@ -10,6 +10,7 @@ export default async function DashboardRoutePage() {
   const authorization = await requirePermission("observations.view");
   const roleDashboardRole = authorization.roleCode;
   if (
+    roleDashboardRole === "SYSTEM_ADMIN" ||
     roleDashboardRole === "PROCESS_OWNER" ||
     roleDashboardRole === "AREA_RESPONSIBLE" ||
     roleDashboardRole === "EXECUTOR" ||

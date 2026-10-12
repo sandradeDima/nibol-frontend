@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileUp, MessageSquare, Send, ShieldCheck, Trash2 } from "lucide-react";
+import { MessageSquare, Send, ShieldCheck, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -24,29 +24,24 @@ type EvaluationDraft = {
 
 export function ObservationCollaborationWorkspace({
   activePlanId,
-  activeEvidenceId,
   activeEvaluationId,
   canDeleteEvidence,
   canSubmitProgress,
-  canUploadEvidence,
   currentUserId,
   observationAreas,
   observationId,
   section = "all",
 }: {
   activePlanId?: string | null;
-  activeEvidenceId?: string | null;
   activeEvaluationId?: string | null;
   canDeleteEvidence: boolean;
   canSubmitProgress: boolean;
-  canUploadEvidence: boolean;
   currentUserId: string;
   observationAreas: Array<{ id: string; name: string }>;
   observationId: string;
-  section?: "all" | "plans" | "evidence" | "comments";
+  section?: "all" | "plans" | "comments";
 }) {
   const showPlans = section === "all" || section === "plans";
-  const showEvidence = section === "all" || section === "evidence";
   const showComments = section === "all" || section === "comments";
   const queryClient = useQueryClient();
   const [selectedPlanId, setSelectedPlanId] = useState(activePlanId ?? "");
@@ -57,9 +52,7 @@ export function ObservationCollaborationWorkspace({
     type: "ADVANCE",
   });
   const [comment, setComment] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
   const [evaluationFiles, setEvaluationFiles] = useState<File[]>([]);
-  const [evidenceAreaId, setEvidenceAreaId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const plans = useQuery({
     queryFn: () =>
@@ -75,10 +68,6 @@ export function ObservationCollaborationWorkspace({
       ),
     queryKey: ["progress-evaluations", observationId],
   });
-  const evidence = useQuery({
-    queryFn: () => progressService.getObservationEvidence(observationId),
-    queryKey: ["observation-evidence", observationId],
-  });
   const comments = useQuery({
     queryFn: () => progressService.getComments(observationId),
     queryKey: ["observation-comments", observationId],
@@ -90,9 +79,6 @@ export function ObservationCollaborationWorkspace({
       }),
       queryClient.invalidateQueries({
         queryKey: ["action-plans", observationId],
-      }),
-      queryClient.invalidateQueries({
-        queryKey: ["observation-evidence", observationId],
       }),
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.observationDetails(observationId),
@@ -169,21 +155,6 @@ export function ObservationCollaborationWorkspace({
       await refresh();
     },
   });
-  const upload = useMutation({
-    mutationFn: () =>
-      progressService.uploadObservationEvidence(
-        observationId,
-        files,
-        "Documento de respaldo de la observación.",
-        evidenceAreaId || undefined,
-      ),
-    onError: (cause) => setError(getUploadErrorMessage(cause, files)),
-    onSuccess: async () => {
-      setFiles([]);
-      setEvidenceAreaId("");
-      await refresh();
-    },
-  });
   const deleteEvidence = useMutation({
     mutationFn: (id: string) => progressService.deleteEvidence(id),
     onError: (cause) => setError(getApiErrorMessage(cause)),
@@ -206,34 +177,6 @@ export function ObservationCollaborationWorkspace({
       });
     },
   });
-  const groupedEvidence = useMemo(() => {
-    const findingEvidence = (evidence.data ?? []).filter(
-      (item) => item.context === "FINDING",
-    );
-    const groups = observationAreas.map((area) => ({
-      files: findingEvidence.filter(
-        (file) => file.observationArea?.id === area.id,
-      ),
-      id: area.id,
-      name: area.name,
-    }));
-    const unassigned = findingEvidence.filter((file) => !file.observationArea);
-    if (unassigned.length)
-      groups.push({
-        files: unassigned,
-        id: "unassigned",
-        name: "Sin área específica",
-      });
-    return groups;
-  }, [evidence.data, observationAreas]);
-
-  useEffect(() => {
-    if (section !== "evidence" || !activeEvidenceId || !evidence.data) return;
-    document
-      .getElementById(`evidence-${activeEvidenceId}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [activeEvidenceId, evidence.data, section]);
-
   useEffect(() => {
     if (section !== "plans" || !activeEvaluationId || !evaluations.data) return;
     document
@@ -245,22 +188,18 @@ export function ObservationCollaborationWorkspace({
     <section className="nibol-panel p-6">
       <div>
         <p className="text-xs font-semibold tracking-[0.2em] text-amber-700 uppercase">
-          {showPlans && showEvidence
+          {showPlans && showComments
             ? "Seguimiento independiente"
             : showPlans
               ? "Planes y avances"
-              : showEvidence
-                ? "Evidencias y documentos"
-                : "Comentarios de la observación"}
+              : "Comentarios de la observación"}
         </p>
         <h3 className="mt-2 text-2xl font-semibold text-stone-950">
-          {showPlans && showEvidence
-            ? "Evaluaciones, evidencia y comentarios"
+          {showPlans && showComments
+            ? "Evaluaciones y comentarios"
             : showPlans
               ? "Avances y Evidencias"
-              : showEvidence
-                ? "Documentos de respaldo y evidencias"
-                : "Comentarios del equipo"}
+              : "Comentarios del equipo"}
         </h3>
         <p className="mt-1 text-sm text-stone-500">
           {showComments
@@ -540,150 +479,6 @@ export function ObservationCollaborationWorkspace({
               )}
             </div>
           </div>
-        </div>
-      ) : null}
-      {showEvidence ? (
-        <div className="mt-8">
-          <section className="scroll-mt-24" id="documentos-observacion">
-            <h4 className="flex items-center gap-2 font-semibold">
-              <FileUp className="h-4 w-4 text-amber-700" />
-              Documentos de respaldo por área involucrada
-            </h4>
-            {canUploadEvidence ? (
-              <form
-                className="mt-4 grid gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_auto] lg:items-end"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  upload.mutate();
-                }}
-              >
-                <label className="grid gap-2 text-sm font-semibold">
-                  Área involucrada
-                  <select
-                    className="nibol-field"
-                    required={observationAreas.length > 0}
-                    value={evidenceAreaId}
-                    onChange={(event) => setEvidenceAreaId(event.target.value)}
-                  >
-                    <option value="">
-                      {observationAreas.length
-                        ? "Seleccione el área"
-                        : "Sin área específica"}
-                    </option>
-                    {observationAreas.map((area) => (
-                      <option key={area.id} value={area.id}>
-                        {area.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <FilePicker
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                  files={files}
-                  id="observation-evidence"
-                  onChange={(selected) =>
-                    setFiles((current) => [
-                      ...current,
-                      ...selected.filter(
-                        (file) =>
-                          !current.some(
-                            (existing) =>
-                              existing.name === file.name &&
-                              existing.size === file.size &&
-                              existing.lastModified === file.lastModified,
-                          ),
-                      ),
-                    ])
-                  }
-                  onRemove={(file) =>
-                    setFiles((current) =>
-                      current.filter((candidate) => candidate !== file),
-                    )
-                  }
-                  required
-                />
-                <button
-                  className="nibol-btn-primary px-4 py-2 text-sm"
-                  disabled={upload.isPending}
-                  type="submit"
-                >
-                  Subir
-                </button>
-              </form>
-            ) : null}
-            <div className="mt-4 space-y-4">
-              {groupedEvidence.map((group) => (
-                <div
-                  className="rounded-2xl border border-stone-200 bg-stone-50 p-4"
-                  key={group.id}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-stone-950">
-                      {group.name}
-                    </p>
-                    <span className="text-xs text-stone-500">
-                      {group.files.length} documento
-                      {group.files.length === 1 ? "" : "s"}
-                    </span>
-                  </div>
-                  <div className="mt-2 space-y-2">
-                    {group.files.length ? (
-                      group.files.map((file) => (
-                        <article
-                          className={`border bg-white p-3 ${activeEvidenceId === file.id ? "border-amber-500 ring-2 ring-amber-200" : "border-stone-200"}`}
-                          id={`evidence-${file.id}`}
-                          key={file.id}
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <a
-                                className="block truncate text-sm font-semibold text-stone-900 hover:text-amber-800 hover:underline"
-                                href={`${apiClient.defaults.baseURL}${file.downloadPath}`}
-                              >
-                                {file.originalName}
-                              </a>
-                              <p className="mt-1 text-xs text-stone-500">
-                                {Math.ceil(file.sizeBytes / 1024)} KB · Cargado
-                                por {file.uploadedByUser?.name ?? "Usuario"} ·{" "}
-                                {new Date(file.createdAt).toLocaleString(
-                                  "es-BO",
-                                )}
-                              </p>
-                              {file.description ? (
-                                <p className="mt-1 text-xs leading-5 text-stone-600">
-                                  {file.description}
-                                </p>
-                              ) : null}
-                            </div>
-                            {canDeleteEvidence &&
-                            file.uploadedByUser?.id === currentUserId &&
-                            ["DRAFT", "RETURNED"].includes(
-                              file.reviewStatus,
-                            ) ? (
-                              <button
-                                aria-label={`Eliminar ${file.originalName}`}
-                                className="rounded-lg p-1.5 text-stone-500 hover:bg-rose-50 hover:text-rose-700"
-                                disabled={deleteEvidence.isPending}
-                                onClick={() => deleteEvidence.mutate(file.id)}
-                                title="Eliminar documento de respaldo"
-                                type="button"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            ) : null}
-                          </div>
-                        </article>
-                      ))
-                    ) : (
-                      <p className="border border-dashed border-stone-300 bg-white p-3 text-xs text-stone-500">
-                        No hay documentos de respaldo para esta área.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
         </div>
       ) : null}
       {showComments ? (

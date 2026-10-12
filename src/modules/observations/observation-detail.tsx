@@ -49,8 +49,6 @@ type Props = {
   canSend: boolean;
   canSubmitRecommended: boolean;
   canSubmitProgress: boolean;
-  canUploadObservationEvidence: boolean;
-  canUploadEvidence: boolean;
   canViewRecommended: boolean;
   currentUserId: string;
   observationId: string;
@@ -110,8 +108,6 @@ export function ObservationDetail({
   canSend,
   canSubmitRecommended,
   canSubmitProgress,
-  canUploadObservationEvidence,
-  canUploadEvidence,
   canViewRecommended,
   currentUserId,
   observationId,
@@ -175,7 +171,10 @@ export function ObservationDetail({
   });
   useEffect(() => {
     const targetId =
-      activeTab === "plans" && window.location.hash === "#avances-evidencias"
+      activeTab === "detail" && activeEvidenceId
+        ? `evidence-${activeEvidenceId}`
+        : activeTab === "plans" &&
+            window.location.hash === "#avances-evidencias"
         ? "avances-evidencias"
         : activeTab === "detail" &&
             window.location.hash === "#documentos-observacion"
@@ -189,7 +188,7 @@ export function ObservationDetail({
       });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [activeTab, activePlanId, query.data]);
+  }, [activeEvidenceId, activeTab, activePlanId, observationEvidence.data, query.data]);
   if (query.isError)
     return (
       <ErrorState
@@ -443,7 +442,10 @@ export function ObservationDetail({
               </div>
             </div>
 
-            <section className="nibol-panel p-6">
+            <section
+              className="nibol-panel p-6"
+              id="documentos-observacion"
+            >
               <div className="flex items-center gap-3">
                 <Users className="h-5 w-5 text-amber-700" />
                 <div>
@@ -522,7 +524,8 @@ export function ObservationDetail({
                               const fileUrl = `${apiClient.defaults.baseURL}${file.downloadPath}`;
                               return (
                                 <div
-                                  className="flex flex-wrap items-center gap-3 border border-stone-200 bg-white p-3"
+                                  className={`flex flex-wrap items-center gap-3 border bg-white p-3 ${activeEvidenceId === file.id ? "border-amber-500 ring-2 ring-amber-200" : "border-stone-200"}`}
+                                  id={`evidence-${file.id}`}
                                   key={file.id}
                                 >
                                   <FileText className="h-5 w-5 shrink-0 text-stone-500" />
@@ -565,19 +568,6 @@ export function ObservationDetail({
                 })}
               </div>
             </section>
-            <ObservationCollaborationWorkspace
-              activeEvidenceId={activeEvidenceId}
-              canDeleteEvidence={canDeleteEvidence}
-              canSubmitProgress={canSubmitProgress}
-              canUploadEvidence={canUploadObservationEvidence}
-              currentUserId={currentUserId}
-              observationAreas={observation.areas.map((area) => ({
-                id: area.id,
-                name: area.area.name,
-              }))}
-              observationId={observationId}
-              section="evidence"
-            />
           </div>
         </>
       ) : null}
@@ -592,7 +582,6 @@ export function ObservationDetail({
           <ObservationCollaborationWorkspace
             canDeleteEvidence={canDeleteEvidence}
             canSubmitProgress={canSubmitProgress}
-            canUploadEvidence={canUploadEvidence}
             currentUserId={currentUserId}
             observationAreas={observation.areas.map((area) => ({
               id: area.id,
@@ -631,7 +620,6 @@ export function ObservationDetail({
               activePlanId={activePlanId}
               canDeleteEvidence={canDeleteEvidence}
               canSubmitProgress={canSubmitProgress}
-              canUploadEvidence={canUploadEvidence}
               currentUserId={currentUserId}
               observationAreas={observation.areas.map((area) => ({
                 id: area.id,
