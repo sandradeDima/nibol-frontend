@@ -259,7 +259,9 @@ const OPERATIONAL_ROUTES_BY_ROLE: Record<string, ReadonlySet<string>> = {
     "/notifications",
   ]),
   AUDIT_CHIEF: new Set([
+    "/dashboard",
     "/dashboard/reporteria",
+    "/observaciones",
     "/reportes",
     "/reportes/auditoria",
   ]),

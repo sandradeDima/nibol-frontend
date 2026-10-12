@@ -46,10 +46,18 @@ import {
 } from "../observations/presentation";
 
 const roleLabels = {
+  AUDITOR: "Auditor",
+  AUDIT_CHIEF: "Jefe auditor",
   AREA_RESPONSIBLE: "Responsable de área",
   EXECUTOR: "Ejecutor",
   PROCESS_OWNER: "Dueño de proceso",
 } as const;
+
+const rolesWithResponsibleHierarchy = new Set<RoleDashboardData["roleCode"]>([
+  "PROCESS_OWNER",
+  "AUDITOR",
+  "AUDIT_CHIEF",
+]);
 
 const formatUpdatedAt = (value: string) =>
   new Intl.DateTimeFormat("es-BO", {
@@ -98,7 +106,7 @@ const buildObservationHref = (
   search?: string,
 ) => {
   const params = new URLSearchParams({ "filter.areaId": areaId });
-  if (roleCode === "PROCESS_OWNER" && responsibleId)
+  if (rolesWithResponsibleHierarchy.has(roleCode) && responsibleId)
     params.set("filter.areaResponsibleUserId", responsibleId);
   if (executorId) params.set("filter.actionPlanResponsibleUserId", executorId);
   if (status.key !== "MIXED")
@@ -493,7 +501,9 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
     observationState ||
     search.trim(),
   );
-  const isProcessOwner = view.roleCode === "PROCESS_OWNER";
+  const hasResponsibleHierarchy = rolesWithResponsibleHierarchy.has(
+    view.roleCode,
+  );
   const isExecutor = view.roleCode === "EXECUTOR";
 
   const resultRows = useMemo(() => {
@@ -765,7 +775,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         </div>
 
         <div className="mt-4 grid gap-3 border-t border-[var(--border)] pt-4 md:grid-cols-2 xl:grid-cols-3">
-          {isProcessOwner ? (
+          {hasResponsibleHierarchy ? (
             <label className="block min-w-0">
               <span className="mb-1.5 block text-xs font-bold tracking-[0.12em] text-[var(--muted)] uppercase">
                 Responsable de área
@@ -944,7 +954,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
                 Observaciones por jerarquía
               </h2>
               <p className="mt-1 text-xs text-[var(--muted)]">
-                {isProcessOwner
+                {hasResponsibleHierarchy
                   ? "Área / Responsable / Ejecutor"
                   : "Área / Ejecutor"}
               </p>
@@ -958,7 +968,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
         </div>
         <div className="hidden grid-cols-[minmax(0,1fr)_150px_190px] gap-4 bg-[var(--surface-soft)] px-5 py-2.5 text-[0.65rem] font-bold tracking-[0.13em] text-[var(--muted)] uppercase lg:grid">
           <span>
-            {isProcessOwner
+            {hasResponsibleHierarchy
               ? "Área / Responsable / Ejecutor"
               : "Área / Ejecutor"}
           </span>
@@ -1004,7 +1014,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
                   />
                   {areaOpen ? (
                     <div>
-                      {isProcessOwner
+                      {hasResponsibleHierarchy
                         ? (area.responsibles ?? []).map((responsible) => (
                             <ResponsibleRow
                               areaId={area.id}
@@ -1352,7 +1362,7 @@ function ExecutorRow({
       )}
       icon={UserRound}
       label={node.name}
-      level={roleCode === "PROCESS_OWNER" ? 2 : 1}
+      level={rolesWithResponsibleHierarchy.has(roleCode) ? 2 : 1}
       meta="Ejecutor"
       onList={() => onList(areaId, node.name, responsibleId, node.id)}
       summary={<HierarchySummary status={node.status} total={node.total} />}

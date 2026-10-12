@@ -243,6 +243,8 @@ export interface DashboardMySummary {
 }
 
 export type RoleDashboardRole =
+  | "AUDITOR"
+  | "AUDIT_CHIEF"
   | "PROCESS_OWNER"
   | "AREA_RESPONSIBLE"
   | "EXECUTOR";

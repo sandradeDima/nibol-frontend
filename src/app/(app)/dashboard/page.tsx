@@ -12,7 +12,9 @@ export default async function DashboardRoutePage() {
   if (
     roleDashboardRole === "PROCESS_OWNER" ||
     roleDashboardRole === "AREA_RESPONSIBLE" ||
-    roleDashboardRole === "EXECUTOR"
+    roleDashboardRole === "EXECUTOR" ||
+    roleDashboardRole === "AUDITOR" ||
+    roleDashboardRole === "AUDIT_CHIEF"
   ) {
     const result = await dashboardServer
       .getRoleDashboard()

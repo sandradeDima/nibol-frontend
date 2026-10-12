@@ -21,7 +21,12 @@ import {
   reportService,
   triggerDownload,
 } from "@/services/report-service";
-import type { ReportFilters, ReportPreviewData, ReportType } from "@/types";
+import type {
+  ReportFilters,
+  ReportOptions,
+  ReportPreviewData,
+  ReportType,
+} from "@/types";
 import {
   REPORT_TYPE_META,
   ReportDataTable,
@@ -65,7 +70,7 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
   );
   const [draft, setDraft] = useState<ReportFilters>(inheritedFilters);
   const [reportName, setReportName] = useState("Reporte operativo NIBOL");
-  const [type, setType] = useState<ReportType>("ACTION_PLANS");
+  const [type, setType] = useState<ReportType>("OBSERVATIONS");
   const [submitted, setSubmitted] = useState<{
     filters: ReportFilters;
     reportName: string;
@@ -94,6 +99,7 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
     key: keyof ReportFilters,
     value: string | string[] | number | boolean | undefined,
   ) => {
+    setSubmitted(null);
     setDraft((current) => {
       const next = { ...current } as Record<string, unknown>;
       if (value === undefined || value === "") delete next[key];
@@ -134,7 +140,9 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
       );
       triggerDownload(
         blob,
-        `reporte-${submitted.type.toLowerCase()}-${format === "excel" ? "nibol.xlsx" : "nibol.pdf"}`,
+        submitted.type === "OBSERVATIONS" && format === "excel"
+          ? "observaciones-detalle.xlsx"
+          : `reporte-${submitted.type.toLowerCase()}-${format === "excel" ? "nibol.xlsx" : "nibol.pdf"}`,
       );
     } catch {
       setExportError(
@@ -163,6 +171,11 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
                   !submitted || previewMutation.isPending || exporting !== null
                 }
                 loading={exporting !== null}
+                excelLabel={
+                  submitted?.type === "OBSERVATIONS"
+                    ? "Excel · detalle"
+                    : "Excel"
+                }
                 onExport={(format) => {
                   void handleExport(format);
                 }}
@@ -196,7 +209,10 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
                 aria-pressed={selected}
                 className={`flex min-w-0 items-start gap-3 border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)] ${selected ? "border-[var(--primary)] bg-[var(--primary-soft)] shadow-[var(--shadow-panel)]" : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--primary)]"}`}
                 key={meta.type}
-                onClick={() => setType(meta.type)}
+                onClick={() => {
+                  setType(meta.type);
+                  setSubmitted(null);
+                }}
                 type="button"
               >
                 <span
@@ -226,7 +242,10 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
           <span className="report-field-label">Nombre del reporte</span>
           <input
             className="nibol-field text-sm"
-            onChange={(event) => setReportName(event.target.value)}
+            onChange={(event) => {
+              setReportName(event.target.value);
+              setSubmitted(null);
+            }}
             value={reportName}
           />
         </label>
@@ -263,16 +282,18 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
               <ReportPreviewSummary
                 data={previewMutation.data}
                 filters={submitted.filters}
+                options={optionsQuery.data}
               />
             ) : null}
           </ReportPanel>
           {previewMutation.data ? (
             <ReportPanel
-              description={`${previewMutation.data.total} registro${previewMutation.data.total === 1 ? "" : "s"} encontrados.`}
+              description={`${previewMutation.data.total} fila${previewMutation.data.total === 1 ? "" : "s"} encontradas con los filtros aplicados.`}
               title="Registros del reporte"
             >
               <ReportDataTable
                 columns={previewMutation.data.columns}
+                grouped={submitted.type === "OBSERVATIONS"}
                 rows={previewMutation.data.rows}
               />
             </ReportPanel>
@@ -292,9 +313,11 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
 function ReportPreviewSummary({
   data,
   filters,
+  options,
 }: {
   data: ReportPreviewData;
   filters: ReportFilters;
+  options?: ReportOptions;
 }) {
   const typeLabel =
     REPORT_TYPE_META.find((meta) => meta.type === data.reportType)?.label ??
@@ -308,12 +331,14 @@ function ReportPreviewSummary({
           label="Registros"
           value={new Intl.NumberFormat("es-BO").format(data.total)}
         />
-        <ReportKpi
-          description="Cumplimiento del corte base de observaciones."
-          icon="compliance"
-          label="Cumplimiento"
-          value={`${Math.round(data.summary.compliancePercent)}%`}
-        />
+        {data.reportType !== "OBSERVATIONS" ? (
+          <ReportKpi
+            description="Cumplimiento del corte base de observaciones."
+            icon="compliance"
+            label="Cumplimiento"
+            value={`${Math.round(data.summary.compliancePercent)}%`}
+          />
+        ) : null}
       </div>
       <div className="border-t border-[var(--border)] pt-4">
         <p className="text-xs font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
@@ -326,7 +351,7 @@ function ReportPreviewSummary({
           {typeLabel}
         </p>
       </div>
-      <ReportFilterSummary filters={filters} />
+      <ReportFilterSummary filters={filters} options={options} />
     </div>
   );
 }

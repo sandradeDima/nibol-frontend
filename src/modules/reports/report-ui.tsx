@@ -37,7 +37,8 @@ export const REPORT_TYPE_META: Array<{
   type: ReportType;
 }> = [
   {
-    description: "Listado ejecutivo con estado, riesgo, fechas y avance.",
+    description:
+      "Detalle de observaciones, planes, comentarios y estados con exportación Excel agrupada.",
     label: "Observaciones",
     type: "OBSERVATIONS",
   },
@@ -1433,7 +1434,24 @@ export function ReportTrend({
   );
 }
 
-export function ReportFilterSummary({ filters }: { filters: ReportFilters }) {
+export function ReportFilterSummary({
+  filters,
+  options,
+}: {
+  filters: ReportFilters;
+  options?: ReportOptions;
+}) {
+  const selected = <T extends { id: string }>(
+    ids: string[] | undefined,
+    choices: T[] | undefined,
+    label: (choice: T) => string,
+  ) =>
+    ids
+      ?.map((id) => {
+        const choice = choices?.find((item) => item.id === id);
+        return choice ? label(choice) : "Seleccionado";
+      })
+      .join(", ") || "Todos";
   const progressLabels = {
     CONCLUDED: "Concluido",
     NOT_STARTED: "No iniciado",
@@ -1454,23 +1472,58 @@ export function ReportFilterSummary({ filters }: { filters: ReportFilters }) {
         : "Actual",
     ],
     ["Fecha", periodLabels[filters.periodField ?? "createdAt"]],
+    ["Fecha de corte", filters.cutoffDate ?? "Actual"],
+    [
+      "Informe",
+      selected(
+        filters.auditReportId,
+        options?.auditReports,
+        (report) => report.label,
+      ),
+    ],
     [
       "Dueño del proceso",
-      filters.processOwnerId ? "Dueño seleccionado" : "Todos",
+      selected(
+        filters.processOwnerId,
+        options?.processOwners,
+        (user) => user.name,
+      ),
     ],
-    ["Área", filters.areaId ? "Área seleccionada" : "Todas"],
+    [
+      "Área",
+      selected(
+        filters.areaId ? [filters.areaId] : undefined,
+        options?.areas,
+        (area) => area.name,
+      ),
+    ],
     [
       "Responsable de área",
-      filters.areaResponsibleId ? "Responsable seleccionado" : "Todos",
+      selected(
+        filters.areaResponsibleId,
+        options?.areaResponsibles,
+        (user) => user.name,
+      ),
     ],
-    ["Riesgo", filters.riskLevelId ? "Nivel seleccionado" : "Todos"],
+    [
+      "Riesgo",
+      selected(
+        filters.riskLevelId ? [filters.riskLevelId] : undefined,
+        options?.riskLevels,
+        (risk) => risk.name,
+      ),
+    ],
     [
       "Estado de observación",
-      filters.observationStatusIds?.length
-        ? `${filters.observationStatusIds.length} seleccionados`
-        : filters.statusId
-          ? "Estado seleccionado"
-          : "Todos",
+      selected(
+        filters.observationStatusIds?.length
+          ? filters.observationStatusIds
+          : filters.statusId
+            ? [filters.statusId]
+            : undefined,
+        options?.observationStatuses,
+        (status) => status.name,
+      ),
     ],
     [
       "Estado global",
@@ -1499,7 +1552,11 @@ export function ReportFilterSummary({ filters }: { filters: ReportFilters }) {
           : "No",
     ],
     ["Atención", filters.activeOnly ? "Solo pendientes" : "Todos"],
-    ["Ejecutor", filters.executorId ? "Ejecutor seleccionado" : "Todos"],
+    [
+      "Ejecutor",
+      selected(filters.executorId, options?.executors, (user) => user.name),
+    ],
+    ["Búsqueda", filters.search || "Todas"],
   ];
   return (
     <div className="grid min-w-0 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-2">
@@ -1522,9 +1579,11 @@ export function ReportFilterSummary({ filters }: { filters: ReportFilters }) {
 
 export function ReportDataTable({
   columns,
+  grouped = false,
   rows,
 }: {
   columns: string[];
+  grouped?: boolean;
   rows: Array<Record<string, unknown>>;
 }) {
   if (rows.length === 0) {
@@ -1538,6 +1597,26 @@ export function ReportDataTable({
     <div className="report-table-wrapper -mx-2 w-full max-w-full min-w-0 overflow-x-auto px-2">
       <table className="w-max min-w-full border-collapse text-left text-sm">
         <thead>
+          {grouped ? (
+            <tr className="bg-[var(--primary)] text-white">
+              {[
+                ["Informe", 3],
+                ["Observación", 11],
+                ["Plan de acción", 3],
+                ["Reprogramación", 2],
+                ["Comentario plan de acción", 2],
+                ["Estados", 3],
+              ].map(([label, span]) => (
+                <th
+                  className="px-3 py-2 text-left text-xs font-semibold"
+                  colSpan={Number(span)}
+                  key={label}
+                >
+                  {label}
+                </th>
+              ))}
+            </tr>
+          ) : null}
           <tr className="border-b border-[var(--border-strong)]">
             {columns.map((column) => (
               <th
@@ -1582,10 +1661,12 @@ const formatCellValue = (value: unknown): string => {
 
 export function ReportExportButtons({
   disabled = false,
+  excelLabel = "Excel",
   loading = false,
   onExport,
 }: {
   disabled?: boolean;
+  excelLabel?: string;
   loading?: boolean;
   onExport: (format: "excel" | "pdf") => void;
 }) {
@@ -1597,7 +1678,7 @@ export function ReportExportButtons({
         onClick={() => onExport("excel")}
         type="button"
       >
-        <Download className="h-4 w-4" /> {loading ? "Preparando…" : "Excel"}
+        <Download className="h-4 w-4" /> {loading ? "Preparando…" : excelLabel}
       </button>
       <button
         className="nibol-btn-secondary px-3 py-2.5 text-sm"
