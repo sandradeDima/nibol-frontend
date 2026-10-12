@@ -1137,13 +1137,15 @@ function RoleObservationResults({
                 <th className="px-4 py-2.5">Estado</th>
                 <th className="px-4 py-2.5">Estado según plazo</th>
                 <th className="px-4 py-2.5">Fecha compromiso</th>
-                <th className="px-4 py-2.5 text-right">Acción</th>
+                <th className="sticky right-0 z-10 border-l border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2.5 text-right">
+                  Acción
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {items.map((item) => (
                 <tr
-                  className="align-top hover:bg-[var(--surface-soft)]"
+                  className="group align-top hover:bg-[var(--surface-soft)]"
                   key={item.id}
                 >
                   <td className="px-4 py-2.5 font-semibold whitespace-nowrap text-[var(--foreground)]">
@@ -1208,7 +1210,7 @@ function RoleObservationResults({
                   >
                     {formatObservationDate(item.dueDate)}
                   </td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="sticky right-0 z-10 border-l border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-right group-hover:bg-[var(--surface-soft)]">
                     <Link
                       className="inline-flex items-center gap-1 font-semibold whitespace-nowrap text-[var(--primary)] hover:underline"
                       href={item.href}
