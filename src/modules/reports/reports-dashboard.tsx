@@ -145,12 +145,17 @@ export function ReportsDashboard({
     setExportError(null);
     try {
       const blob = await reportService.downloadReport(filters, format, {
-        reportName: "Planes de acción NIBOL",
-        type: "ACTION_PLANS",
+        reportName:
+          format === "excel"
+            ? "Observaciones y planes de acción NIBOL"
+            : "Planes de acción NIBOL",
+        type: format === "excel" ? "OBSERVATIONS" : "ACTION_PLANS",
       });
       triggerDownload(
         blob,
-        `planes-de-accion-${format === "excel" ? "nibol.xlsx" : "nibol.pdf"}`,
+        format === "excel"
+          ? "observaciones-detalle.xlsx"
+          : "planes-de-accion-nibol.pdf",
       );
     } catch {
       setExportError(
