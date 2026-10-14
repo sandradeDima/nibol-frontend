@@ -264,6 +264,15 @@ const OPERATIONAL_ROUTES_BY_ROLE: Record<string, ReadonlySet<string>> = {
     "/observaciones",
     "/reportes",
     "/reportes/auditoria",
+    "/planes-accion",
+    "/notifications",
+    "/avances-evidencias",
+    "/aprobaciones/pendientes",
+    "/aprobaciones/flujos",
+    "/solicitudes-especiales/nueva",
+    "/cronograma",
+    "/ampliaciones-plazo",
+    "/actividad",
   ]),
 };
 
@@ -288,6 +297,13 @@ export const getVisibleSidebarItems = (
       : !item.permission ||
         hasPermission(authorization.permissions, item.permission);
     if (!hasRequiredPermission) return false;
+    const resource = item.permission?.split(".")[0];
+    if (
+      resource &&
+      (authorization.permissions.includes(`${resource}.view_module`) || authorization.roleCode === "AUDIT_CHIEF") &&
+      (!authorization.permissions.includes(`${resource}.view_module`) ||
+        !authorization.permissions.includes(`${resource}.view`))
+    ) return false;
     if (!OPERATIONAL_ROLE_CODES.has(authorization.roleCode ?? "")) return true;
     return (
       OPERATIONAL_ROUTES_BY_ROLE[authorization.roleCode ?? ""]?.has(

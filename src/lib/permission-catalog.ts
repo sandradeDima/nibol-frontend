@@ -106,10 +106,12 @@ export const PERMISSION_ACTIONS = [
     label: "Eliminar",
   },
 ] as const;
+const MODULE_PERMISSION_ACTION = { key: "view_module", label: "Ver módulo" } as const;
 
 export type PermissionResource = (typeof PERMISSION_RESOURCES)[number]["key"];
 export type PermissionAction =
   | (typeof PERMISSION_ACTIONS)[number]["key"]
+  | "view_module"
   | "approve"
   | "assign_executor"
   | "close"
