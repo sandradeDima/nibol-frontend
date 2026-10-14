@@ -42,6 +42,13 @@ type ReportingDashboardProps = {
 
 const DEFAULT_FILTERS: ReportFilters = {};
 
+const PLAN_STATUS_CODES: Record<string, string> = {
+  NOT_STARTED: "NI",
+  STARTED: "I",
+  WITH_PROGRESS: "CA",
+  CONCLUDED: "CO",
+};
+
 const DASHBOARD_FILTER_KEYS = [
   "activeOnly",
   "cutoffDate",
@@ -237,7 +244,7 @@ function AdvancePanel({ items }: { items: ReportChartItem[] }) {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--accent)] uppercase">
-                    {item.key}
+                    {PLAN_STATUS_CODES[item.key] ?? item.key}
                   </p>
                   <p className="truncate text-xs text-[var(--foreground-soft)]">
                     {item.label}
