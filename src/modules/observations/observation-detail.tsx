@@ -175,11 +175,11 @@ export function ObservationDetail({
         ? `evidence-${activeEvidenceId}`
         : activeTab === "plans" &&
             window.location.hash === "#avances-evidencias"
-        ? "avances-evidencias"
-        : activeTab === "detail" &&
-            window.location.hash === "#documentos-observacion"
-          ? "documentos-observacion"
-          : null;
+          ? "avances-evidencias"
+          : activeTab === "detail" &&
+              window.location.hash === "#documentos-observacion"
+            ? "documentos-observacion"
+            : null;
     if (!targetId) return;
     const frame = window.requestAnimationFrame(() => {
       document.getElementById(targetId)?.scrollIntoView({
@@ -188,7 +188,13 @@ export function ObservationDetail({
       });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [activeEvidenceId, activeTab, activePlanId, observationEvidence.data, query.data]);
+  }, [
+    activeEvidenceId,
+    activeTab,
+    activePlanId,
+    observationEvidence.data,
+    query.data,
+  ]);
   if (query.isError)
     return (
       <ErrorState
@@ -583,10 +589,6 @@ export function ObservationDetail({
             canDeleteEvidence={canDeleteEvidence}
             canSubmitProgress={canSubmitProgress}
             currentUserId={currentUserId}
-            observationAreas={observation.areas.map((area) => ({
-              id: area.id,
-              name: area.area.name,
-            }))}
             observationId={observationId}
             section="comments"
           />
@@ -621,10 +623,6 @@ export function ObservationDetail({
               canDeleteEvidence={canDeleteEvidence}
               canSubmitProgress={canSubmitProgress}
               currentUserId={currentUserId}
-              observationAreas={observation.areas.map((area) => ({
-                id: area.id,
-                name: area.area.name,
-              }))}
               observationId={observationId}
               section="plans"
               key={`plans-${activePlanId ?? "all"}`}

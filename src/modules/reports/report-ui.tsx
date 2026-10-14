@@ -1577,6 +1577,19 @@ export function ReportFilterSummary({
   );
 }
 
+const OBSERVATION_GROUPS = [
+  { label: "Informe", span: 3, color: "#2F5597" },
+  { label: "Observación", span: 11, color: "#C00000" },
+  { label: "Plan de acción", span: 3, color: "#7030A0" },
+  { label: "Reprogramación", span: 2, color: "#C00000" },
+  { label: "Comentario plan de acción", span: 2, color: "#7030A0" },
+  { label: "Estados", span: 3, color: "#44546A" },
+] as const;
+
+const OBSERVATION_HEADER_COLORS = OBSERVATION_GROUPS.flatMap(
+  ({ span, color }) => Array(span).fill(color) as string[],
+);
+
 export function ReportDataTable({
   columns,
   grouped = false,
@@ -1598,19 +1611,13 @@ export function ReportDataTable({
       <table className="w-max min-w-full border-collapse text-left text-sm">
         <thead>
           {grouped ? (
-            <tr className="bg-[var(--primary)] text-white">
-              {[
-                ["Informe", 3],
-                ["Observación", 11],
-                ["Plan de acción", 3],
-                ["Reprogramación", 2],
-                ["Comentario plan de acción", 2],
-                ["Estados", 3],
-              ].map(([label, span]) => (
+            <tr className="text-white">
+              {OBSERVATION_GROUPS.map(({ label, span, color }) => (
                 <th
                   className="px-3 py-2 text-left text-xs font-semibold"
-                  colSpan={Number(span)}
+                  colSpan={span}
                   key={label}
+                  style={{ backgroundColor: color }}
                 >
                   {label}
                 </th>
@@ -1618,10 +1625,15 @@ export function ReportDataTable({
             </tr>
           ) : null}
           <tr className="border-b border-[var(--border-strong)]">
-            {columns.map((column) => (
+            {columns.map((column, index) => (
               <th
-                className="px-3 py-3 text-[10px] font-semibold tracking-[0.15em] whitespace-nowrap text-[var(--muted)] uppercase"
+                className={`px-3 py-3 text-[10px] font-semibold tracking-[0.15em] whitespace-nowrap uppercase ${grouped ? "border border-white/30 text-white" : "text-[var(--muted)]"}`}
                 key={column}
+                style={
+                  grouped
+                    ? { backgroundColor: OBSERVATION_HEADER_COLORS[index] }
+                    : undefined
+                }
               >
                 {column}
               </th>

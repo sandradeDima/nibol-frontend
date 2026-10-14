@@ -328,7 +328,11 @@ function ReportPreviewSummary({
         <ReportKpi
           description="Registros que cumplen los filtros del reporte."
           icon="total"
-          label="Registros"
+          label={
+            data.reportType === "OBSERVATIONS"
+              ? "Planes de acción"
+              : "Registros"
+          }
           value={new Intl.NumberFormat("es-BO").format(data.total)}
         />
         {data.reportType !== "OBSERVATIONS" ? (

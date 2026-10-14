@@ -28,7 +28,6 @@ export function ObservationCollaborationWorkspace({
   canDeleteEvidence,
   canSubmitProgress,
   currentUserId,
-  observationAreas,
   observationId,
   section = "all",
 }: {
@@ -37,7 +36,6 @@ export function ObservationCollaborationWorkspace({
   canDeleteEvidence: boolean;
   canSubmitProgress: boolean;
   currentUserId: string;
-  observationAreas: Array<{ id: string; name: string }>;
   observationId: string;
   section?: "all" | "plans" | "comments";
 }) {
