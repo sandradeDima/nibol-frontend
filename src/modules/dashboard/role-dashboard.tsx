@@ -513,7 +513,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
     return (listQuery.data?.observations ?? []).filter((row) => {
       if (selectedList.executorId === "unassigned" && row.executorNames.length)
         return false;
-      const isFinal = row.status.isFinal ?? row.status.key === "CONCLUIDO";
+      const isFinal = row.status.isFinal;
       if (activeCard === "TOTAL") return true;
       if (activeCard === "PENDING") return !isFinal;
       if (activeCard === "CLOSED") return isFinal;
@@ -1186,7 +1186,7 @@ function RoleObservationResults({
                     <span
                       className={cn(
                         "inline-flex border px-2 py-1 text-xs font-semibold",
-                        getStatusClasses(item.status.key),
+                        getStatusClasses(item.status),
                       )}
                     >
                       {item.status.name}

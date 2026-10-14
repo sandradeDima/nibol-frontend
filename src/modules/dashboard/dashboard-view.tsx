@@ -589,7 +589,7 @@ function ObservationsTable({ rows }: { rows: DashboardObservationRow[] }) {
                 <span
                   className={cn(
                     "inline-flex items-center border px-3 py-1 text-xs font-semibold tracking-[0.14em] uppercase",
-                    getStatusClasses(row.status.key),
+                    getStatusClasses(row.status),
                   )}
                 >
                   {row.status.name}

@@ -260,7 +260,7 @@ export function OperationalDashboard({
                       <span
                         className={cn(
                           "inline-flex border px-2 py-1 text-xs font-semibold",
-                          getStatusClasses(row.status.key),
+                          getStatusClasses(row.status),
                         )}
                       >
                         {row.status.name}

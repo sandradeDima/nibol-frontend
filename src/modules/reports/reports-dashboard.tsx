@@ -169,7 +169,7 @@ export function ReportsDashboard({
   const applyShortcut = (shortcut: KpiShortcut) => {
     const next = clearKpiShortcutFilters(filters);
     const closedStatusId = optionsQuery.data?.observationStatuses.find(
-      (status) => status.key === "CONCLUIDO",
+      (status) => status.isFinal,
     )?.id;
 
     switch (shortcut) {
@@ -221,7 +221,7 @@ export function ReportsDashboard({
         return (
           filters.statusId ===
           optionsQuery.data?.observationStatuses.find(
-            (status) => status.key === "CONCLUIDO",
+            (status) => status.isFinal,
           )?.id
         );
       case "CONCLUDED":

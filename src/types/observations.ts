@@ -21,6 +21,7 @@ export interface ObservationRiskLevel {
 export interface ObservationStatus {
   id: string;
   isFinal: boolean;
+  isInitial: boolean;
   key: string;
   name: string;
 }

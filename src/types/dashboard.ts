@@ -54,6 +54,7 @@ export interface DashboardRiskSummary {
 
 export interface DashboardStatusSummary {
   isFinal?: boolean;
+  isInitial?: boolean;
   key: string;
   name: string;
 }

@@ -294,7 +294,7 @@ export function ObservationDetail({
                     kind === "risk" &&
                       `inline-flex border px-2.5 py-1 ${getRiskLevelClasses()}`,
                     kind === "status" &&
-                      getStatusClasses(observation.status.key),
+                      getStatusClasses(observation.status),
                   )}
                   style={
                     kind === "risk"

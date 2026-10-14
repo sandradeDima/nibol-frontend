@@ -144,6 +144,7 @@ export interface ReportOptions {
   observationStatuses: Array<{
     id: string;
     isFinal: boolean;
+    isInitial: boolean;
     key: string;
     name: string;
   }>;
