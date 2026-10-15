@@ -136,6 +136,7 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
         {
           reportName: submitted.reportName,
           type: submitted.type,
+          pdfView: "GENERATOR",
         },
       );
       triggerDownload(

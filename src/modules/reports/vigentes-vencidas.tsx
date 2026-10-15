@@ -131,6 +131,7 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
               ? "Planes de acción próximos a vencer"
               : "Planes de acción vigentes",
         type: "ACTION_PLANS",
+        pdfView: "ATTENTION",
       });
       triggerDownload(
         blob,

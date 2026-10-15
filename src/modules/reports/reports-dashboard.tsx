@@ -150,6 +150,7 @@ export function ReportsDashboard({
             ? "Observaciones y planes de acción NIBOL"
             : "Planes de acción NIBOL",
         type: format === "excel" ? "OBSERVATIONS" : "ACTION_PLANS",
+        pdfView: "REPORTS",
       });
       triggerDownload(
         blob,

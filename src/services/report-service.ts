@@ -100,6 +100,7 @@ export const buildReportQuery = (
   options?: {
     page?: number;
     perPage?: number;
+    pdfView?: "REPORTS" | "DASHBOARD" | "GENERATOR" | "ATTENTION";
     reportName?: string;
     type?: ReportType;
   },
@@ -108,6 +109,7 @@ export const buildReportQuery = (
   appendValue(params, "page", options?.page ?? 1);
   appendValue(params, "perPage", options?.perPage ?? 20);
   appendValue(params, "reportName", options?.reportName);
+  appendValue(params, "pdfView", options?.pdfView);
   appendValue(params, "type", options?.type);
   appendValue(params, "periodField", filters.periodField ?? "createdAt");
   Object.entries(filters).forEach(([key, value]) => {
@@ -135,7 +137,10 @@ const buildAuditQuery = (query: AuditReportQuery): string => {
 };
 
 const download = async (path: string): Promise<Blob> => {
-  const response = await apiClient.get(path, { responseType: "blob" });
+  const response = await apiClient.get(path, {
+    responseType: "blob",
+    timeout: 300_000,
+  });
   return response.data as Blob;
 };
 
@@ -152,7 +157,11 @@ export const reportService = {
   async downloadReport(
     filters: ReportFilters,
     format: "excel" | "pdf",
-    options?: { reportName?: string; type?: ReportType },
+    options?: {
+      pdfView?: "REPORTS" | "DASHBOARD" | "GENERATOR" | "ATTENTION";
+      reportName?: string;
+      type?: ReportType;
+    },
   ): Promise<Blob> {
     return download(
       `/reports/export${buildReportQuery(filters, { ...options, perPage: 5000 })}&format=${format}`,

@@ -567,6 +567,7 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
       const blob = await reportService.downloadReport(filters, format, {
         reportName: "Tablero - Avance de planes NIBOL",
         type: "ACTION_PLANS",
+        pdfView: "DASHBOARD",
       });
       triggerDownload(
         blob,
