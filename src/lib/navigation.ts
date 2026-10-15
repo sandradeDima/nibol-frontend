@@ -92,24 +92,10 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
   },
   {
     group: "Control",
-    icon: "CalendarRange",
-    label: "Cronograma",
-    permission: "observations.view",
-    route: "/cronograma",
-  },
-  {
-    group: "Control",
     icon: "CalendarPlus2",
     label: "Ampliaciones de plazo",
     permission: "deadline_extensions.view",
     route: "/ampliaciones-plazo",
-  },
-  {
-    group: "Control",
-    icon: "Activity",
-    label: "Actividad",
-    permission: "observations.view",
-    route: "/actividad",
   },
   {
     group: "Control",
@@ -258,22 +244,6 @@ const OPERATIONAL_ROUTES_BY_ROLE: Record<string, ReadonlySet<string>> = {
     "/aprobaciones/pendientes",
     "/notifications",
   ]),
-  AUDIT_CHIEF: new Set([
-    "/dashboard",
-    "/dashboard/reporteria",
-    "/observaciones",
-    "/reportes",
-    "/reportes/auditoria",
-    "/planes-accion",
-    "/notifications",
-    "/avances-evidencias",
-    "/aprobaciones/pendientes",
-    "/aprobaciones/flujos",
-    "/solicitudes-especiales/nueva",
-    "/cronograma",
-    "/ampliaciones-plazo",
-    "/actividad",
-  ]),
 };
 
 const OPERATIONAL_MENU_ORDER = [
@@ -286,6 +256,14 @@ const OPERATIONAL_MENU_ORDER = [
   "/aprobaciones/pendientes",
   "/notifications",
   "/ampliaciones-plazo",
+] as const;
+
+const AUDIT_CHIEF_MENU_ORDER = [
+  "/dashboard",
+  "/dashboard/reporteria",
+  "/observaciones",
+  "/planes-accion",
+  "/notifications",
 ] as const;
 
 export const getVisibleSidebarItems = (
@@ -305,22 +283,45 @@ export const getVisibleSidebarItems = (
         !authorization.permissions.includes(`${resource}.view`))
     ) return false;
     if (!OPERATIONAL_ROLE_CODES.has(authorization.roleCode ?? "")) return true;
-    return (
-      OPERATIONAL_ROUTES_BY_ROLE[authorization.roleCode ?? ""]?.has(
-        item.route,
-      ) ?? false
-    );
+    const allowedRoutes = OPERATIONAL_ROUTES_BY_ROLE[
+      authorization.roleCode ?? ""
+    ];
+    return !allowedRoutes || allowedRoutes.has(item.route);
   });
 
   if (!OPERATIONAL_ROLE_CODES.has(authorization.roleCode ?? "")) {
     return visibleItems;
   }
 
-  return visibleItems
+  const auditChiefResources = new Set<string>();
+  const roleVisibleItems =
+    authorization.roleCode === "AUDIT_CHIEF"
+      ? visibleItems.filter((item) => {
+          if (!item.permission) return true;
+          const resource = item.permission.slice(
+            0,
+            item.permission.lastIndexOf("."),
+          );
+          if (auditChiefResources.has(resource)) return false;
+          auditChiefResources.add(resource);
+          return true;
+        })
+      : visibleItems;
+  const menuOrder =
+    authorization.roleCode === "AUDIT_CHIEF"
+      ? AUDIT_CHIEF_MENU_ORDER
+      : OPERATIONAL_MENU_ORDER;
+
+  return roleVisibleItems
     .sort(
-      (left, right) =>
-        OPERATIONAL_MENU_ORDER.indexOf(left.route as never) -
-        OPERATIONAL_MENU_ORDER.indexOf(right.route as never),
+      (left, right) => {
+        const leftOrder = menuOrder.indexOf(left.route as never);
+        const rightOrder = menuOrder.indexOf(right.route as never);
+        return (
+          (leftOrder === -1 ? menuOrder.length : leftOrder) -
+          (rightOrder === -1 ? menuOrder.length : rightOrder)
+        );
+      },
     )
     .map((item) => ({ ...item, group: "Principal" }));
 };
