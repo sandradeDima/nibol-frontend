@@ -181,7 +181,8 @@ export const buildPermissionName = (
 
 export const CRITICAL_ADMIN_PERMISSIONS = PERMISSION_RESOURCES.flatMap(
   (resource) =>
-    (PERMISSION_ACTIONS_BY_RESOURCE[resource.key] ?? PERMISSION_ACTIONS).map(
-      (action) => buildPermissionName(resource.key, action.key),
-    ),
+    [
+      ...(PERMISSION_ACTIONS_BY_RESOURCE[resource.key] ?? PERMISSION_ACTIONS),
+      MODULE_PERMISSION_ACTION,
+    ].map((action) => buildPermissionName(resource.key, action.key)),
 );

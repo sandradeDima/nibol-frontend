@@ -80,6 +80,12 @@ export function PermissionMatrix({
                   resource.key,
                   action.key,
                 );
+                const resourcePermissionNames = (
+                  PERMISSION_ACTIONS_BY_RESOURCE[resource.key] ??
+                  PERMISSION_ACTIONS
+                ).map((resourceAction) =>
+                  buildPermissionName(resource.key, resourceAction.key),
+                );
                 const isLocked = lockedPermissions.has(permissionName);
                 const isChecked = selectedPermissions.has(permissionName);
 
@@ -101,13 +107,39 @@ export function PermissionMatrix({
                           return;
                         }
 
-                        const nextPermissions = event.target.checked
-                          ? [...permissionNames, permissionName]
-                          : permissionNames.filter(
-                              (value) => value !== permissionName,
-                            );
+                        const nextPermissions = new Set(permissionNames);
+                        const viewModuleName = buildPermissionName(
+                          resource.key,
+                          "view_module",
+                        );
 
-                        onChange(Array.from(new Set(nextPermissions)));
+                        if (event.target.checked) {
+                          nextPermissions.add(permissionName);
+                        } else {
+                          nextPermissions.delete(permissionName);
+                        }
+
+                        if (
+                          action.key === "view_module" &&
+                          event.target.checked &&
+                          !resourcePermissionNames.some((name) =>
+                            nextPermissions.has(name),
+                          )
+                        ) {
+                          nextPermissions.add(
+                            buildPermissionName(resource.key, "view"),
+                          );
+                        } else if (
+                          action.key !== "view_module" &&
+                          !resourcePermissionNames.some((name) =>
+                            nextPermissions.has(name),
+                          ) &&
+                          !lockedPermissions.has(viewModuleName)
+                        ) {
+                          nextPermissions.delete(viewModuleName);
+                        }
+
+                        onChange(Array.from(nextPermissions));
                       }}
                       type="checkbox"
                     />

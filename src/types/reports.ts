@@ -62,6 +62,8 @@ export interface ReportActionPlanRow {
   observation: {
     code: string;
     id: string;
+    mainObservation: string;
+    number: string;
     status: { isFinal: boolean; key: string; name: string };
     title: string;
   };
@@ -94,6 +96,8 @@ export interface ReportCriticalObservation {
   dueDate: string;
   href: string;
   id: string;
+  mainObservation: string;
+  number: string;
   progressPercent: number;
   riskLevel: { colorToken: string | null; name: string };
   observationStatus: { key: string; name: string };
@@ -106,7 +110,9 @@ export interface ReportUpcomingActionPlan {
   effectiveDueDate: string;
   executorName: string;
   href: string;
+  mainObservation: string;
   observationCode: string;
+  observationNumber: string;
   observationStatus: string;
   progress: { code: "NI" | "I" | "CA" | "CO"; label: string; percent: number };
   title: string;

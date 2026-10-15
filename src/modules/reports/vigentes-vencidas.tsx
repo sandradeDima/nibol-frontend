@@ -288,12 +288,14 @@ function AttentionTable({
   }
   return (
     <div className="report-table-wrapper -mx-2 w-full max-w-full min-w-0 overflow-x-auto px-2">
-      <table className="w-max min-w-[950px] border-collapse text-left text-sm">
+      <table className="w-max min-w-[1240px] border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-[var(--border-strong)]">
             {[
               "Atención",
-              "Informe / observación",
+              "Número de observación",
+              "Observación principal",
+              "Título de observación",
               "Plan",
               "Área",
               "Ejecutor",
@@ -331,16 +333,19 @@ function AttentionTable({
                       : "En plazo"}
                 </span>
               </td>
-              <td className="min-w-[17rem] px-3 py-3">
+              <td className="px-3 py-3 whitespace-nowrap">
                 <Link
                   className="font-semibold text-[var(--foreground)] hover:text-[var(--accent)] hover:underline"
                   href={row.href}
                 >
-                  {row.observation.code}
+                  {row.observation.number}
                 </Link>
-                <p className="mt-1 text-xs leading-5 text-[var(--foreground-soft)]">
-                  {row.observation.title}
-                </p>
+              </td>
+              <td className="max-w-[20rem] px-3 py-3 text-[var(--foreground-soft)]">
+                {row.observation.mainObservation}
+              </td>
+              <td className="max-w-[20rem] px-3 py-3 text-[var(--foreground-soft)]">
+                {row.observation.title}
               </td>
               <td className="max-w-[18rem] px-3 py-3 text-[var(--foreground-soft)]">
                 {row.title}

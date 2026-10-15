@@ -297,10 +297,12 @@ function OperationalObservations({
   }
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[900px] text-left text-xs">
+      <table className="w-full min-w-[1120px] text-left text-xs">
         <thead className="border-b border-[var(--border)] text-[10px] tracking-[0.12em] text-[var(--muted)] uppercase">
           <tr>
-            <th className="pr-3 pb-2 font-semibold">Observación</th>
+            <th className="pr-3 pb-2 font-semibold">Número de observación</th>
+            <th className="pr-3 pb-2 font-semibold">Observación principal</th>
+            <th className="pr-3 pb-2 font-semibold">Título de observación</th>
             <th className="pr-3 pb-2 font-semibold">Área</th>
             <th className="pr-3 pb-2 font-semibold">Riesgo</th>
             <th className="pr-3 pb-2 font-semibold">Estado de observación</th>
@@ -315,13 +317,19 @@ function OperationalObservations({
         <tbody className="divide-y divide-[var(--border)]">
           {items.map((item) => (
             <tr key={item.id}>
-              <td className="max-w-[260px] py-2.5 pr-3">
+              <td className="py-2.5 pr-3 whitespace-nowrap">
                 <Link
                   className="font-semibold text-[var(--primary)] hover:underline"
                   href={item.href}
                 >
-                  {item.title}
+                  {item.number}
                 </Link>
+              </td>
+              <td className="max-w-[260px] py-2.5 pr-3 text-[var(--foreground-soft)]">
+                {item.mainObservation}
+              </td>
+              <td className="max-w-[260px] py-2.5 pr-3 text-[var(--foreground-soft)]">
+                {item.title}
               </td>
               <td className="py-2.5 pr-3 text-[var(--foreground-soft)]">
                 {item.area.name}
@@ -383,11 +391,12 @@ function UpcomingActionPlans({
   }
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[820px] text-left text-xs">
+      <table className="w-full min-w-[980px] text-left text-xs">
         <thead className="border-b border-[var(--border)] text-[10px] tracking-[0.12em] text-[var(--muted)] uppercase">
           <tr>
             <th className="pr-3 pb-2 font-semibold">Plan de acción</th>
-            <th className="pr-3 pb-2 font-semibold">Observación</th>
+            <th className="pr-3 pb-2 font-semibold">Número de observación</th>
+            <th className="pr-3 pb-2 font-semibold">Observación principal</th>
             <th className="pr-3 pb-2 font-semibold">Ejecutor</th>
             <th className="pr-3 pb-2 font-semibold">Estado del plan</th>
             <th className="pr-3 pb-2 font-semibold">Estado de observación</th>
@@ -410,7 +419,10 @@ function UpcomingActionPlans({
                 </Link>
               </td>
               <td className="py-2.5 pr-3 text-[var(--foreground-soft)]">
-                {item.observationCode}
+                {item.observationNumber}
+              </td>
+              <td className="max-w-[260px] py-2.5 pr-3 text-[var(--foreground-soft)]">
+                {item.mainObservation}
               </td>
               <td className="py-2.5 pr-3 text-[var(--foreground-soft)]">
                 {item.executorName}

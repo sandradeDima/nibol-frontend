@@ -624,13 +624,15 @@ export function ObservationTable({
                           "inline-flex border px-2 py-1 text-xs font-semibold",
                           row.deadlineStatus === "VENCIDO"
                             ? "border-rose-200 bg-rose-50 text-rose-800"
-                            : "border-stone-200 bg-stone-50 text-stone-700",
+                            : row.deadlineStatus === "REPROGRAMADO"
+                              ? "border-amber-200 bg-amber-50 text-amber-800"
+                              : "border-stone-200 bg-stone-50 text-stone-700",
                         )}
                       >
-                        {row.deadlineStatus === "NO_APLICA"
-                          ? "No aplica"
-                          : row.deadlineStatus === "VENCIDO"
-                            ? "Vencido"
+                        {row.deadlineStatus === "VENCIDO"
+                          ? "Vencido"
+                          : row.deadlineStatus === "REPROGRAMADO"
+                            ? "Reprogramado"
                             : "Vigente"}
                       </span>
                     </div>
@@ -755,14 +757,16 @@ export function ObservationTable({
                     "inline-flex border px-2 py-1 text-xs font-semibold",
                     row.deadlineStatus === "VENCIDO"
                       ? "border-rose-200 bg-rose-50 text-rose-800"
-                      : "border-stone-200 bg-stone-50 text-stone-700",
+                      : row.deadlineStatus === "REPROGRAMADO"
+                        ? "border-amber-200 bg-amber-50 text-amber-800"
+                        : "border-stone-200 bg-stone-50 text-stone-700",
                   )}
                 >
                   Plazo:{" "}
-                  {row.deadlineStatus === "NO_APLICA"
-                    ? "No aplica"
-                    : row.deadlineStatus === "VENCIDO"
-                      ? "Vencido"
+                  {row.deadlineStatus === "VENCIDO"
+                    ? "Vencido"
+                    : row.deadlineStatus === "REPROGRAMADO"
+                      ? "Reprogramado"
                       : "Vigente"}
                 </span>
               </div>

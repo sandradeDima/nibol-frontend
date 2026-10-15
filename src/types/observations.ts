@@ -75,7 +75,7 @@ export interface ObservationTableRow {
     title: string;
   };
   currentDueDate: string;
-  deadlineStatus: "VIGENTE" | "VENCIDO" | "NO_APLICA";
+  deadlineStatus: "VIGENTE" | "VENCIDO" | "REPROGRAMADO";
   displayCode: string;
   id: string;
   isOverdue: boolean;

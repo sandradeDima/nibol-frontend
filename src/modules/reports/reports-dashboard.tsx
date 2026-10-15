@@ -614,15 +614,18 @@ function ActionPlanTable({ rows }: { rows: ReportActionPlanRow[] }) {
   }
   return (
     <div className="report-table-wrapper -mx-2 w-full max-w-full min-w-0 overflow-x-auto px-2">
-      <table className="w-max min-w-[1060px] border-collapse text-left text-sm">
+      <table className="w-max min-w-[1380px] border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-[var(--border-strong)]">
             {[
-              "Informe / observación",
+              "Número de observación",
+              "Observación principal",
+              "Título de observación",
               "Plan",
               "Área",
               "Nivel de riesgo",
               "Dueño del proceso",
+              "Responsable de área",
               "Ejecutor",
               "Estado de observación",
               "Estado del plan de acción",
@@ -649,16 +652,19 @@ function ActionPlanTable({ rows }: { rows: ReportActionPlanRow[] }) {
               className="border-b border-[var(--border)] align-top last:border-0 hover:bg-[var(--surface-soft)]"
               key={row.actionPlanId}
             >
-              <td className="min-w-[17rem] px-3 py-3">
+              <td className="px-3 py-3 whitespace-nowrap">
                 <Link
                   className="font-semibold text-[var(--foreground)] hover:text-[var(--accent)] hover:underline"
                   href={row.href}
                 >
-                  {row.observation.code}
+                  {row.observation.number}
                 </Link>
-                <p className="mt-1 text-xs leading-5 text-[var(--foreground-soft)]">
-                  {row.observation.title}
-                </p>
+              </td>
+              <td className="max-w-[20rem] px-3 py-3 text-[var(--foreground-soft)]">
+                {row.observation.mainObservation}
+              </td>
+              <td className="max-w-[20rem] px-3 py-3 text-[var(--foreground-soft)]">
+                {row.observation.title}
               </td>
               <td className="max-w-[20rem] px-3 py-3 text-[var(--foreground-soft)]">
                 {row.title}
@@ -671,6 +677,9 @@ function ActionPlanTable({ rows }: { rows: ReportActionPlanRow[] }) {
               </td>
               <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
                 {row.processOwner?.name ?? "Sin asignar"}
+              </td>
+              <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
+                {row.areaResponsible?.name ?? "Sin asignar"}
               </td>
               <td className="px-3 py-3 whitespace-nowrap text-[var(--foreground-soft)]">
                 {row.executor?.name ?? "Sin asignar"}
