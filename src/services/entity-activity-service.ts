@@ -50,6 +50,17 @@ export const entityActivityService = {
     return getList(`/observations/${observationId}/history`, filters);
   },
 
+  listEntityHistory(
+    entityType: string,
+    entityId: string,
+    filters: EntityActivityFilters = {},
+  ) {
+    return getList(
+      `/entities/${encodeURIComponent(entityType)}/${encodeURIComponent(entityId)}/history`,
+      filters,
+    );
+  },
+
   async export(filters: EntityActivityFilters = {}) {
     const response = await apiClient.get<Blob>("/activity/export", {
       params: filters,

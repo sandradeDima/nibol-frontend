@@ -1,9 +1,13 @@
 import { PageHeader } from "@/components/ui/page-header";
-import { requirePermission } from "@/lib/server-auth";
+import { requireAnyPermission } from "@/lib/server-auth";
 import { ProgressEvaluationsTable } from "@/modules/progress/progress-evaluations-table";
 
 export default async function AvancesEvidenciasPage() {
-  await requirePermission("observations.view");
+  await requireAnyPermission([
+    "observations.view",
+    "action_plans.view",
+    "progress_evaluations.view",
+  ]);
 
   return (
     <main className="space-y-6">

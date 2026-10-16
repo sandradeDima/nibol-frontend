@@ -35,6 +35,13 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     route: "/notifications",
   },
   {
+    group: "Gestion",
+    icon: "Activity",
+    label: "Actividad",
+    permissions: ["activity.view", "activity_logs.view", "observations.view"],
+    route: "/actividad",
+  },
+  {
     group: "Control",
     icon: "BadgeAlert",
     label: "Observaciones",
@@ -66,21 +73,37 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     group: "Control",
     icon: "FolderKanban",
     label: "Avances y evidencias",
-    permission: "observations.view",
+    permissions: [
+      "observations.view",
+      "action_plans.view",
+      "progress_evaluations.view",
+    ],
     route: "/avances-evidencias",
   },
   {
     group: "Control",
     icon: "BadgeCheck",
     label: "Aprobaciones pendientes",
-    permission: "action_plans.view",
+    permissions: [
+      "action_plans.evaluate",
+      "deadline_extensions.approve",
+      "deadline_extensions.reject",
+    ],
     route: "/aprobaciones/pendientes",
   },
   {
     group: "Control",
     icon: "GitBranchCheck",
     label: "Tareas de flujos",
-    permission: "workflow_tasks.view",
+    permissions: [
+      "workflow_tasks.view",
+      "workflow_tasks.approve",
+      "workflow_tasks.complete",
+      "workflow_tasks.reject",
+      "workflow_tasks.observe",
+      "workflow_tasks.request_correction",
+      "workflow_tasks.reassign",
+    ],
     route: "/aprobaciones/flujos",
   },
   {
@@ -207,124 +230,15 @@ export const SIDEBAR_ITEMS: SidebarConfigItem[] = [
     })),
 ];
 
-const OPERATIONAL_ROLE_CODES = new Set([
-  "AUDIT_CHIEF",
-  "EXECUTOR",
-  "AREA_RESPONSIBLE",
-  "PROCESS_OWNER",
-]);
-
-const OPERATIONAL_ROUTES_BY_ROLE: Record<string, ReadonlySet<string>> = {
-  AREA_RESPONSIBLE: new Set([
-    "/dashboard",
-    "/dashboard/reporteria",
-    "/observaciones",
-    "/reportes",
-    "/planes-accion",
-    "/aprobaciones/pendientes",
-    "/notifications",
-    "/ampliaciones-plazo",
-  ]),
-  EXECUTOR: new Set([
-    "/dashboard",
-    "/dashboard/reporteria",
-    "/observaciones",
-    "/reportes",
-    "/planes-accion",
-    "/aprobaciones/pendientes",
-    "/notifications",
-    "/ampliaciones-plazo",
-  ]),
-  PROCESS_OWNER: new Set([
-    "/dashboard",
-    "/dashboard/reporteria",
-    "/observaciones",
-    "/reportes",
-    "/planes-accion",
-    "/aprobaciones/pendientes",
-    "/notifications",
-  ]),
-};
-
-const OPERATIONAL_MENU_ORDER = [
-  "/dashboard",
-  "/dashboard/reporteria",
-  "/observaciones",
-  "/reportes",
-  "/reportes/auditoria",
-  "/planes-accion",
-  "/aprobaciones/pendientes",
-  "/notifications",
-  "/ampliaciones-plazo",
-] as const;
-
-const AUDIT_CHIEF_MENU_ORDER = [
-  "/dashboard",
-  "/dashboard/reporteria",
-  "/observaciones",
-  "/planes-accion",
-  "/notifications",
-] as const;
-
 export const getVisibleSidebarItems = (
   authorization: AuthorizationSummary,
-): SidebarItem[] => {
-  const visibleItems = SIDEBAR_ITEMS.filter((item) => {
-    const hasRequiredPermission = item.permissions
+): SidebarItem[] =>
+  SIDEBAR_ITEMS.filter((item) =>
+    item.permissions
       ? hasAnyPermission(authorization.permissions, item.permissions)
       : !item.permission ||
-        hasPermission(authorization.permissions, item.permission);
-    if (!hasRequiredPermission) return false;
-    const resource = item.permission?.split(".")[0];
-    if (
-      resource &&
-      (authorization.permissions.includes(`${resource}.view_module`) || authorization.roleCode === "AUDIT_CHIEF") &&
-      (!authorization.permissions.includes(`${resource}.view_module`) ||
-        !authorization.permissions.includes(`${resource}.view`))
-    ) return false;
-    if (!OPERATIONAL_ROLE_CODES.has(authorization.roleCode ?? "")) return true;
-    const allowedRoutes = OPERATIONAL_ROUTES_BY_ROLE[
-      authorization.roleCode ?? ""
-    ];
-    return !allowedRoutes || allowedRoutes.has(item.route);
-  });
-
-  if (!OPERATIONAL_ROLE_CODES.has(authorization.roleCode ?? "")) {
-    return visibleItems;
-  }
-
-  const auditChiefResources = new Set<string>();
-  const roleVisibleItems =
-    authorization.roleCode === "AUDIT_CHIEF"
-      ? visibleItems.filter((item) => {
-          if (!item.permission) return true;
-          const resource = item.permission.slice(
-            0,
-            item.permission.lastIndexOf("."),
-          );
-          if (auditChiefResources.has(resource)) return false;
-          auditChiefResources.add(resource);
-          return true;
-        })
-      : visibleItems;
-  const menuOrder =
-    authorization.roleCode === "AUDIT_CHIEF"
-      ? AUDIT_CHIEF_MENU_ORDER
-      : OPERATIONAL_MENU_ORDER;
-
-  return roleVisibleItems
-    .sort(
-      (left, right) => {
-        const leftOrder = menuOrder.indexOf(left.route as never);
-        const rightOrder = menuOrder.indexOf(right.route as never);
-        return (
-          (leftOrder === -1 ? menuOrder.length : leftOrder) -
-          (rightOrder === -1 ? menuOrder.length : rightOrder)
-        );
-      },
-    )
-    .map((item) => ({ ...item, group: "Principal" }));
-};
+        hasPermission(authorization.permissions, item.permission),
+  );
 
 const routeLabelMap = new Map(
   SIDEBAR_ITEMS.map((item) => [item.route, item.label] as const),
@@ -393,9 +307,7 @@ export const buildBreadcrumbs = (pathname: string): BreadcrumbItem[] => {
 
       return {
         href,
-        label: isOpaqueRouteSegment(segment)
-          ? "Detalle"
-          : getRouteLabel(href),
+        label: isOpaqueRouteSegment(segment) ? "Detalle" : getRouteLabel(href),
       };
     }),
   ];

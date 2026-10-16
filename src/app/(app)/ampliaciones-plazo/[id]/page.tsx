@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/ui/page-header";
-import { requirePermission } from "@/lib/server-auth";
+import { requireAnyPermission } from "@/lib/server-auth";
 import { ExtensionRequestDetail } from "@/modules/extension-requests/extension-request-detail";
 
 type ExtensionRequestDetailPageProps = {
@@ -11,7 +11,11 @@ type ExtensionRequestDetailPageProps = {
 export default async function ExtensionRequestDetailPage({
   params,
 }: ExtensionRequestDetailPageProps) {
-  const authorization = await requirePermission("deadline_extensions.view");
+  const authorization = await requireAnyPermission([
+    "deadline_extensions.view",
+    "deadline_extensions.approve",
+    "deadline_extensions.reject",
+  ]);
   const { id } = await params;
 
   return (

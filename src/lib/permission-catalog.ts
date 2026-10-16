@@ -81,6 +81,22 @@ const CORE_PERMISSION_RESOURCES = [
     key: "action_plans.history",
     label: "Historial de planes",
   },
+  {
+    key: "workflows",
+    label: "Flujos",
+  },
+  {
+    key: "workflow_tasks",
+    label: "Tareas de flujos",
+  },
+  {
+    key: "workflow_instances",
+    label: "Instancias de flujos",
+  },
+  {
+    key: "workflow_timers",
+    label: "Temporizadores de flujos",
+  },
 ] as const;
 
 export const PERMISSION_RESOURCES = [
@@ -106,24 +122,56 @@ export const PERMISSION_ACTIONS = [
     label: "Eliminar",
   },
 ] as const;
-const MODULE_PERMISSION_ACTION = { key: "view_module", label: "Ver módulo" } as const;
+const MODULE_PERMISSION_ACTION = {
+  key: "view_module",
+  label: "Ver módulo",
+} as const;
 
 export type PermissionResource = (typeof PERMISSION_RESOURCES)[number]["key"];
 export type PermissionAction =
   | (typeof PERMISSION_ACTIONS)[number]["key"]
   | "view_module"
+  | "archive"
   | "approve"
   | "assign_executor"
+  | "cancel"
   | "close"
   | "complete"
   | "evaluate"
   | "export"
+  | "manage"
+  | "observe"
+  | "publish"
   | "reject"
   | "request"
+  | "request_correction"
+  | "reassign"
+  | "retry"
   | "return"
   | "review"
   | "send"
-  | "submit_to_audit";
+  | "simulate"
+  | "start"
+  | "submit_to_audit"
+  | "technical"
+  | "validate"
+  | "view_audit"
+  | "view_instances"
+  | "view_versions";
+
+const RESOURCES_WITHOUT_MODULE_PERMISSION = [
+  "workflows",
+  "workflow_tasks",
+  "workflow_instances",
+  "workflow_timers",
+] as const;
+
+export const supportsModulePermission = (
+  resource: PermissionResource,
+): boolean =>
+  !RESOURCES_WITHOUT_MODULE_PERMISSION.includes(
+    resource as (typeof RESOURCES_WITHOUT_MODULE_PERMISSION)[number],
+  );
 
 export const PERMISSION_ACTIONS_BY_RESOURCE: Partial<
   Record<
@@ -135,6 +183,11 @@ export const PERMISSION_ACTIONS_BY_RESOURCE: Partial<
     ...PERMISSION_ACTIONS,
     { key: "send", label: "Enviar a los involucrados" },
     { key: "close", label: "Cerrar observaciones" },
+  ],
+  activity: [
+    ...PERMISSION_ACTIONS,
+    { key: "export", label: "Exportar actividad" },
+    { key: "technical", label: "Ver detalles técnicos" },
   ],
   recommended_action_plans: [
     { key: "view", label: "Ver planes recomendados" },
@@ -168,8 +221,46 @@ export const PERMISSION_ACTIONS_BY_RESOURCE: Partial<
     { key: "view", label: "Ver historial de observaciones" },
   ],
   "action_plans.history": [{ key: "view", label: "Ver historial de planes" }],
+  observation_areas: [
+    ...PERMISSION_ACTIONS,
+    { key: "manage", label: "Administrar áreas de observación" },
+  ],
+  workflows: [
+    { key: "view", label: "Ver flujos" },
+    { key: "create", label: "Crear flujos" },
+    { key: "edit", label: "Editar flujos" },
+    { key: "delete", label: "Eliminar flujos" },
+    { key: "archive", label: "Archivar flujos" },
+    { key: "publish", label: "Publicar flujos" },
+    { key: "validate", label: "Validar flujos" },
+    { key: "simulate", label: "Simular flujos" },
+    { key: "view_versions", label: "Ver versiones de flujos" },
+    { key: "view_instances", label: "Ver instancias de flujos" },
+  ],
+  workflow_tasks: [
+    { key: "view", label: "Ver tareas de flujos" },
+    { key: "approve", label: "Aprobar tareas" },
+    { key: "complete", label: "Completar tareas" },
+    { key: "reject", label: "Rechazar tareas" },
+    { key: "observe", label: "Observar tareas" },
+    { key: "request_correction", label: "Solicitar correcciones" },
+    { key: "reassign", label: "Reasignar tareas" },
+  ],
+  workflow_instances: [
+    { key: "start", label: "Iniciar instancias" },
+    { key: "cancel", label: "Cancelar instancias" },
+    { key: "retry", label: "Reintentar instancias" },
+    { key: "view_audit", label: "Ver auditoría de instancias" },
+  ],
+  workflow_timers: [
+    { key: "view", label: "Ver temporizadores" },
+    { key: "retry", label: "Reintentar temporizadores" },
+  ],
   audit_reports: [...PERMISSION_ACTIONS, { key: "export", label: "Exportar" }],
-  reports: [...PERMISSION_ACTIONS, { key: "export", label: "Exportar" }],
+  reports: [
+    { key: "view", label: "Ver reportes" },
+    { key: "export", label: "Exportar" },
+  ],
 };
 
 export const buildPermissionName = (
@@ -183,6 +274,8 @@ export const CRITICAL_ADMIN_PERMISSIONS = PERMISSION_RESOURCES.flatMap(
   (resource) =>
     [
       ...(PERMISSION_ACTIONS_BY_RESOURCE[resource.key] ?? PERMISSION_ACTIONS),
-      MODULE_PERMISSION_ACTION,
+      ...(supportsModulePermission(resource.key)
+        ? [MODULE_PERMISSION_ACTION]
+        : []),
     ].map((action) => buildPermissionName(resource.key, action.key)),
 );

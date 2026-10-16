@@ -6,8 +6,13 @@ import { getServerAuthorization } from "@/lib/server-auth";
 
 export default async function AutomaticNotificationsPage() {
   const authorization = await getServerAuthorization();
-  const canAccess = Boolean(authorization?.dataScope === "ALL");
-  if (!canAccess) redirect("/forbidden?missing=automatic_jobs.view");
+  const canView = Boolean(
+    authorization?.permissions.includes("automatic_jobs.view"),
+  );
+  if (!canView) redirect("/forbidden?missing=automatic_jobs.view");
+  const canEdit = Boolean(
+    authorization?.permissions.includes("automatic_jobs.edit"),
+  );
 
   return (
     <main className="space-y-6">
@@ -16,7 +21,7 @@ export default async function AutomaticNotificationsPage() {
         eyebrow="Administración"
         title="Notificaciones automáticas"
       />
-      <AutomaticNotificationAdmin canExecute={canAccess} />
+      <AutomaticNotificationAdmin canExecute={canEdit} />
     </main>
   );
 }

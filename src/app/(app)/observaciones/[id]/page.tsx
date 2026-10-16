@@ -30,6 +30,10 @@ export default async function ObservationDetailPage({
         canDeleteEvidence={authorization.permissions.includes(
           "evidence.delete",
         )}
+        canViewEvidence={authorization.permissions.includes("evidence.view")}
+        canViewHistory={authorization.permissions.includes(
+          "observations.history.view",
+        )}
         canSend={authorization.permissions.includes("observations.send")}
         canEdit={authorization.permissions.includes("observations.edit")}
         canEditActionPlans={authorization.permissions.includes(

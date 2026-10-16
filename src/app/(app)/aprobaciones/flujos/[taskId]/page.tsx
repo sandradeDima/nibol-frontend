@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/ui/page-header";
-import { requirePermission } from "@/lib/server-auth";
+import { requireAnyPermission } from "@/lib/server-auth";
 import { WorkflowTaskDetail } from "@/modules/workflows/workflow-task-detail";
 
 export default async function WorkflowTaskDetailPage({
@@ -7,7 +7,15 @@ export default async function WorkflowTaskDetailPage({
 }: {
   params: Promise<{ taskId: string }>;
 }) {
-  const authorization = await requirePermission("workflow_tasks.view");
+  const authorization = await requireAnyPermission([
+    "workflow_tasks.view",
+    "workflow_tasks.approve",
+    "workflow_tasks.complete",
+    "workflow_tasks.reject",
+    "workflow_tasks.observe",
+    "workflow_tasks.request_correction",
+    "workflow_tasks.reassign",
+  ]);
   const { taskId } = await params;
   return (
     <main className="space-y-6">

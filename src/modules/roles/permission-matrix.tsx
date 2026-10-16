@@ -5,6 +5,7 @@ import {
   PERMISSION_ACTIONS_BY_RESOURCE,
   PERMISSION_RESOURCES,
   buildPermissionName,
+  supportsModulePermission,
   type PermissionAction,
 } from "@/lib/permission-catalog";
 
@@ -69,13 +70,18 @@ export function PermissionMatrix({
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {(
-                [
-                  ...(PERMISSION_ACTIONS_BY_RESOURCE[resource.key] ??
-                    PERMISSION_ACTIONS),
-                  { key: "view_module" as PermissionAction, label: "Ver módulo" },
-                ]
-              ).map((action) => {
+              {[
+                ...(PERMISSION_ACTIONS_BY_RESOURCE[resource.key] ??
+                  PERMISSION_ACTIONS),
+                ...(supportsModulePermission(resource.key)
+                  ? [
+                      {
+                        key: "view_module" as PermissionAction,
+                        label: "Ver módulo",
+                      },
+                    ]
+                  : []),
+              ].map((action) => {
                 const permissionName = buildPermissionName(
                   resource.key,
                   action.key,

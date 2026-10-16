@@ -3,7 +3,7 @@ import { requirePermission } from "@/lib/server-auth";
 import { ObservationForm } from "@/modules/observations/observation-form";
 
 export default async function NewObservationPage() {
-  await requirePermission("observations.create");
+  const authorization = await requirePermission("observations.create");
 
   return (
     <main className="space-y-6">
@@ -13,7 +13,13 @@ export default async function NewObservationPage() {
         title="Nueva observacion"
       />
 
-      <ObservationForm mode="create" />
+      <ObservationForm
+        canManageAreas={
+          authorization.isAdmin ||
+          authorization.permissions.includes("observation_areas.manage")
+        }
+        mode="create"
+      />
     </main>
   );
 }

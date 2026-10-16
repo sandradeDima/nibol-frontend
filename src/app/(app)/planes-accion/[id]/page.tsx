@@ -1,4 +1,5 @@
 import { requirePermission } from "@/lib/server-auth";
+import { EntityActivityTimeline } from "@/modules/activity/entity-activity-timeline";
 import { ActionPlanDetailView } from "@/modules/remediation/action-plan-detail";
 
 export default async function ActionPlanPage({
@@ -49,6 +50,17 @@ export default async function ActionPlanPage({
         initialEditing={edit === "1"}
         isAdmin={authorization.isAdmin}
       />
+      {authorization.permissions.includes("action_plans.history.view") ? (
+        <section className="nibol-panel mt-6 min-w-0 p-6">
+          <div className="mb-5">
+            <h2 className="text-xl font-semibold">Historial del plan</h2>
+            <p className="mt-1 text-sm text-stone-500">
+              Cambios y decisiones visibles dentro de su alcance.
+            </p>
+          </div>
+          <EntityActivityTimeline entityId={id} entityType="ACTION_PLAN" />
+        </section>
+      ) : null}
     </main>
   );
 }

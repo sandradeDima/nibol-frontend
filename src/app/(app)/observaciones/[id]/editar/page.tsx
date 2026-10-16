@@ -11,7 +11,7 @@ type EditObservationPageProps = {
 export default async function EditObservationPage({
   params,
 }: EditObservationPageProps) {
-  await requirePermission("observations.edit");
+  const authorization = await requirePermission("observations.edit");
   const { id } = await params;
 
   return (
@@ -22,7 +22,14 @@ export default async function EditObservationPage({
         title="Editar observacion"
       />
 
-      <ObservationForm mode="edit" observationId={id} />
+      <ObservationForm
+        canManageAreas={
+          authorization.isAdmin ||
+          authorization.permissions.includes("observation_areas.manage")
+        }
+        mode="edit"
+        observationId={id}
+      />
     </main>
   );
 }

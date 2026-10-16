@@ -23,6 +23,22 @@ export const generatedPermissionResources = [
     key: "products",
     label: "Productos",
   },
+  {
+    key: "observation_dictionary",
+    label: "Diccionario de observaciones",
+  },
+  {
+    key: "risks",
+    label: "Riesgos asociados",
+  },
+  {
+    key: "observation_areas",
+    label: "Áreas de observación",
+  },
+  {
+    key: "progress_evaluations",
+    label: "Evaluaciones de avance",
+  },
 ] as const;
 
 export const generatedSidebarItems = [

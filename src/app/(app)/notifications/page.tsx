@@ -5,6 +5,7 @@ import { NotificationCenter } from "@/modules/notifications/notification-center"
 export default async function NotificationsPage() {
   const authorization = await requirePermission("notifications.view");
   const canCreate = authorization.permissions.includes("notifications.create");
+  const canDelete = authorization.permissions.includes("notifications.delete");
 
   return (
     <main className="space-y-6">
@@ -14,7 +15,7 @@ export default async function NotificationsPage() {
         title="Notificaciones"
       />
 
-      <NotificationCenter canCreate={canCreate} />
+      <NotificationCenter canCreate={canCreate} canDelete={canDelete} />
     </main>
   );
 }

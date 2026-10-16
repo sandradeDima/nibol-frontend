@@ -284,22 +284,37 @@ export function EntityActivityLatest({
 
 export function EntityActivityTimeline({
   canViewTechnical = false,
+  entityId,
+  entityType = "OBSERVATION",
   limit = 50,
   observationId,
 }: {
   canViewTechnical?: boolean;
+  entityId?: string;
+  entityType?: "ACTION_PLAN" | "OBSERVATION";
   limit?: number;
-  observationId: string;
+  observationId?: string;
 }) {
+  const targetId = entityId ?? observationId;
   const query = useQuery({
-    queryFn: () =>
-      entityActivityService.listObservationHistory(observationId, {
+    queryFn: () => {
+      const filters = {
         includeTechnicalDetails: canViewTechnical,
         page: 1,
         pageSize: limit,
-      }),
+      };
+      return entityType === "OBSERVATION"
+        ? entityActivityService.listObservationHistory(targetId!, filters)
+        : entityActivityService.listEntityHistory(
+            entityType,
+            targetId!,
+            filters,
+          );
+    },
+    enabled: Boolean(targetId),
     queryKey: [
-      ...QUERY_KEYS.entityActivityObservation(observationId),
+      ...QUERY_KEYS.entityActivityObservation(targetId ?? ""),
+      entityType,
       canViewTechnical,
       limit,
     ],

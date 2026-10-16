@@ -21,6 +21,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
 import { QUERY_KEYS } from "@/lib/constants";
+import { EntityActivityTimeline } from "@/modules/activity/entity-activity-timeline";
 import { apiClient } from "@/services/api-client";
 import { observationService } from "@/services/observation-service";
 import { progressService } from "@/services/progress-service";
@@ -42,6 +43,8 @@ type Props = {
   canCreateActionPlans: boolean;
   canCreateRecommended: boolean;
   canDeleteEvidence: boolean;
+  canViewHistory: boolean;
+  canViewEvidence: boolean;
   canDelete: boolean;
   canEdit: boolean;
   canEditActionPlans: boolean;
@@ -54,7 +57,7 @@ type Props = {
   observationId: string;
 };
 
-type ObservationTab = "detail" | "plans" | "comments";
+type ObservationTab = "detail" | "plans" | "comments" | "history";
 
 const observationTabs: Array<{
   key: ObservationTab;
@@ -63,14 +66,20 @@ const observationTabs: Array<{
   { key: "detail", label: "Detalle de Observación" },
   { key: "plans", label: "Planes de Acción" },
   { key: "comments", label: "Comentarios" },
+  { key: "history", label: "Historial" },
 ];
 
-const normalizeTab = (value: string | null): ObservationTab =>
-  value === "plans"
-    ? "plans"
-    : value === "comments" || value === "comentarios"
-      ? "comments"
-      : "detail";
+const normalizeTab = (
+  value: string | null,
+  canViewHistory: boolean,
+): ObservationTab =>
+  value === "history" && canViewHistory
+    ? "history"
+    : value === "plans"
+      ? "plans"
+      : value === "comments" || value === "comentarios"
+        ? "comments"
+        : "detail";
 
 const getLegacyTab = (): ObservationTab | null => {
   if (typeof window === "undefined") return null;
@@ -101,6 +110,8 @@ export function ObservationDetail({
   canCreateActionPlans,
   canCreateRecommended,
   canDeleteEvidence,
+  canViewHistory,
+  canViewEvidence,
   canEditRecommended,
   canDelete,
   canEdit,
@@ -125,7 +136,7 @@ export function ObservationDetail({
   );
   const requestedTab = searchParams.get("tab");
   const activeTab = requestedTab
-    ? normalizeTab(requestedTab)
+    ? normalizeTab(requestedTab, canViewHistory)
     : (legacyTab ?? "detail");
   const activePlanId = searchParams.get("planId");
   const activeAdvanceId = searchParams.get("advanceId");
@@ -150,6 +161,7 @@ export function ObservationDetail({
   const observationEvidence = useQuery({
     queryFn: () => progressService.getObservationEvidence(observationId),
     queryKey: ["observation-evidence", observationId],
+    enabled: canViewEvidence,
   });
   const remove = useMutation({
     mutationFn: () => observationService.deleteObservation(observationId),
@@ -293,8 +305,7 @@ export function ObservationDetail({
                     "mt-2 text-base font-semibold text-stone-950",
                     kind === "risk" &&
                       `inline-flex border px-2.5 py-1 ${getRiskLevelClasses()}`,
-                    kind === "status" &&
-                      getStatusClasses(observation.status),
+                    kind === "status" && getStatusClasses(observation.status),
                   )}
                   style={
                     kind === "risk"
@@ -318,36 +329,38 @@ export function ObservationDetail({
             className="flex max-w-full gap-1 overflow-x-auto"
             role="tablist"
           >
-            {observationTabs.map((tab, index) => (
-              <button
-                aria-controls={`observation-tabpanel-${tab.key}`}
-                aria-selected={activeTab === tab.key}
-                className={cn(
-                  "min-h-11 shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none",
-                  activeTab === tab.key
-                    ? "bg-stone-950 text-white"
-                    : "text-stone-600 hover:bg-amber-50 hover:text-stone-950",
-                )}
-                key={tab.key}
-                id={`${tab.key}-tab`}
-                onClick={() => changeTab(tab.key)}
-                onKeyDown={(event) => {
-                  if (event.key !== "ArrowRight" && event.key !== "ArrowLeft")
-                    return;
-                  event.preventDefault();
-                  const nextIndex =
-                    (index +
-                      (event.key === "ArrowRight" ? 1 : -1) +
-                      observationTabs.length) %
-                    observationTabs.length;
-                  changeTab(observationTabs[nextIndex]!.key);
-                }}
-                role="tab"
-                type="button"
-              >
-                {tab.label}
-              </button>
-            ))}
+            {observationTabs
+              .filter((tab) => tab.key !== "history" || canViewHistory)
+              .map((tab, index, visibleTabs) => (
+                <button
+                  aria-controls={`observation-tabpanel-${tab.key}`}
+                  aria-selected={activeTab === tab.key}
+                  className={cn(
+                    "min-h-11 shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none",
+                    activeTab === tab.key
+                      ? "bg-stone-950 text-white"
+                      : "text-stone-600 hover:bg-amber-50 hover:text-stone-950",
+                  )}
+                  key={tab.key}
+                  id={`${tab.key}-tab`}
+                  onClick={() => changeTab(tab.key)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft")
+                      return;
+                    event.preventDefault();
+                    const nextIndex =
+                      (index +
+                        (event.key === "ArrowRight" ? 1 : -1) +
+                        visibleTabs.length) %
+                      visibleTabs.length;
+                    changeTab(visibleTabs[nextIndex]!.key);
+                  }}
+                  role="tab"
+                  type="button"
+                >
+                  {tab.label}
+                </button>
+              ))}
           </div>
         </nav>
       </div>
@@ -448,10 +461,7 @@ export function ObservationDetail({
               </div>
             </div>
 
-            <section
-              className="nibol-panel p-6"
-              id="documentos-observacion"
-            >
+            <section className="nibol-panel p-6" id="documentos-observacion">
               <div className="flex items-center gap-3">
                 <Users className="h-5 w-5 text-amber-700" />
                 <div>
@@ -510,65 +520,67 @@ export function ObservationDetail({
                           </div>
                         </dl>
                       </div>
-                      <div className="min-w-0 border-t border-stone-200 pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5">
-                        <div className="flex items-center justify-between gap-3">
-                          <h4 className="font-semibold text-stone-950">
-                            Evidencias adjuntas
-                          </h4>
-                          <span className="shrink-0 text-xs text-stone-500">
-                            {documents.length} documento
-                            {documents.length === 1 ? "" : "s"}
-                          </span>
-                        </div>
-                        <div className="mt-3 space-y-2">
-                          {observationEvidence.isPending ? (
-                            <p className="border border-dashed border-stone-300 bg-white p-3 text-xs text-stone-500">
-                              Cargando documentos…
-                            </p>
-                          ) : documents.length ? (
-                            documents.map((file) => {
-                              const fileUrl = `${apiClient.defaults.baseURL}${file.downloadPath}`;
-                              return (
-                                <div
-                                  className={`flex flex-wrap items-center gap-3 border bg-white p-3 ${activeEvidenceId === file.id ? "border-amber-500 ring-2 ring-amber-200" : "border-stone-200"}`}
-                                  id={`evidence-${file.id}`}
-                                  key={file.id}
-                                >
-                                  <FileText className="h-5 w-5 shrink-0 text-stone-500" />
-                                  <p className="min-w-0 flex-1 text-sm font-semibold break-words text-stone-900">
-                                    {file.originalName}
-                                  </p>
-                                  <div className="flex shrink-0 items-center gap-2">
-                                    <a
-                                      aria-label={`Ver ${file.originalName}`}
-                                      className="nibol-btn-secondary px-2.5 py-2 text-xs"
-                                      href={fileUrl}
-                                      rel="noreferrer"
-                                      target="_blank"
-                                    >
-                                      <Eye className="h-3.5 w-3.5" />
-                                      Ver
-                                    </a>
-                                    <a
-                                      aria-label={`Descargar ${file.originalName}`}
-                                      className="nibol-btn-secondary px-2.5 py-2 text-xs"
-                                      download={file.originalName}
-                                      href={fileUrl}
-                                    >
-                                      <Download className="h-3.5 w-3.5" />
-                                      Descargar
-                                    </a>
+                      {canViewEvidence ? (
+                        <div className="min-w-0 border-t border-stone-200 pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-5">
+                          <div className="flex items-center justify-between gap-3">
+                            <h4 className="font-semibold text-stone-950">
+                              Evidencias adjuntas
+                            </h4>
+                            <span className="shrink-0 text-xs text-stone-500">
+                              {documents.length} documento
+                              {documents.length === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                          <div className="mt-3 space-y-2">
+                            {observationEvidence.isPending ? (
+                              <p className="border border-dashed border-stone-300 bg-white p-3 text-xs text-stone-500">
+                                Cargando documentos…
+                              </p>
+                            ) : documents.length ? (
+                              documents.map((file) => {
+                                const fileUrl = `${apiClient.defaults.baseURL}${file.downloadPath}`;
+                                return (
+                                  <div
+                                    className={`flex flex-wrap items-center gap-3 border bg-white p-3 ${activeEvidenceId === file.id ? "border-amber-500 ring-2 ring-amber-200" : "border-stone-200"}`}
+                                    id={`evidence-${file.id}`}
+                                    key={file.id}
+                                  >
+                                    <FileText className="h-5 w-5 shrink-0 text-stone-500" />
+                                    <p className="min-w-0 flex-1 text-sm font-semibold break-words text-stone-900">
+                                      {file.originalName}
+                                    </p>
+                                    <div className="flex shrink-0 items-center gap-2">
+                                      <a
+                                        aria-label={`Ver ${file.originalName}`}
+                                        className="nibol-btn-secondary px-2.5 py-2 text-xs"
+                                        href={fileUrl}
+                                        rel="noreferrer"
+                                        target="_blank"
+                                      >
+                                        <Eye className="h-3.5 w-3.5" />
+                                        Ver
+                                      </a>
+                                      <a
+                                        aria-label={`Descargar ${file.originalName}`}
+                                        className="nibol-btn-secondary px-2.5 py-2 text-xs"
+                                        download={file.originalName}
+                                        href={fileUrl}
+                                      >
+                                        <Download className="h-3.5 w-3.5" />
+                                        Descargar
+                                      </a>
+                                    </div>
                                   </div>
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <p className="border border-dashed border-stone-300 bg-white p-3 text-xs text-stone-500">
-                              No hay documentos de respaldo para esta área.
-                            </p>
-                          )}
+                                );
+                              })
+                            ) : (
+                              <p className="border border-dashed border-stone-300 bg-white p-3 text-xs text-stone-500">
+                                No hay documentos de respaldo para esta área.
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      ) : null}
                     </article>
                   );
                 })}
@@ -593,6 +605,28 @@ export function ObservationDetail({
             section="comments"
           />
         </div>
+      ) : null}
+
+      {activeTab === "history" && canViewHistory ? (
+        <section
+          aria-labelledby="history-tab"
+          className="nibol-panel min-w-0 p-6"
+          id="observation-tabpanel-history"
+          role="tabpanel"
+        >
+          <div className="mb-5">
+            <h2 className="text-xl font-semibold">
+              Historial de la observación
+            </h2>
+            <p className="mt-1 text-sm text-stone-500">
+              Cambios y decisiones visibles dentro de su alcance.
+            </p>
+          </div>
+          <EntityActivityTimeline
+            entityId={observationId}
+            entityType="OBSERVATION"
+          />
+        </section>
       ) : null}
 
       {activeTab === "plans" ? (

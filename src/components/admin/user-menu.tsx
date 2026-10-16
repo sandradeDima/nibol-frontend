@@ -29,6 +29,9 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canViewNotifications =
     authorization.permissions.includes("notifications.view");
+  const canDeleteNotifications = authorization.permissions.includes(
+    "notifications.delete",
+  );
 
   const handleDocumentPointerDown = useEffectEvent((event: PointerEvent) => {
     const target = event.target;
@@ -54,13 +57,14 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
 
   return (
     <div className="flex items-center gap-3">
-      <NotificationBell canView={canViewNotifications} />
+      <NotificationBell
+        canDelete={canDeleteNotifications}
+        canView={canViewNotifications}
+      />
 
       <div className="relative" ref={containerRef}>
         <button
-          aria-label={
-            open ? "Cerrar menú de usuario" : "Abrir menú de usuario"
-          }
+          aria-label={open ? "Cerrar menú de usuario" : "Abrir menú de usuario"}
           aria-expanded={open}
           className={cn(
             "inline-flex items-center gap-3 border px-3 py-2.5 text-left transition",

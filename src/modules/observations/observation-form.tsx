@@ -42,8 +42,8 @@ import { getApiErrorMessage } from "@/utils";
 import { formatObservationDate } from "./presentation";
 
 type ObservationFormProps =
-  | { mode: "create" }
-  | { mode: "edit"; observationId: string };
+  | { canManageAreas: boolean; mode: "create" }
+  | { canManageAreas: boolean; mode: "edit"; observationId: string };
 
 const emptyValues: ObservationFormValues = {
   areaAssignments: [
@@ -230,6 +230,7 @@ export function ObservationForm(props: ObservationFormProps) {
     control: form.control,
     name: "areaAssignments",
   });
+  const canEditAreas = props.mode === "create" || props.canManageAreas;
 
   useEffect(() => {
     const item = observationQuery.data;
@@ -301,6 +302,7 @@ export function ObservationForm(props: ObservationFormProps) {
   ]);
   const mutation = useMutation({
     mutationFn: async (values: ObservationFormValues) => {
+      const { areaAssignments, ...fields } = values;
       const observation =
         props.mode === "create"
           ? observationService.createObservation({
@@ -314,7 +316,10 @@ export function ObservationForm(props: ObservationFormProps) {
                 })),
               ),
             })
-          : observationService.updateObservation(props.observationId, values);
+          : observationService.updateObservation(
+              props.observationId,
+              props.canManageAreas ? { ...fields, areaAssignments } : fields,
+            );
       const savedObservation = await observation;
       try {
         await Promise.all(
@@ -756,10 +761,16 @@ export function ObservationForm(props: ObservationFormProps) {
                   Asigne quién es dueño del proceso y quién ejecuta por cada
                   área.
                 </p>
+                {!canEditAreas ? (
+                  <p className="mt-1 text-xs text-stone-500">
+                    No tiene permiso para cambiar las áreas asignadas.
+                  </p>
+                ) : null}
               </div>
             </div>
             <button
               className="nibol-btn-secondary px-4 py-2 text-sm"
+              disabled={!canEditAreas}
               onClick={() =>
                 areas.append({
                   areaId: "",
@@ -788,6 +799,7 @@ export function ObservationForm(props: ObservationFormProps) {
                     <button
                       aria-label={`Quitar área ${index + 1}`}
                       className="rounded-lg p-2 text-stone-500 hover:bg-rose-50 hover:text-rose-700"
+                      disabled={!canEditAreas}
                       onClick={() => {
                         areas.remove(index);
                         setPlansByArea((current) => {
@@ -823,6 +835,7 @@ export function ObservationForm(props: ObservationFormProps) {
                     <select
                       className={fieldClass}
                       {...form.register(`areaAssignments.${index}.areaId`)}
+                      disabled={!canEditAreas}
                       onChange={(event) => {
                         const previousAreaId = watchedAreas[index]?.areaId;
                         if (
@@ -873,6 +886,7 @@ export function ObservationForm(props: ObservationFormProps) {
                     label="Dueño del proceso"
                   >
                     <UserSearchSelect
+                      disabled={!canEditAreas}
                       onChange={(userId) =>
                         form.setValue(
                           `areaAssignments.${index}.processOwnerUserId`,
@@ -892,6 +906,7 @@ export function ObservationForm(props: ObservationFormProps) {
                     label="Responsable del área"
                   >
                     <UserSearchSelect
+                      disabled={!canEditAreas}
                       onChange={(userId) =>
                         form.setValue(
                           `areaAssignments.${index}.areaResponsibleUserId`,

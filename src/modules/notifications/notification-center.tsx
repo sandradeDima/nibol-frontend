@@ -30,7 +30,13 @@ import { getApiErrorMessage } from "@/utils";
 const panelClassName = "nibol-panel min-w-0 p-6";
 const emptySubscribe = () => () => {};
 
-export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
+export function NotificationCenter({
+  canCreate,
+  canDelete,
+}: {
+  canCreate: boolean;
+  canDelete: boolean;
+}) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -383,14 +389,16 @@ export function NotificationCenter({ canCreate }: { canCreate: boolean }) {
                             Abrir registro
                           </Link>
                         ) : null}
-                        <NotificationDeleteButton
-                          disabled={deleteNotificationMutation.isPending}
-                          onClick={() => {
-                            void deleteNotificationMutation.mutateAsync(
-                              notification.id,
-                            );
-                          }}
-                        />
+                        {canDelete ? (
+                          <NotificationDeleteButton
+                            disabled={deleteNotificationMutation.isPending}
+                            onClick={() => {
+                              void deleteNotificationMutation.mutateAsync(
+                                notification.id,
+                              );
+                            }}
+                          />
+                        ) : null}
                       </>
                     }
                     notification={notification}

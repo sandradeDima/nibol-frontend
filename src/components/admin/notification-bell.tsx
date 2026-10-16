@@ -15,7 +15,13 @@ import { notificationService } from "@/services/notification-service";
 import { getApiErrorMessage } from "@/utils";
 import { cn } from "@/utils";
 
-export function NotificationBell({ canView }: { canView: boolean }) {
+export function NotificationBell({
+  canDelete,
+  canView,
+}: {
+  canDelete: boolean;
+  canView: boolean;
+}) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -259,19 +265,21 @@ export function NotificationBell({ canView }: { canView: boolean }) {
                               Abrir registro
                             </Link>
                           ) : null}
-                          <button
-                            className="nibol-btn-secondary px-3 py-2 text-xs"
-                            disabled={deleteNotificationMutation.isPending}
-                            onClick={() => {
-                              void deleteNotificationMutation.mutateAsync(
-                                notification.id,
-                              );
-                            }}
-                            type="button"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Eliminar
-                          </button>
+                          {canDelete ? (
+                            <button
+                              className="nibol-btn-secondary px-3 py-2 text-xs"
+                              disabled={deleteNotificationMutation.isPending}
+                              onClick={() => {
+                                void deleteNotificationMutation.mutateAsync(
+                                  notification.id,
+                                );
+                              }}
+                              type="button"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Eliminar
+                            </button>
+                          ) : null}
                         </div>
                       </div>
                     </div>
