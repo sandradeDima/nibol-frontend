@@ -501,7 +501,12 @@ export function ExtensionRequestReviewWorkspace({
       );
       const remainingPages = await Promise.all(
         Array.from(
-          { length: firstPage.pagination.totalPages - 1 },
+          {
+            length:
+              Math.ceil(
+                firstPage.pagination.total / firstPage.pagination.perPage,
+              ) - 1,
+          },
           (_, index) => {
             const pageParams = new URLSearchParams(params);
             pageParams.set("page", String(index + 2));
