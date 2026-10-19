@@ -53,6 +53,7 @@ const DASHBOARD_FILTER_KEYS = [
   "activeOnly",
   "cutoffDate",
   "areaId",
+  "areaIds",
   "areaResponsibleId",
   "executorId",
   "globalStatus",

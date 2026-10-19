@@ -1,9 +1,12 @@
 import { PageHeader } from "@/components/ui/page-header";
-import { requirePermission } from "@/lib/server-auth";
+import { requireAnyPermission } from "@/lib/server-auth";
 import { ExtensionRequestTable } from "@/modules/extension-requests/extension-request-table";
 
 export default async function ExtensionRequestsPage() {
-  const authorization = await requirePermission("deadline_extensions.view");
+  const authorization = await requireAnyPermission([
+    "deadline_extensions.view",
+    "deadline_extensions.request",
+  ]);
 
   return (
     <main className="space-y-6">
@@ -14,6 +17,11 @@ export default async function ExtensionRequestsPage() {
       />
 
       <ExtensionRequestTable
+        isAdmin={authorization.isAdmin}
+        canRequest={authorization.permissions.includes(
+          "deadline_extensions.request",
+        )}
+        currentUserId={authorization.userId}
         canApprove={authorization.permissions.includes(
           "deadline_extensions.approve",
         )}

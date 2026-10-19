@@ -13,6 +13,7 @@ export default async function ExtensionRequestDetailPage({
 }: ExtensionRequestDetailPageProps) {
   const authorization = await requireAnyPermission([
     "deadline_extensions.view",
+    "deadline_extensions.request",
     "deadline_extensions.approve",
     "deadline_extensions.reject",
   ]);
@@ -27,6 +28,7 @@ export default async function ExtensionRequestDetailPage({
       />
 
       <ExtensionRequestDetail
+        isAdmin={authorization.isAdmin}
         canApprove={authorization.permissions.includes(
           "deadline_extensions.approve",
         )}

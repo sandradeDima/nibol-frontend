@@ -107,7 +107,18 @@ export function PermissionMatrix({
                     <input
                       checked={isChecked}
                       className="mt-1 h-4 w-4 rounded border-stone-300 text-amber-700 focus:ring-amber-300"
-                      disabled={disabled || readOnly || isLocked}
+                      disabled={
+                        disabled ||
+                        readOnly ||
+                        isLocked ||
+                        (action.key === "view" &&
+                          selectedPermissions.has(
+                            buildPermissionName(resource.key, "view_module"),
+                          )) ||
+                        (resource.key === "activity" &&
+                          action.key !== "view_module" &&
+                          !selectedPermissions.has("activity.view_module"))
+                      }
                       onChange={(event) => {
                         if (!onChange) {
                           return;
@@ -126,10 +137,22 @@ export function PermissionMatrix({
                         }
 
                         if (
+                          resource.key === "activity" &&
+                          action.key === "view_module" &&
+                          !event.target.checked
+                        ) {
+                          for (const name of nextPermissions) {
+                            if (name.startsWith("activity.")) {
+                              nextPermissions.delete(name);
+                            }
+                          }
+                        }
+
+                        if (
                           action.key === "view_module" &&
                           event.target.checked &&
-                          !resourcePermissionNames.some((name) =>
-                            nextPermissions.has(name),
+                          !nextPermissions.has(
+                            buildPermissionName(resource.key, "view"),
                           )
                         ) {
                           nextPermissions.add(

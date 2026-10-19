@@ -275,7 +275,7 @@ export function RemediationPlanTable({ canEdit }: { canEdit: boolean }) {
               <div>
                 <p className="flex items-center gap-1 text-xs text-stone-500">
                   <CalendarDays className="h-3.5 w-3.5" />
-                  Fecha efectiva
+                  Fecha de compromiso
                 </p>
                 <p className="mt-1 font-semibold">
                   {formatRemediationDate(plan.effectiveDueDate)}

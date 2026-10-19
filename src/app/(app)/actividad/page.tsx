@@ -1,8 +1,9 @@
 import { PageHeader } from "@/components/ui/page-header";
-import { requireAnyPermission } from "@/lib/server-auth";
+import { requireAnyPermission, requirePermission } from "@/lib/server-auth";
 import { ActivityPage } from "@/modules/activity/activity-page";
 
 export default async function ActivityPageRoute() {
+  await requirePermission("activity.view_module");
   const authorization = await requireAnyPermission([
     "activity.view",
     "activity_logs.view",

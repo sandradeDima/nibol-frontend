@@ -29,7 +29,7 @@ export function ActionPlanScheduleTable() {
               <th className="px-5 py-4">Área</th>
               <th className="px-5 py-4">Ejecutor</th>
               <th className="px-5 py-4">Avance oficial</th>
-              <th className="px-5 py-4">Fecha efectiva</th>
+              <th className="px-5 py-4">Fecha de compromiso</th>
               <th className="px-5 py-4">Estado de avance</th>
               <th className="px-5 py-4">Estado de plazo</th>
               <th className="px-5 py-4">Reprogramado</th>

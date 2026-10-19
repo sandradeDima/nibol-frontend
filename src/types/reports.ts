@@ -15,6 +15,7 @@ export type ReportType =
 export interface ReportFilters {
   activeOnly?: boolean;
   areaId?: string;
+  areaIds?: string[];
   areaResponsibleId?: string[];
   auditReportId?: string[];
   cutoffDate?: string;

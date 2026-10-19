@@ -491,7 +491,7 @@ export function RemediationWorkspace({
                               <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-stone-500" />
                               <div>
                                 <p className="text-xs font-semibold tracking-wider text-stone-500 uppercase">
-                                  Fecha de compromiso
+                                  Fecha límite
                                 </p>
                                 <p className="mt-1 font-semibold text-stone-950">
                                   {formatRemediationDate(plan.effectiveDueDate)}

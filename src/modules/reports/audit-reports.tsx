@@ -30,6 +30,7 @@ import {
   ReportError,
   ReportExportButtons,
   ReportLoading,
+  ReportOptionSelect,
   ReportPanel,
 } from "./report-ui";
 
@@ -351,88 +352,69 @@ function AuditFilterBar({
         </label>
         <label className="space-y-2">
           <span className="report-field-label">Área</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("areaId", event.target.value || undefined)
-            }
+          <ReportOptionSelect
+            onChange={(value) => onChange("areaId", value || undefined)}
+            options={(options?.areas ?? []).map((area) => ({
+              id: area.id,
+              label: area.name,
+            }))}
+            placeholder="Todas las áreas"
             value={draft.areaId ?? ""}
-          >
-            <option value="">Todas las áreas</option>
-            {options?.areas.map((area) => (
-              <option key={area.id} value={area.id}>
-                {area.name}
-              </option>
-            ))}
-          </select>
+          />
         </label>
         <label className="space-y-2">
           <span className="report-field-label">Usuario</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("userId", event.target.value || undefined)
-            }
+          <ReportOptionSelect
+            onChange={(value) => onChange("userId", value || undefined)}
+            options={(options?.users ?? []).map((user) => ({
+              id: user.id,
+              label: user.name,
+            }))}
+            placeholder="Todos los usuarios"
             value={draft.userId ?? ""}
-          >
-            <option value="">Todos los usuarios</option>
-            {options?.users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-          </select>
+          />
         </label>
         <label className="space-y-2">
           <span className="report-field-label">Observación</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("observationId", event.target.value || undefined)
-            }
+          <ReportOptionSelect
+            onChange={(value) => onChange("observationId", value || undefined)}
+            options={(options?.observations ?? []).map((observation) => ({
+              id: observation.id,
+              label: `${observation.code} · ${observation.title}`,
+            }))}
+            placeholder="Todas las observaciones"
             value={draft.observationId ?? ""}
-          >
-            <option value="">Todas las observaciones</option>
-            {options?.observations.map((observation) => (
-              <option key={observation.id} value={observation.id}>
-                {observation.code} · {observation.title}
-              </option>
-            ))}
-          </select>
+          />
         </label>
         <label className="space-y-2">
           <span className="report-field-label">Evento</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("eventType", event.target.value || undefined)
-            }
+          <ReportOptionSelect
+            onChange={(value) => onChange("eventType", value || undefined)}
+            options={(options?.eventTypes ?? []).map((eventType) => ({
+              id: eventType.key,
+              label: eventType.label,
+            }))}
+            placeholder="Todos los eventos"
             value={draft.eventType ?? ""}
-          >
-            <option value="">Todos los eventos</option>
-            {options?.eventTypes.map((eventType) => (
-              <option key={eventType.key} value={eventType.key}>
-                {eventType.label}
-              </option>
-            ))}
-          </select>
+          />
         </label>
         <label className="space-y-2">
           <span className="report-field-label">Resultado</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("result", event.target.value || undefined)
-            }
+          <ReportOptionSelect
+            onChange={(value) => onChange("result", value || undefined)}
+            options={[
+              { id: "Aprobado", label: "Aprobado" },
+              { id: "Rechazado", label: "Rechazado" },
+              {
+                id: "Corrección solicitada",
+                label: "Corrección solicitada",
+              },
+              { id: "Completado", label: "Completado" },
+              { id: "Registrado", label: "Registrado" },
+            ]}
+            placeholder="Todos los resultados"
             value={draft.result ?? ""}
-          >
-            <option value="">Todos los resultados</option>
-            <option value="Aprobado">Aprobado</option>
-            <option value="Rechazado">Rechazado</option>
-            <option value="Corrección solicitada">Corrección solicitada</option>
-            <option value="Completado">Completado</option>
-            <option value="Registrado">Registrado</option>
-          </select>
+          />
         </label>
         <label className="relative space-y-2">
           <span className="report-field-label">Buscar</span>
@@ -449,37 +431,27 @@ function AuditFilterBar({
         </label>
         <label className="space-y-2">
           <span className="report-field-label">Riesgo</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("riskLevelId", event.target.value || undefined)
-            }
+          <ReportOptionSelect
+            onChange={(value) => onChange("riskLevelId", value || undefined)}
+            options={(observationOptions?.riskLevels ?? []).map((risk) => ({
+              id: risk.id,
+              label: risk.name,
+            }))}
+            placeholder="Todos los riesgos"
             value={draft.riskLevelId ?? ""}
-          >
-            <option value="">Todos los riesgos</option>
-            {observationOptions?.riskLevels.map((risk) => (
-              <option key={risk.id} value={risk.id}>
-                {risk.name}
-              </option>
-            ))}
-          </select>
+          />
         </label>
         <label className="space-y-2">
           <span className="report-field-label">Estado</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              onChange("status", event.target.value || undefined)
-            }
+          <ReportOptionSelect
+            onChange={(value) => onChange("status", value || undefined)}
+            options={(observationOptions?.statuses ?? []).map((status) => ({
+              id: status.key,
+              label: status.name,
+            }))}
+            placeholder="Todos los estados"
             value={draft.status ?? ""}
-          >
-            <option value="">Todos los estados</option>
-            {observationOptions?.statuses.map((status) => (
-              <option key={status.id} value={status.key}>
-                {status.name}
-              </option>
-            ))}
-          </select>
+          />
         </label>
       </div>
       <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--border)] pt-4">

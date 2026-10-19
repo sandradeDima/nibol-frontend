@@ -184,6 +184,47 @@ type ReportFilterBarProps = {
   showActiveOnly?: boolean;
 };
 
+export function ReportOptionSelect({
+  allowEmpty = true,
+  className = "nibol-field h-11 text-sm",
+  id,
+  onChange,
+  options,
+  placeholder,
+  value,
+}: {
+  allowEmpty?: boolean;
+  className?: string;
+  id?: string;
+  onChange: (value: string) => void;
+  options: Array<{ id: string; label: string }>;
+  placeholder: string;
+  value: string;
+}) {
+  return options.length > 2 ? (
+    <SearchableSelect
+      id={id}
+      onChange={onChange}
+      options={options}
+      placeholder={placeholder}
+      value={value}
+    />
+  ) : (
+    <select
+      className={className}
+      onChange={(event) => onChange(event.target.value)}
+      value={value}
+    >
+      {allowEmpty ? <option value="">{placeholder}</option> : null}
+      {options.map((option) => (
+        <option key={option.id} value={option.id}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 type DashboardFilterFieldsProps = {
   allowedAreaResponsibleIds: Set<string>;
   allowedExecutorIds: Set<string>;
@@ -285,22 +326,21 @@ function DashboardFilterFields({
         />
       </label>
       {capabilities.area ? (
-        <label className="space-y-2">
+        <label className="min-w-0 space-y-2">
           <span className="report-field-label">Área</span>
-          <select
-            className="nibol-field h-11 text-sm"
-            onChange={(event) =>
-              updateFilter("areaId", event.target.value || undefined)
+          <SearchableSelect
+            id="dashboard-area"
+            multiple
+            onChange={(value) =>
+              updateFilter("areaIds", value.length ? value : undefined)
             }
-            value={draft.areaId ?? ""}
-          >
-            <option value="">Todas las áreas</option>
-            {options?.areas.map((area) => (
-              <option key={area.id} value={area.id}>
-                {area.name}
-              </option>
-            ))}
-          </select>
+            options={(options?.areas ?? []).map((area) => ({
+              id: area.id,
+              label: area.name,
+            }))}
+            placeholder="Todas las áreas"
+            value={draft.areaIds ?? (draft.areaId ? [draft.areaId] : [])}
+          />
         </label>
       ) : null}
       {capabilities.processOwner ? (
@@ -409,8 +449,13 @@ export function ReportFilterBar({
         });
   const hierarchyRelationships = options?.hierarchyRelationships ?? [];
   const getAllowedHierarchyIds = (nextDraft: ReportFilters) => {
+    const areaIds = nextDraft.areaIds?.length
+      ? nextDraft.areaIds
+      : nextDraft.areaId
+        ? [nextDraft.areaId]
+        : [];
     const byArea = hierarchyRelationships.filter(
-      (item) => !nextDraft.areaId || item.areaId === nextDraft.areaId,
+      (item) => !areaIds.length || areaIds.includes(item.areaId),
     );
     const byProcessOwner = nextDraft.processOwnerId?.length
       ? byArea.filter(
@@ -475,9 +520,13 @@ export function ReportFilterBar({
   ) => {
     if (
       dashboardOnly &&
-      ["areaId", "processOwnerId", "areaResponsibleId"].includes(key)
+      ["areaId", "areaIds", "processOwnerId", "areaResponsibleId"].includes(key)
     ) {
-      const nextDraft = { ...draft, [key]: value } as ReportFilters;
+      const nextDraft = {
+        ...draft,
+        [key]: value,
+        ...(key === "areaIds" ? { areaId: undefined } : {}),
+      } as ReportFilters;
       const allowed = getAllowedHierarchyIds(nextDraft);
       const keepSelected = (selected: unknown, ids: Set<string>) => {
         if (!Array.isArray(selected) || selected.length === 0) return undefined;
@@ -488,12 +537,13 @@ export function ReportFilterBar({
       };
       onChange(
         key,
-        key === "areaId"
+        key === "areaId" || key === "areaIds"
           ? value
           : key === "processOwnerId"
             ? keepSelected(value, allowed.processOwnerIds)
             : keepSelected(value, allowed.areaResponsibleIds),
       );
+      if (key === "areaIds") onChange("areaId", undefined);
       if (key !== "processOwnerId" && key !== "areaResponsibleId")
         onChange(
           "processOwnerId",
@@ -650,21 +700,23 @@ export function ReportFilterBar({
           <>
             <label className="space-y-2">
               <span className="report-field-label">Período de análisis</span>
-              <select
-                className="nibol-field h-11 text-sm"
-                onChange={(event) =>
+              <ReportOptionSelect
+                allowEmpty={false}
+                onChange={(value) =>
                   onChange(
                     "periodField",
-                    event.target.value as ReportFilters["periodField"],
+                    (value || "createdAt") as ReportFilters["periodField"],
                   )
                 }
+                options={[
+                  { id: "createdAt", label: "Fecha de registro" },
+                  { id: "reportDate", label: "Fecha del informe" },
+                  { id: "originalDueDate", label: "Fecha original del plan" },
+                  { id: "currentDueDate", label: "Fecha límite actual" },
+                ]}
+                placeholder="Fecha de registro"
                 value={draft.periodField ?? "createdAt"}
-              >
-                <option value="createdAt">Fecha de registro</option>
-                <option value="reportDate">Fecha del informe</option>
-                <option value="originalDueDate">Fecha original del plan</option>
-                <option value="currentDueDate">Fecha límite actual</option>
-              </select>
+              />
             </label>
             <label className="space-y-2">
               <span className="report-field-label">Desde</span>
@@ -711,76 +763,64 @@ export function ReportFilterBar({
               </label>
             ) : null}
             {capabilities.area ? (
-              <label className="space-y-2">
+              <label className="min-w-0 space-y-2">
                 <span className="report-field-label">Área</span>
-                <select
-                  className="nibol-field h-11 text-sm"
-                  onChange={(event) =>
-                    updateFilter("areaId", event.target.value || undefined)
+                <ReportOptionSelect
+                  onChange={(value) =>
+                    updateFilter("areaId", value || undefined)
                   }
+                  options={(options?.areas ?? []).map((area) => ({
+                    id: area.id,
+                    label: area.name,
+                  }))}
+                  placeholder="Todas las áreas"
                   value={draft.areaId ?? ""}
-                >
-                  <option value="">Todas las áreas</option>
-                  {options?.areas.map((area) => (
-                    <option key={area.id} value={area.id}>
-                      {area.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
             ) : null}
             <label className="space-y-2">
               <span className="report-field-label">Nivel de riesgo</span>
-              <select
-                className="nibol-field h-11 text-sm"
-                onChange={(event) =>
-                  onChange("riskLevelId", event.target.value || undefined)
+              <ReportOptionSelect
+                onChange={(value) =>
+                  onChange("riskLevelId", value || undefined)
                 }
+                options={(options?.riskLevels ?? []).map((risk) => ({
+                  id: risk.id,
+                  label: risk.name,
+                }))}
+                placeholder="Todos los niveles"
                 value={draft.riskLevelId ?? ""}
-              >
-                <option value="">Todos los niveles</option>
-                {options?.riskLevels.map((risk) => (
-                  <option key={risk.id} value={risk.id}>
-                    {risk.name}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
             <label className="space-y-2">
               <span className="report-field-label">
                 Estado del plan de acción
               </span>
-              <select
-                className="nibol-field h-11 text-sm"
-                onChange={(event) =>
-                  onChange("progressStatus", event.target.value || undefined)
+              <ReportOptionSelect
+                onChange={(value) =>
+                  onChange("progressStatus", value || undefined)
                 }
+                options={(options?.progressStatuses ?? []).map((status) => ({
+                  id: status.key,
+                  label: status.label,
+                }))}
+                placeholder="Todos los estados"
                 value={draft.progressStatus ?? ""}
-              >
-                <option value="">Todos los estados</option>
-                {options?.progressStatuses.map((status) => (
-                  <option key={status.key} value={status.key}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
             <label className="space-y-2">
               <span className="report-field-label">Estado de observación</span>
-              <select
-                className="nibol-field h-11 text-sm"
-                onChange={(event) =>
-                  updateFilter("statusId", event.target.value || undefined)
+              <ReportOptionSelect
+                onChange={(value) =>
+                  updateFilter("statusId", value || undefined)
                 }
+                options={(options?.observationStatuses ?? []).map((status) => ({
+                  id: status.id,
+                  label: status.name,
+                }))}
+                placeholder="Todos los estados"
                 value={draft.statusId ?? ""}
-              >
-                <option value="">Todos los estados</option>
-                {options?.observationStatuses.map((status) => (
-                  <option key={status.id} value={status.id}>
-                    {status.name}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
             {capabilities.processOwner ? (
               <label className="min-w-0 space-y-2">
@@ -1492,7 +1532,7 @@ export function ReportFilterSummary({
     [
       "Área",
       selected(
-        filters.areaId ? [filters.areaId] : undefined,
+        filters.areaIds ?? (filters.areaId ? [filters.areaId] : undefined),
         options?.areas,
         (area) => area.name,
       ),

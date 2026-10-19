@@ -236,6 +236,9 @@ export function ActionPlanDetailView({
     null,
   );
   const [comment, setComment] = useState("");
+  const [createdExtensionId, setCreatedExtensionId] = useState<string | null>(
+    null,
+  );
   const [extensionOpen, setExtensionOpen] = useState(
     searchParams.get("extension") === "1",
   );
@@ -284,7 +287,7 @@ export function ActionPlanDetailView({
     queryKey: ["observation-comments", plan?.observation.id],
   });
   const extensionsQuery = useQuery({
-    enabled: Boolean(plan && canViewExtensions),
+    enabled: Boolean(plan && (canViewExtensions || canRequestExtension)),
     queryFn: () =>
       extensionRequestService.list(
         `?filter.actionPlanId=${encodeURIComponent(actionPlanId)}&perPage=100`,
@@ -303,7 +306,9 @@ export function ActionPlanDetailView({
       planQuery.refetch(),
       evaluationsQuery.refetch(),
       canViewObservation ? commentsQuery.refetch() : Promise.resolve(),
-      canViewExtensions ? extensionsQuery.refetch() : Promise.resolve(),
+      canViewExtensions || canRequestExtension
+        ? extensionsQuery.refetch()
+        : Promise.resolve(),
       queryClient.invalidateQueries({ queryKey: ["action-plans"] }),
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.observationDetails(plan.observation.id),
@@ -376,6 +381,8 @@ export function ActionPlanDetailView({
     mutationFn: async () => {
       if (!extensionClassification || !extensionDate || !extensionReason.trim())
         throw new Error("Complete la clasificación, fecha y justificación.");
+      if (createdExtensionId)
+        return extensionRequestService.sendToManager(createdExtensionId);
       const request = await extensionRequestService.createForActionPlan(
         actionPlanId,
         {
@@ -384,10 +391,15 @@ export function ActionPlanDetailView({
           reason: extensionReason.trim(),
         },
       );
+      setCreatedExtensionId(request.id);
       return extensionRequestService.sendToManager(request.id);
     },
-    onError: (cause) => setError(getApiErrorMessage(cause)),
+    onError: async (cause) => {
+      setError(getApiErrorMessage(cause));
+      await refresh();
+    },
     onSuccess: async () => {
+      setCreatedExtensionId(null);
       setExtensionOpen(false);
       setExtensionClassification("");
       setExtensionDate("");
@@ -402,6 +414,13 @@ export function ActionPlanDetailView({
     (item) => item.reviewStatus === "SENT_TO_AUDIT",
   );
   const extensions = extensionsQuery.data?.data ?? [];
+  const recoverableExtensionId =
+    createdExtensionId ??
+    extensions.find(
+      (item) =>
+        item.requestedByUser.id === currentUserId &&
+        ["DRAFT", "MANAGER_REJECTED"].includes(item.status),
+    )?.id;
   const pendingExtensions = extensions.filter((item) =>
     isPendingExtension(item.status),
   );
@@ -972,7 +991,17 @@ export function ActionPlanDetailView({
                 ? "El plan está vencido y requiere atención."
                 : `El plan se encuentra dentro del plazo efectivo${plan.reprogrammed ? " reprogramado" : ""}.`}
             </p>
-            {canRequestExtensionForPlan && !extensions.length ? (
+            {canRequestExtensionForPlan && recoverableExtensionId ? (
+              <Link
+                className="nibol-btn-secondary mt-5 px-4 py-2.5 text-sm"
+                href={`/ampliaciones-plazo/${recoverableExtensionId}`}
+              >
+                Revisar estado y reintentar envío de la ampliación guardada
+              </Link>
+            ) : null}
+            {canRequestExtensionForPlan &&
+            !extensions.length &&
+            !createdExtensionId ? (
               <div className="mt-5 border-t border-stone-200 pt-5">
                 <button
                   className="nibol-btn-secondary px-4 py-2.5 text-sm"

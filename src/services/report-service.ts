@@ -53,6 +53,7 @@ export const parseReportFilters = (
     searchParams.get("filter.fechaCorte");
   if (cutoffDate) filters.cutoffDate = cutoffDate;
   [
+    "areaIds",
     "areaResponsibleId",
     "auditReportId",
     "deadlineStatuses",

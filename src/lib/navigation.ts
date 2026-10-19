@@ -1,9 +1,39 @@
 import { generatedSidebarItems } from "@/modules/generated-module-registry";
 import type { AuthorizationSummary, SidebarItem } from "@/types";
+import {
+  PERMISSION_RESOURCES,
+  supportsModulePermission,
+  type PermissionResource,
+} from "./permission-catalog";
 import { hasAnyPermission, hasPermission } from "./permissions";
 
 type SidebarConfigItem = Omit<SidebarItem, "icon"> & {
   icon: string;
+  modulePermission?: string;
+};
+
+const MODULE_PERMISSION_RESOURCES = new Set(
+  PERMISSION_RESOURCES.filter(({ key }) => supportsModulePermission(key)).map(
+    ({ key }) => key,
+  ),
+);
+
+const getModulePermissions = (item: SidebarConfigItem): string[] => {
+  if (item.modulePermission) return [item.modulePermission];
+
+  const permissions =
+    item.permissions ?? (item.permission ? [item.permission] : []);
+  return Array.from(
+    new Set(
+      permissions.flatMap((permission) => {
+        if (!permission.endsWith(".view")) return [];
+        const resource = permission.slice(0, -".view".length);
+        return MODULE_PERMISSION_RESOURCES.has(resource as PermissionResource)
+          ? [`${resource}.view_module`]
+          : [];
+      }),
+    ),
+  );
 };
 
 const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
@@ -39,6 +69,7 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     icon: "Activity",
     label: "Actividad",
     permissions: ["activity.view", "activity_logs.view", "observations.view"],
+    modulePermission: "activity.view_module",
     route: "/actividad",
   },
   {
@@ -117,7 +148,7 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     group: "Control",
     icon: "CalendarPlus2",
     label: "Ampliaciones de plazo",
-    permission: "deadline_extensions.view",
+    permissions: ["deadline_extensions.view", "deadline_extensions.request"],
     route: "/ampliaciones-plazo",
   },
   {
@@ -233,12 +264,21 @@ export const SIDEBAR_ITEMS: SidebarConfigItem[] = [
 export const getVisibleSidebarItems = (
   authorization: AuthorizationSummary,
 ): SidebarItem[] =>
-  SIDEBAR_ITEMS.filter((item) =>
-    item.permissions
+  SIDEBAR_ITEMS.filter((item) => {
+    if (
+      !hasAnyPermission(
+        authorization.permissions,
+        getModulePermissions(item),
+      )
+    ) {
+      return false;
+    }
+
+    return item.permissions
       ? hasAnyPermission(authorization.permissions, item.permissions)
       : !item.permission ||
-        hasPermission(authorization.permissions, item.permission),
-  );
+          hasPermission(authorization.permissions, item.permission);
+  });
 
 const routeLabelMap = new Map(
   SIDEBAR_ITEMS.map((item) => [item.route, item.label] as const),

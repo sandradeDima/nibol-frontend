@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -12,6 +12,7 @@ import { progressService } from "@/services/progress-service";
 import { getApiErrorMessage } from "@/utils";
 
 import { ExtensionRequestReviewDetail } from "./extension-request-review-workspace";
+import { ExtensionRequestSubmit } from "./extension-request-submit";
 
 export function ExtensionRequestDetail({
   canApprove,
@@ -19,12 +20,14 @@ export function ExtensionRequestDetail({
   canRequest,
   currentUserId,
   requestId,
+  isAdmin = false,
 }: {
   canApprove: boolean;
   canReject: boolean;
   canRequest: boolean;
   currentUserId: string;
   requestId: string;
+  isAdmin?: boolean;
 }) {
   const queryClient = useQueryClient();
   const [comment, setComment] = useState("");
@@ -43,9 +46,7 @@ export function ExtensionRequestDetail({
     ]);
   };
   const action = useMutation({
-    mutationFn: async (kind: "submit" | "approve" | "reject" | "cancel") => {
-      if (kind === "submit")
-        return extensionRequestService.sendToManager(requestId);
+    mutationFn: async (kind: "approve" | "reject" | "cancel") => {
       if (kind === "cancel") return extensionRequestService.cancel(requestId);
       if (kind === "reject")
         return extensionRequestService.managerReject(requestId, {
@@ -122,31 +123,12 @@ export function ExtensionRequestDetail({
         onReject={() => decide("reject")}
         request={request}
       />
-      {canRequest &&
-      isOwner &&
-      ["DRAFT", "MANAGER_REJECTED"].includes(request.status) ? (
-        <section className="nibol-panel flex flex-wrap items-center justify-between gap-3 p-5">
-          <div>
-            <p className="text-sm font-semibold">
-              {request.status === "DRAFT"
-                ? "Solicitud en borrador"
-                : "Solicitud devuelta para corrección"}
-            </p>
-            <p className="mt-1 text-sm text-stone-500">
-              Envíela al responsable de área cuando la información esté
-              completa.
-            </p>
-          </div>
-          <button
-            className="nibol-btn-primary px-4 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={action.isPending}
-            onClick={() => action.mutate("submit")}
-            type="button"
-          >
-            <Send className="h-4 w-4" /> Enviar a revisión
-          </button>
-        </section>
-      ) : null}
+      <ExtensionRequestSubmit
+        request={request}
+        canRequest={canRequest}
+        currentUserId={currentUserId}
+        isAdmin={isAdmin}
+      />
       {canRequest &&
       isOwner &&
       request.status !== "CANCELLED" &&

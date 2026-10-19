@@ -19,11 +19,14 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { ErrorState } from "@/components/ui/error-state";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { buildObservationUrl } from "@/lib/observation-links";
 import { extensionRequestService } from "@/services/extension-request-service";
 import { progressService } from "@/services/progress-service";
 import type { ExtensionRequestDetail } from "@/types";
 import { cn, getApiErrorMessage } from "@/utils";
+
+import { ExtensionRequestSubmit } from "./extension-request-submit";
 
 const statusLabels: Record<ExtensionRequestDetail["status"], string> = {
   CANCELLED: "Cancelada",
@@ -429,21 +432,37 @@ export function ExtensionRequestReviewWorkspace({
   canApprove,
   canReject,
   pendingOnly = false,
+  canRequest = false,
+  currentUserId = "",
+  isAdmin = false,
 }: {
   canApprove: boolean;
   canReject: boolean;
   pendingOnly?: boolean;
+  canRequest?: boolean;
+  currentUserId?: string;
+  isAdmin?: boolean;
 }) {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
-  const [status, setStatus] = useState(searchParams.get("filter.status") ?? "");
-  const [areaId, setAreaId] = useState(searchParams.get("filter.areaId") ?? "");
+  const [status, setStatus] = useState(
+    searchParams.get("filter.status")?.split(",").filter(Boolean) ?? [],
+  );
+  const [areaId, setAreaId] = useState(
+    searchParams.get("filter.areaId")?.split(",").filter(Boolean) ?? [],
+  );
   const [responsibleUserId, setResponsibleUserId] = useState(
-    searchParams.get("filter.responsibleUserId") ?? "",
+    searchParams
+      .get("filter.responsibleUserId")
+      ?.split(",")
+      .filter(Boolean) ?? [],
   );
   const [executorUserId, setExecutorUserId] = useState(
-    searchParams.get("filter.executorUserId") ?? "",
+    searchParams
+      .get("filter.executorUserId")
+      ?.split(",")
+      .filter(Boolean) ?? [],
   );
   const [selectedId, setSelectedId] = useState<string | null>(
     searchParams.get("extensionId"),
@@ -453,14 +472,13 @@ export function ExtensionRequestReviewWorkspace({
   const listQuery = useQuery({
     queryFn: () => {
       const params = new URLSearchParams({ perPage: "100" });
-      if (pendingOnly) {
-        params.set("filter.status", "SENT_TO_MANAGER");
-        params.set("reviewQueue", "true");
-      } else if (status) params.set("filter.status", status);
-      if (areaId) params.set("filter.areaId", areaId);
-      if (executorUserId) params.set("filter.executorUserId", executorUserId);
-      if (responsibleUserId)
-        params.set("filter.responsibleUserId", responsibleUserId);
+      if (pendingOnly) params.set("reviewQueue", "true");
+      if (status.length) params.set("filter.status", status.join(","));
+      if (areaId.length) params.set("filter.areaId", areaId.join(","));
+      if (executorUserId.length)
+        params.set("filter.executorUserId", executorUserId.join(","));
+      if (responsibleUserId.length)
+        params.set("filter.responsibleUserId", responsibleUserId.join(","));
       if (search.trim()) params.set("search", search.trim());
       return extensionRequestService.list(`?${params.toString()}`);
     },
@@ -474,9 +492,44 @@ export function ExtensionRequestReviewWorkspace({
       status,
     ],
   });
+  const filterOptionsQuery = useQuery({
+    queryFn: async () => {
+      const params = new URLSearchParams({ perPage: "100" });
+      if (pendingOnly) params.set("reviewQueue", "true");
+      const firstPage = await extensionRequestService.list(
+        `?${params.toString()}`,
+      );
+      const remainingPages = await Promise.all(
+        Array.from(
+          { length: firstPage.pagination.totalPages - 1 },
+          (_, index) => {
+            const pageParams = new URLSearchParams(params);
+            pageParams.set("page", String(index + 2));
+            return extensionRequestService.list(`?${pageParams.toString()}`);
+          },
+        ),
+      );
+      return {
+        ...firstPage,
+        data: [
+          ...firstPage.data,
+          ...remainingPages.flatMap((page) => page.data),
+        ],
+      };
+    },
+    queryKey: [
+      "extension-requests",
+      pendingOnly ? "review" : "all",
+      "filter-options",
+    ],
+  });
   const rows = useMemo(
     () => listQuery.data?.data ?? [],
     [listQuery.data?.data],
+  );
+  const filterOptionRows = useMemo(
+    () => filterOptionsQuery.data?.data ?? [],
+    [filterOptionsQuery.data?.data],
   );
   const activeSelectedId =
     selectedId && rows.some((row) => row.id === selectedId)
@@ -493,7 +546,7 @@ export function ExtensionRequestReviewWorkspace({
     () =>
       Array.from(
         new Map(
-          rows
+          filterOptionRows
             .map(
               (row) =>
                 row.observationArea?.area ??
@@ -503,22 +556,23 @@ export function ExtensionRequestReviewWorkspace({
             .map((area) => [area!.id, area!]),
         ).values(),
       ).sort((left, right) => left.name.localeCompare(right.name)),
-    [rows],
+    [filterOptionRows],
   );
   const responsibles = useMemo(
     () =>
       uniqueUsers(
-        rows.map(
+        filterOptionRows.map(
           (row) =>
             row.observationArea?.areaResponsible ??
             row.actionPlan?.observationArea.areaResponsible,
         ),
       ),
-    [rows],
+    [filterOptionRows],
   );
   const executors = useMemo(
-    () => uniqueUsers(rows.map((row) => row.actionPlan?.responsibleUser)),
-    [rows],
+    () =>
+      uniqueUsers(filterOptionRows.map((row) => row.actionPlan?.responsibleUser)),
+    [filterOptionRows],
   );
 
   const reviewMutation = useMutation({
@@ -600,65 +654,57 @@ export function ExtensionRequestReviewWorkspace({
               />
             </span>
           </label>
-          <label className="grid min-w-40 gap-1 text-xs font-bold tracking-wide text-stone-500 uppercase">
+          <label className="grid min-w-40 flex-1 gap-1 text-xs font-bold tracking-wide text-stone-500 uppercase">
             Estado
-            <select
-              className="nibol-field h-12"
-              onChange={(event) => setStatus(event.target.value)}
+            <SearchableSelect
+              multiple
+              onChange={setStatus}
+              options={Object.entries(statusLabels).map(([id, label]) => ({
+                id,
+                label,
+              }))}
+              placeholder="Todos"
               value={status}
-            >
-              <option value="">Todos</option>
-              {Object.entries(statusLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            />
           </label>
-          <label className="grid min-w-40 gap-1 text-xs font-bold tracking-wide text-stone-500 uppercase">
+          <label className="grid min-w-40 flex-1 gap-1 text-xs font-bold tracking-wide text-stone-500 uppercase">
             Área
-            <select
-              className="nibol-field h-12"
-              onChange={(event) => setAreaId(event.target.value)}
+            <SearchableSelect
+              multiple
+              onChange={setAreaId}
+              options={areas.map((area) => ({
+                id: area.id,
+                label: area.name,
+              }))}
+              placeholder="Todas"
               value={areaId}
-            >
-              <option value="">Todas</option>
-              {areas.map((area) => (
-                <option key={area.id} value={area.id}>
-                  {area.name}
-                </option>
-              ))}
-            </select>
+            />
           </label>
-          <label className="grid min-w-44 gap-1 text-xs font-bold tracking-wide text-stone-500 uppercase">
+          <label className="grid min-w-44 flex-1 gap-1 text-xs font-bold tracking-wide text-stone-500 uppercase">
             Responsable
-            <select
-              className="nibol-field h-12"
-              onChange={(event) => setResponsibleUserId(event.target.value)}
+            <SearchableSelect
+              multiple
+              onChange={setResponsibleUserId}
+              options={responsibles.map((user) => ({
+                id: user.id,
+                label: user.name,
+              }))}
+              placeholder="Todos"
               value={responsibleUserId}
-            >
-              <option value="">Todos</option>
-              {responsibles.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+            />
           </label>
-          <label className="grid min-w-44 gap-1 text-xs font-bold tracking-wide text-stone-500 uppercase">
+          <label className="grid min-w-44 flex-1 gap-1 text-xs font-bold tracking-wide text-stone-500 uppercase">
             Ejecutor
-            <select
-              className="nibol-field h-12"
-              onChange={(event) => setExecutorUserId(event.target.value)}
+            <SearchableSelect
+              multiple
+              onChange={setExecutorUserId}
+              options={executors.map((user) => ({
+                id: user.id,
+                label: user.name,
+              }))}
+              placeholder="Todos"
               value={executorUserId}
-            >
-              <option value="">Todos</option>
-              {executors.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+            />
           </label>
         </div>
       </div>
@@ -759,18 +805,26 @@ export function ExtensionRequestReviewWorkspace({
               title="No fue posible cargar el detalle"
             />
           ) : detail ? (
-            <ExtensionRequestReviewDetail
-              canApprove={canApprove}
-              canReject={canReject}
-              comment={comment}
-              error={error}
-              isProcessing={reviewMutation.isPending || download.isPending}
-              onApprove={() => decide("approve")}
-              onCommentChange={setComment}
-              onDownload={(file) => download.mutate(file)}
-              onReject={() => decide("reject")}
-              request={detail}
-            />
+            <>
+              <ExtensionRequestSubmit
+                request={detail}
+                canRequest={canRequest}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
+              />
+              <ExtensionRequestReviewDetail
+                canApprove={canApprove}
+                canReject={canReject}
+                comment={comment}
+                error={error}
+                isProcessing={reviewMutation.isPending || download.isPending}
+                onApprove={() => decide("approve")}
+                onCommentChange={setComment}
+                onDownload={(file) => download.mutate(file)}
+                onReject={() => decide("reject")}
+                request={detail}
+              />
+            </>
           ) : (
             <div className="grid min-h-96 place-items-center text-center text-sm text-stone-500">
               Seleccione una solicitud para revisar.
