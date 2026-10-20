@@ -58,6 +58,7 @@ import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
+import { createClientId } from "@/lib/client-id";
 import { QUERY_KEYS } from "@/lib/constants";
 import {
   formatDate,
@@ -152,14 +153,6 @@ const PALETTE_ICON_TONE: Record<WorkflowDesignerNodeType, string> = {
   STAGE: "bg-[var(--surface-muted)] text-[var(--foreground-soft)]",
   START: "bg-[var(--primary)] text-white",
   SUBFLOW: "bg-[var(--primary-soft)] text-[var(--primary)]",
-};
-
-const getClientId = (prefix: string): string => {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}_${crypto.randomUUID()}`;
-  }
-
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 };
 
 const buildGraph = (data: WorkflowDesignerData): DesignerGraph => ({
@@ -1021,7 +1014,7 @@ function DesignerWorkspace({
         toast.error("Solo se permite un nodo Inicio en esta versión.");
         return;
       }
-      const id = getClientId("node");
+      const id = createClientId("node");
       const nodeKey = `${nodeType.toLowerCase()}_${graph.nodes.length + 1}`;
       const configuration = createDefaultNodeConfiguration(
         nodeType,
@@ -1139,7 +1132,7 @@ function DesignerWorkspace({
             ...current.transitions,
             {
               conditionGroup: null,
-              id: getClientId("edge"),
+              id: createClientId("edge"),
               label: null,
               priority: current.transitions.length,
               source: connection.source as string,

@@ -19,6 +19,7 @@ import { toast } from "sonner";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { createClientId } from "@/lib/client-id";
 import { QUERY_KEYS } from "@/lib/constants";
 import {
   specialRequestStartFormSchema,
@@ -29,7 +30,7 @@ import { getApiErrorMessage } from "@/utils";
 
 const createReference = (): string => {
   const stamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-  const suffix = crypto.randomUUID().slice(0, 6).toUpperCase();
+  const suffix = createClientId().slice(0, 6).toUpperCase();
   return `SR-${stamp}-${suffix}`;
 };
 

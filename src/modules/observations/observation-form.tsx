@@ -30,6 +30,7 @@ import { FilePicker } from "@/components/ui/file-picker";
 import { RiskSearchMultiSelect } from "@/components/ui/risk-search-multi-select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { UserSearchSelect } from "@/components/ui/user-search-select";
+import { createClientId } from "@/lib/client-id";
 import { QUERY_KEYS } from "@/lib/constants";
 import {
   observationFormSchema,
@@ -940,7 +941,7 @@ export function ObservationForm(props: ObservationFormProps) {
                               {
                                 description: "",
                                 dueDate: dueDate ?? "",
-                                id: crypto.randomUUID(),
+                                id: createClientId(),
                                 responsibleUserId:
                                   watchedAreas[index]?.areaResponsibleUserId ??
                                   "",
