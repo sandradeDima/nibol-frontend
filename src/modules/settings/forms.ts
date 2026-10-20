@@ -16,30 +16,30 @@ const supportedTimezones = Array.from(
 export const timezoneOptions = supportedTimezones;
 
 export const settingsFormSchema = z.object({
-  appName: z.string().trim().min(1, "App name is required.").max(191),
+  appName: z.string().trim().min(1, "El nombre de la aplicación es obligatorio.").max(191),
   dateFormat: z.enum(DATE_FORMAT_VALUES),
   primaryColor: z
     .string()
     .trim()
     .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, {
-      message: "Enter a valid hex color.",
+      message: "Ingrese un color hexadecimal válido.",
     }),
   senderEmail: z
     .string()
     .trim()
-    .email("Enter a valid sender email address.")
+    .email("Ingrese un correo electrónico de remitente válido.")
     .max(191),
-  senderName: z.string().trim().min(1, "Sender name is required.").max(191),
+  senderName: z.string().trim().min(1, "El nombre del remitente es obligatorio.").max(191),
   supportEmail: z
     .string()
     .trim()
-    .email("Enter a valid support email address.")
+    .email("Ingrese un correo electrónico de soporte válido.")
     .max(191),
   timezone: z
     .string()
     .trim()
     .refine((value) => timezoneOptions.includes(value), {
-      message: "Choose a valid IANA timezone.",
+      message: "Seleccione una zona horaria IANA válida.",
     }),
 });
 

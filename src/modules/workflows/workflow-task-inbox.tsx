@@ -151,7 +151,7 @@ export function WorkflowTaskInbox() {
         />
       ) : query.data.data.length === 0 ? (
         <EmptyState
-          description="No hay tareas de workflow que coincidan con los filtros actuales."
+          description="No hay tareas de flujo de trabajo que coincidan con los filtros actuales."
           title="Bandeja al día"
         />
       ) : (

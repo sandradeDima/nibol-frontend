@@ -30,7 +30,7 @@ const formatUpdatedAt = (value: string | null): string => {
     return "Usando valores por defecto";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-BO", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -364,7 +364,7 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
               <input
                 className="nibol-field h-auto py-3 disabled:opacity-70"
                 disabled={!canEdit || isBusy}
-                placeholder="support@example.com"
+                placeholder="soporte@ejemplo.com"
                 type="email"
                 {...form.register("supportEmail")}
               />
@@ -475,7 +475,7 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
               <input
                 className="nibol-field h-auto py-3 disabled:opacity-70"
                 disabled={!canEdit || isBusy}
-                placeholder="Base Project"
+                placeholder="Proyecto base"
                 {...form.register("senderName")}
               />
               {form.formState.errors.senderName ? (
@@ -492,7 +492,7 @@ export function SettingsPageContent({ canEdit }: { canEdit: boolean }) {
               <input
                 className="nibol-field h-auto py-3 disabled:opacity-70"
                 disabled={!canEdit || isBusy}
-                placeholder="no-reply@example.com"
+                placeholder="no-responder@ejemplo.com"
                 type="email"
                 {...form.register("senderEmail")}
               />

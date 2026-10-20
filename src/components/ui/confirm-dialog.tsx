@@ -23,9 +23,9 @@ type ConfirmDialogProps = {
 };
 
 export function ConfirmDialog({
-  cancelLabel = "Cancel",
+  cancelLabel = "Cancelar",
   children,
-  confirmLabel = "Confirm",
+  confirmLabel = "Confirmar",
   description,
   isLoading = false,
   onConfirm,
@@ -73,7 +73,7 @@ export function ConfirmDialog({
       role="dialog"
     >
       <button
-        aria-label="Close dialog"
+        aria-label="Cerrar diálogo"
         className="absolute inset-0"
         disabled={isLoading}
         onClick={() => {
@@ -103,7 +103,7 @@ export function ConfirmDialog({
           </div>
 
           <button
-            aria-label="Close dialog"
+            aria-label="Cerrar diálogo"
             className="flex h-10 w-10 shrink-0 items-center justify-center text-[var(--muted)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--foreground)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
             disabled={isLoading}
             onClick={() => {
@@ -154,7 +154,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             type="button"
           >
-            {isLoading ? "Working..." : confirmLabel}
+            {isLoading ? "Procesando…" : confirmLabel}
           </button>
         </div>
       </div>

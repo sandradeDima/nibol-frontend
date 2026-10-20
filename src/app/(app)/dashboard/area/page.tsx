@@ -28,9 +28,9 @@ export default async function AreaDashboardPage() {
           description={
             result.error instanceof Error
               ? result.error.message
-              : "No fue posible cargar el dashboard del área."
+              : "No fue posible cargar el panel del área."
           }
-          title="No se pudo preparar el dashboard del área"
+          title="No se pudo preparar el panel del área"
         />
       </main>
     );

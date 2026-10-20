@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { Copy, Eye, Mail, Pencil, Power, Trash2 } from "lucide-react";
 
 import { DataTable, type DataTableConfig } from "@/components/data-table";
@@ -15,7 +16,7 @@ const formatDate = (value: string | null): string => {
     return "Nunca";
   }
 
-  return format(new Date(value), "MMM d, yyyy");
+  return format(new Date(value), "d MMM yyyy", { locale: es });
 };
 
 const userColumns: ColumnDef<UserTableRow>[] = [
@@ -47,7 +48,7 @@ const userColumns: ColumnDef<UserTableRow>[] = [
         </span>
       </div>
     ),
-    header: "Email",
+    header: "Correo electrónico",
   },
   {
     accessorKey: "roles",
@@ -142,7 +143,7 @@ export function UserTable() {
           value: (row) => row.name,
         },
         {
-          header: "Email",
+          header: "Correo electrónico",
           key: "email",
           value: (row) => row.email,
         },

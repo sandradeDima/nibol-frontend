@@ -18,6 +18,43 @@ export const VERSION_STATUS_LABELS: Record<WorkflowVersionStatus, string> = {
   PUBLISHED: "Publicada",
 };
 
+const RUNTIME_LABELS: Record<string, string> = {
+  ACTIVE: "Activa",
+  APPROVE: "Aprobar",
+  APPROVED: "Aprobada",
+  APROBADO: "Aprobado",
+  ALTERNATE_ROUTE: "Ruta alternativa",
+  ALTERNATE_ROUTE_EXECUTED: "Ruta alternativa ejecutada",
+  CANCEL: "Cancelar",
+  CANCELLED: "Cancelada",
+  CLOSED: "Cerrado",
+  COMPLETE: "Completar",
+  COMPLETED: "Completada",
+  CORRECTION_REQUESTED: "Corrección solicitada",
+  CURRENT_STATE: "Estado actual",
+  DEVUELTO: "Devuelto",
+  ESCALATE: "Escalar",
+  EXPIRED: "Vencida",
+  FAILED: "Fallida",
+  IN_PROGRESS: "En curso",
+  NOTIFY: "Notificar",
+  OBSERVE: "Observar",
+  OBSERVED: "Observada",
+  PENDING: "Pendiente",
+  REASSIGN: "Reasignar",
+  REJECT: "Rechazar",
+  REJECTED: "Rechazada",
+  RETURN: "Devolver",
+  RETURN_TO_STAGE: "Volver a la etapa",
+  RETRY: "Reintentar",
+  REQUEST_CORRECTION: "Solicitar corrección",
+  RETURNED: "Devuelto",
+  WAITING: "En espera",
+};
+
+export const formatWorkflowRuntimeLabel = (value: string): string =>
+  RUNTIME_LABELS[value] ?? value;
+
 export const formatWorkflowStatus = (
   status: WorkflowDefinitionStatus,
 ): string => {
@@ -88,10 +125,10 @@ export const getLatestVersionLabel = (
 
 export const getActivityLabel = (action: string): string => {
   const labels: Record<string, string> = {
-    "workflows.archive": "Workflow archivado",
-    "workflows.create": "Workflow creado",
+    "workflows.archive": "Flujo de trabajo archivado",
+    "workflows.create": "Flujo de trabajo creado",
     "workflows.create_version": "Borrador de versión creado",
-    "workflows.duplicate": "Workflow duplicado",
+    "workflows.duplicate": "Flujo de trabajo duplicado",
     "workflows.edit": "Metadatos actualizados",
   };
 

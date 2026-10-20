@@ -16,15 +16,15 @@ export default function ForbiddenPage() {
           className="inline-flex items-center justify-center rounded-2xl bg-stone-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
           href="/dashboard"
         >
-          Return to dashboard
+          Volver al panel de control
         </Link>
       }
       description={
         missingPermission
-          ? `Missing permission: ${missingPermission}.`
-          : "Your account is authenticated, but this route is outside your assigned access."
+          ? `Permiso faltante: ${missingPermission}.`
+          : "Su cuenta está autenticada, pero no tiene acceso a esta sección."
       }
-      title="You do not have permission to view this page"
+      title="No tiene permiso para ver esta página"
     />
   );
 }

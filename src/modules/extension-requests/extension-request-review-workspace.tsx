@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { ErrorState } from "@/components/ui/error-state";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { buildObservationUrl } from "@/lib/observation-links";
+import { formatWorkflowRuntimeLabel } from "@/modules/workflows/presentation";
 import { extensionRequestService } from "@/services/extension-request-service";
 import { progressService } from "@/services/progress-service";
 import type { ExtensionRequestDetail } from "@/types";
@@ -63,7 +64,7 @@ const fileType = (mimeType: string) => {
   if (mimeType.includes("sheet") || mimeType.includes("excel")) return "XLS";
   if (mimeType.includes("word")) return "DOC";
   if (mimeType.startsWith("image/")) return "IMG";
-  return "FILE";
+  return "Archivo";
 };
 
 const uniqueUsers = (
@@ -332,11 +333,11 @@ export function ExtensionRequestReviewDetail({
         </div>
         <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-stone-500">Estado de workflow</dt>
+            <dt className="text-stone-500">Estado del flujo de trabajo</dt>
             <dd className="mt-1 font-semibold">
               {request.reviewTask
                 ? request.reviewTask.id
-                  ? `Tarea pendiente · ${request.reviewTask.status}`
+                  ? `Tarea pendiente · ${formatWorkflowRuntimeLabel(request.reviewTask.status)}`
                   : "Revisión heredada"
                 : request.status === "SENT_TO_MANAGER"
                   ? "Sin tarea disponible para este usuario"

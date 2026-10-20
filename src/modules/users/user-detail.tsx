@@ -28,7 +28,7 @@ const formatDate = (value: string | null): string => {
     return "Nunca";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-BO", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));

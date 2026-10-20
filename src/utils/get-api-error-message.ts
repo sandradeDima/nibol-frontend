@@ -3,6 +3,26 @@ import axios from "axios";
 import type { ApiErrorResponse } from "@/types";
 
 const translateApiMessage = (message: string): string => {
+  if (/^invalid email or password$/i.test(message))
+    return "El correo electrónico o la contraseña no son válidos.";
+  if (/^invalid email$/i.test(message))
+    return "El correo electrónico no es válido.";
+  if (/^email not verified$/i.test(message))
+    return "Debe verificar su correo electrónico antes de iniciar sesión.";
+  if (/^invalid token$/i.test(message))
+    return "El enlace no es válido o ya venció.";
+  if (/^token expired$/i.test(message))
+    return "El enlace ya venció. Solicite uno nuevo.";
+  if (/^invalid password$/i.test(message))
+    return "La contraseña ingresada no es válida.";
+  if (/^user already exists(?:\. use another email\.)?$/i.test(message))
+    return "Ya existe una cuenta con ese correo electrónico.";
+  if (/^this account is inactive\.?$/i.test(message))
+    return "Esta cuenta está inactiva.";
+  if (/^reset password isn't enabled$/i.test(message))
+    return "El restablecimiento de contraseña no está habilitado.";
+  if (/^if this email exists in our system, check your email for the reset link$/i.test(message))
+    return "Si el correo está registrado, recibirá un enlace para restablecer su contraseña.";
   if (/At least one file is required/i.test(message))
     return "Seleccione al menos un archivo.";
   if (

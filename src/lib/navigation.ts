@@ -284,8 +284,8 @@ const routeLabelMap = new Map(
   SIDEBAR_ITEMS.map((item) => [item.route, item.label] as const),
 );
 
-routeLabelMap.set("/dashboard/auditoria", "Dashboard Auditoría");
-routeLabelMap.set("/dashboard/area", "Dashboard Área");
+routeLabelMap.set("/dashboard/auditoria", "Panel de Auditoría");
+routeLabelMap.set("/dashboard/area", "Panel del área");
 routeLabelMap.set("/dashboard/reporteria", "Tablero - Avance de planes");
 routeLabelMap.set("/reportes", "Reportes");
 routeLabelMap.set("/reportes/generador", "Generador de reportes");

@@ -20,7 +20,7 @@ type RoleDetailProps = {
 };
 
 const formatDate = (value: string): string => {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-BO", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));

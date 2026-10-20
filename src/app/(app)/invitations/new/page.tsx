@@ -8,9 +8,9 @@ export default async function NewInvitationPage() {
   return (
     <main className="space-y-6">
       <PageHeader
-        description="Invite a un nuevo integrante, asigne su rol inicial y enviele el acceso seguro desde un solo flujo."
+        description="Invite a un nuevo integrante, asígnele su rol inicial y envíele el acceso seguro desde un solo flujo."
         eyebrow="Invitaciones"
-        title="Nueva invitacion"
+        title="Nueva invitación"
       />
 
       <InvitationForm />

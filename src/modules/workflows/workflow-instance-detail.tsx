@@ -20,6 +20,7 @@ import { QUERY_KEYS } from "@/lib/constants";
 import {
   formatDate,
   formatProcessType,
+  formatWorkflowRuntimeLabel,
 } from "@/modules/workflows/presentation";
 import { workflowRuntimeService } from "@/services/workflow-runtime-service";
 import { getApiErrorMessage } from "@/utils";
@@ -112,7 +113,7 @@ export function WorkflowInstanceDetail({
       <div className="nibol-panel space-y-6 p-6 sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="nibol-eyebrow">Ejecución de workflow</p>
+            <p className="nibol-eyebrow">Ejecución del flujo de trabajo</p>
             <h2 className="font-display mt-3 text-4xl leading-none font-bold text-[var(--foreground)] uppercase">
               {instance.specialRequest?.title ?? instance.workflow.name}
             </h2>
@@ -142,7 +143,7 @@ export function WorkflowInstanceDetail({
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <span className="nibol-badge nibol-badge-primary">
-              {instance.status}
+              {formatWorkflowRuntimeLabel(instance.status)}
             </span>
             {canCancel && !terminal ? (
               <button
@@ -182,7 +183,14 @@ export function WorkflowInstanceDetail({
             })}
           />
           <Info label="Nodo actual" value={instance.currentNode?.name ?? "—"} />
-          <Info label="Resultado final" value={instance.finalResult ?? "—"} />
+          <Info
+            label="Resultado final"
+            value={
+              instance.finalResult
+                ? formatWorkflowRuntimeLabel(instance.finalResult)
+                : "—"
+            }
+          />
           <Info
             label="Completada"
             value={formatDate(instance.completedAt, {
@@ -210,7 +218,7 @@ export function WorkflowInstanceDetail({
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="nibol-panel space-y-6 p-6 sm:p-8">
           <div>
-            <p className="nibol-eyebrow">Timeline de ejecución</p>
+            <p className="nibol-eyebrow">Línea de tiempo de ejecución</p>
             <h3 className="font-display mt-2 text-2xl font-bold text-[var(--foreground)] uppercase">
               Historial completo
             </h3>
@@ -238,12 +246,14 @@ export function WorkflowInstanceDetail({
                 {event.node ? (
                   <p className="mt-1 text-sm text-[var(--foreground-soft)]">
                     {event.node.name}
-                    {event.decision ? ` · ${event.decision}` : ""}
+                    {event.decision
+                      ? ` · ${formatWorkflowRuntimeLabel(event.decision)}`
+                      : ""}
                   </p>
                 ) : null}
                 {event.actor ? (
                   <p className="mt-1 text-xs text-[var(--muted)]">
-                    Actor: {event.actor.name}
+                    Responsable: {event.actor.name}
                   </p>
                 ) : null}
                 {event.comment ? (
@@ -271,7 +281,9 @@ export function WorkflowInstanceDetail({
                     </p>
                     <p className="mt-1 text-xs text-[var(--muted)]">
                       Visita {task.entrySequence} ·{" "}
-                      {task.decision ?? task.status}
+                      {formatWorkflowRuntimeLabel(
+                        task.decision ?? task.status,
+                      )}
                     </p>
                   </div>
                   <ArrowIcon />

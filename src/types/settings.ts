@@ -20,11 +20,11 @@ export const DATE_FORMAT_OPTIONS = [
     value: DATE_FORMAT_VALUES[2],
   },
   {
-    label: "19 Jun 2026",
+    label: "19 jun 2026",
     value: DATE_FORMAT_VALUES[3],
   },
   {
-    label: "June 19, 2026",
+    label: "19 de junio de 2026",
     value: DATE_FORMAT_VALUES[4],
   },
 ] as const;

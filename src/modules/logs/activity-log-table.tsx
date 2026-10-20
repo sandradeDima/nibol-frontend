@@ -11,16 +11,16 @@ import type { ActivityLogTableRow } from "@/types";
 import { formatLogDateTime, summarizeLogValue } from "./log-formatters";
 
 const ACTIVITY_ACTION_OPTIONS = [
-  { label: "Asignacion de rol", value: "Role assigned" },
+  { label: "Asignación de rol", value: "Role assigned" },
   { label: "Cambio de permisos", value: "Permission changed" },
-  { label: "Cierre de sesion exitoso", value: "Logout success" },
-  { label: "Configuracion actualizada", value: "Settings updated" },
-  { label: "Fallo de inicio de sesion", value: "Login failure" },
-  { label: "Inicio de sesion exitoso", value: "Login success" },
-  { label: "Invitacion aceptada", value: "Invitation accepted" },
-  { label: "Invitacion enviada", value: "Invitation sent" },
-  { label: "Invitacion reenviada", value: "Invitation resent" },
-  { label: "Invitacion revocada", value: "Invitation revoked" },
+  { label: "Cierre de sesión exitoso", value: "Logout success" },
+  { label: "Configuración actualizada", value: "Settings updated" },
+  { label: "Fallo de inicio de sesión", value: "Login failure" },
+  { label: "Inicio de sesión exitoso", value: "Login success" },
+  { label: "Invitación aceptada", value: "Invitation accepted" },
+  { label: "Invitación enviada", value: "Invitation sent" },
+  { label: "Invitación reenviada", value: "Invitation resent" },
+  { label: "Invitación revocada", value: "Invitation revoked" },
   { label: "Rol actualizado", value: "Role updated" },
   { label: "Rol cambiado", value: "Role changed" },
   { label: "Rol creado", value: "Role created" },
@@ -30,12 +30,17 @@ const ACTIVITY_ACTION_OPTIONS = [
   { label: "Usuario deshabilitado", value: "User disabled" },
   { label: "Usuario eliminado", value: "User deleted" },
   { label: "Usuario habilitado", value: "User enabled" },
+  { label: "Usuario restaurado", value: "User restored" },
+  {
+    label: "Correo de verificación reenviado",
+    value: "Verification email resent",
+  },
 ] as const;
 
 const ACTIVITY_ENTITY_OPTIONS = [
-  { label: "Autenticacion", value: "authentication" },
-  { label: "Configuracion", value: "setting" },
-  { label: "Invitacion", value: "invitation" },
+  { label: "Autenticación", value: "authentication" },
+  { label: "Configuración", value: "setting" },
+  { label: "Invitación", value: "invitation" },
   { label: "Rol", value: "role" },
   { label: "Usuario", value: "user" },
 ] as const;

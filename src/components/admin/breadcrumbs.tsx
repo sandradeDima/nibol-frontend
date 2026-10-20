@@ -12,7 +12,7 @@ export function Breadcrumbs() {
   const breadcrumbs = buildBreadcrumbs(pathname);
 
   return (
-    <nav aria-label="Breadcrumb" className="overflow-x-auto">
+    <nav aria-label="Ruta de navegación" className="overflow-x-auto">
       <ol className="flex min-w-max items-center gap-2 text-sm text-[var(--muted)]">
         {breadcrumbs.map((item, index) => {
           const isLast = index === breadcrumbs.length - 1;

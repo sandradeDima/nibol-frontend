@@ -45,7 +45,7 @@ const fetchJson = async <T>(input: string): Promise<T> => {
   }
 
   if (!response.ok) {
-    let message = "Request failed.";
+    let message = "La solicitud no se pudo completar.";
 
     try {
       const body = (await response.json()) as ApiErrorResponse;

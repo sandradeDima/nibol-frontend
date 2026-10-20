@@ -104,7 +104,7 @@ export function AuthInput({
             type="button"
             onClick={() => setRevealed((s) => !s)}
             className="absolute top-1/2 right-3 -translate-y-1/2 text-sm font-semibold text-[var(--muted)] hover:text-[var(--foreground)]"
-            aria-label={revealed ? "Hide password" : "Show password"}
+            aria-label={revealed ? "Ocultar contraseña" : "Mostrar contraseña"}
           >
             {revealed ? "Ocultar" : "Mostrar"}
           </button>

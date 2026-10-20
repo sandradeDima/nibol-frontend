@@ -29,6 +29,7 @@ import {
   getProgressStatusLabel,
   getProgressTypeLabel,
 } from "./presentation";
+import { formatWorkflowRuntimeLabel } from "@/modules/workflows/presentation";
 import {
   getActionPlanStatusClasses,
   getActionPlanStatusLabel,
@@ -56,7 +57,7 @@ const fileType = (mimeType: string) => {
   if (mimeType.includes("sheet") || mimeType.includes("excel")) return "XLS";
   if (mimeType.includes("word")) return "DOC";
   if (mimeType.startsWith("image/")) return "IMG";
-  return "FILE";
+  return "Archivo";
 };
 
 type ProgressReviewDetailProps = {
@@ -309,7 +310,7 @@ export function ProgressReviewDetail({
           <History className="mt-0.5 h-5 w-5 text-[var(--accent)]" />
           <div>
             <p className="nibol-eyebrow">Historial</p>
-            <h3 className="mt-2 text-lg font-semibold">Revisión y workflow</h3>
+            <h3 className="mt-2 text-lg font-semibold">Revisión y flujo de trabajo</h3>
           </div>
         </div>
         <div className="mt-4 space-y-3">
@@ -343,7 +344,7 @@ export function ProgressReviewDetail({
           <span className="text-stone-500">Tarea actual: </span>
           <strong>
             {task?.id
-              ? `${task.status} · asignada`
+              ? `${formatWorkflowRuntimeLabel(task.status)} · asignada`
               : task
                 ? "Revisión heredada"
                 : "No asignada a este usuario"}

@@ -15,7 +15,7 @@ export default async function WorkflowTasksPage() {
   return (
     <main className="space-y-6">
       <PageHeader
-        description="Revise y atienda únicamente las tareas de workflows asignadas a su usuario, roles o áreas administradas."
+        description="Revise y atienda únicamente las tareas de flujos de trabajo asignadas a usted, a sus roles o a las áreas que administra."
         eyebrow="Aprobaciones · Workflows"
         title="Tareas de aprobación"
       />

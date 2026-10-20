@@ -17,7 +17,7 @@ export default async function WorkflowInstanceDetailPage({
     <main className="space-y-6">
       <PageHeader
         description="Consulte la versión fijada, las decisiones y el historial normalizado de ejecución."
-        eyebrow="Configuración · Workflows"
+        eyebrow="Configuración · Flujos de trabajo"
         title="Detalle de instancia"
       />
       <WorkflowInstanceDetail

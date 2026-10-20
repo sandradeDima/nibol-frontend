@@ -44,7 +44,7 @@ const renderFilterControl = ({
           onChange(nextValue.length > 0 ? event.target.value : undefined);
         }}
         placeholder={
-          filter.placeholder ?? `Filter by ${filter.label.toLowerCase()}`
+          filter.placeholder ?? `Filtrar por ${filter.label.toLowerCase()}`
         }
         type="text"
         value={Array.isArray(value) ? value.join(", ") : (value ?? "")}
@@ -91,7 +91,7 @@ const renderFilterControl = ({
 
   if (searchableSelects && filter.type === "select") {
     const placeholder =
-      filter.placeholder ?? `All ${filter.label.toLowerCase()}`;
+      filter.placeholder ?? `Todos: ${filter.label.toLowerCase()}`;
     const selectedValues = Array.isArray(value)
       ? value
       : value
@@ -127,7 +127,7 @@ const renderFilterControl = ({
       value={getSelectValue(value)}
     >
       <option value="">
-        {filter.placeholder ?? `All ${filter.label.toLowerCase()}`}
+        {filter.placeholder ?? `Todos: ${filter.label.toLowerCase()}`}
       </option>
       {filter.options?.map((option) => (
         <option key={option.value} value={option.value}>

@@ -77,7 +77,7 @@ export function RegisterForm() {
         <AuthInput
           autoComplete="email"
           error={form.formState.errors.email?.message}
-          label="Email"
+          label="Correo electrónico"
           placeholder="usuario@nibol.com.bo"
           type="email"
           {...form.register("email")}

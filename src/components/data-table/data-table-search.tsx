@@ -15,7 +15,7 @@ type DataTableSearchProps = {
 export function DataTableSearch({
   isBusy = false,
   onChange,
-  placeholder = "Search records",
+  placeholder = "Buscar registros",
   value,
 }: DataTableSearchProps) {
   return (

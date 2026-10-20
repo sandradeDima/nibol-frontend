@@ -26,7 +26,7 @@ const formatDate = (value: string | null): string => {
     return "Nunca";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-BO", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
@@ -233,7 +233,7 @@ export function ProfileSettings() {
             </div>
             <div className="rounded-[1.4rem] border border-stone-200/90 bg-white/80 px-4 py-4">
               <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
-                Email
+                Correo electrónico
               </p>
               <p className="mt-2 text-sm font-medium text-stone-900">
                 {profile.email}

@@ -54,7 +54,7 @@ export function SearchField({
         endAdornment={
           value ? (
             <button
-              aria-label="Clear search"
+              aria-label="Borrar búsqueda"
               className="mr-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center text-[var(--muted)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--foreground)]"
               onClick={() => onChange("")}
               type="button"

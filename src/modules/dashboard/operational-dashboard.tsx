@@ -152,7 +152,7 @@ export function OperationalDashboard({
         description="Prioridades operativas, vencimientos y próximos pasos dentro de su alcance."
         eyebrow="Control y seguimiento"
         compact
-        title="Dashboard"
+        title="Panel de control"
       />
 
       <section className="grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">

@@ -160,7 +160,7 @@ export function WorkflowVersionHistory({
         <div className="flex items-start gap-3 border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-4 text-sm leading-6 text-[var(--foreground-soft)]">
           <History className="mt-0.5 h-4 w-4 shrink-0 text-[var(--primary)]" />
           <p>
-            Este workflow está archivado. Sus versiones pueden consultarse, pero
+            Este flujo de trabajo está archivado. Sus versiones pueden consultarse, pero
             no se pueden crear nuevos borradores.
           </p>
         </div>
@@ -189,7 +189,7 @@ export function WorkflowVersionHistory({
           description={
             status
               ? "Pruebe con otro estado para ver las versiones disponibles."
-              : "Este workflow todavía no tiene versiones registradas."
+              : "Este flujo de trabajo todavía no tiene versiones registradas."
           }
           icon={History}
           title="No hay versiones para mostrar"

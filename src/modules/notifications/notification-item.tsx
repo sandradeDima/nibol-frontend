@@ -1,6 +1,7 @@
 "use client";
 
 import { format, formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 import {
   AlertCircle,
   Bell,
@@ -116,10 +117,11 @@ export function NotificationItem({
             <time
               className="text-xs font-medium text-[var(--muted)]"
               dateTime={notification.createdAt}
-              title={format(new Date(notification.createdAt), "PPpp")}
+              title={format(new Date(notification.createdAt), "PPpp", { locale: es })}
             >
               {formatDistanceToNow(new Date(notification.createdAt), {
                 addSuffix: true,
+                locale: es,
               })}
             </time>
           </div>

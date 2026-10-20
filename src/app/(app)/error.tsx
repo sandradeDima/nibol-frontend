@@ -18,11 +18,11 @@ export default function AppError({
           }}
           type="button"
         >
-          Try again
+          Intentar de nuevo
         </button>
       }
-      description="Something went wrong while preparing this admin area. Try the request again or navigate back to the dashboard."
-      title="The admin shell hit an unexpected issue"
+      description="Ocurrió un problema al preparar esta área de administración. Intente nuevamente o vuelva al panel de control."
+      title="Se produjo un problema inesperado"
     />
   );
 }

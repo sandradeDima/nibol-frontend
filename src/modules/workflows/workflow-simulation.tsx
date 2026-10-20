@@ -482,7 +482,7 @@ function WorkflowSimulationWorkspace({
             conexiones
           </span>
           <span>
-            Las simulaciones no crean tareas, timers ni notificaciones.
+              Las simulaciones no crean tareas, temporizadores ni notificaciones.
           </span>
         </div>
       </header>
@@ -608,7 +608,7 @@ function WorkflowSimulationWorkspace({
                     event.target.value || null,
                   )
                 }
-                placeholder="Ej. APPROVED"
+                placeholder="Ej. APROBADO"
                 value={context.remediationPlanStatus ?? ""}
               />
             </Field>
@@ -618,7 +618,7 @@ function WorkflowSimulationWorkspace({
                 onChange={(event) =>
                   updateContext("requestType", event.target.value || null)
                 }
-                placeholder="Ej. EXTENSION"
+                placeholder="Ej. EXTENSIÓN"
                 value={context.requestType ?? ""}
               />
             </Field>
@@ -644,7 +644,7 @@ function WorkflowSimulationWorkspace({
                 onChange={(event) =>
                   updateContext("previousDecision", event.target.value || null)
                 }
-                placeholder="Ej. APPROVED"
+                placeholder="Ej. APROBADO"
                 value={context.previousDecision ?? ""}
               />
             </Field>
@@ -768,10 +768,12 @@ function WorkflowSimulationWorkspace({
                       }
                       value={nodeDecisions[node.nodeKey] ?? ""}
                     >
-                      <option value="">Predeterminada ({defaultAction})</option>
+                      <option value="">
+                        {`Predeterminada (${formatWorkflowRuntimeLabel(defaultAction)})`}
+                      </option>
                       {actions.map((action) => (
                         <option key={action} value={action}>
-                          {action}
+                          {formatWorkflowRuntimeLabel(action)}
                         </option>
                       ))}
                     </select>
@@ -781,8 +783,8 @@ function WorkflowSimulationWorkspace({
             </div>
           )}
           <div className="border-t border-[var(--border)] pt-5 text-xs leading-5 text-[var(--muted)]">
-            Las decisiones omitidas usan APPROVE o COMPLETE únicamente para
-            facilitar la simulación y quedan marcadas como advertencia.
+            Las decisiones omitidas usan «Aprobar» o «Completar» únicamente
+            para facilitar la simulación y quedan marcadas como advertencia.
           </div>
         </div>
       </section>
@@ -893,8 +895,8 @@ function WorkflowSimulationWorkspace({
               </div>
               <p className="flex items-start gap-2 text-xs leading-5 text-[var(--muted)]">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--primary)]" />{" "}
-                La simulación proyecta asignaciones, timers y notificaciones; no
-                ejecuta efectos reales.
+                La simulación proyecta asignaciones, temporizadores y notificaciones;
+                no ejecuta efectos reales.
               </p>
             </div>
           </section>

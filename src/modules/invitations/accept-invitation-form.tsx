@@ -103,7 +103,7 @@ export function AcceptInvitationForm() {
         <div className="grid gap-3 sm:grid-cols-2">
           <div className={summaryCardClassName}>
             <p className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">
-              Email
+              Correo electrónico
             </p>
             <p className="mt-2 text-sm font-semibold text-stone-950">
               {previewQuery.data.email}

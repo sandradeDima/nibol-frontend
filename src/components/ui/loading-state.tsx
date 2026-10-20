@@ -7,7 +7,7 @@ type LoadingStateProps = {
 
 export function LoadingState({
   cards = 4,
-  title = "Loading workspace",
+  title = "Cargando el espacio de trabajo",
 }: LoadingStateProps) {
   return (
     <div className="space-y-6">

@@ -46,7 +46,7 @@ const fetchDashboardResource = async <T>(path: string): Promise<T> => {
   });
 
   if (!response.ok) {
-    let message = "No fue posible cargar el dashboard.";
+    let message = "No fue posible cargar el panel de control.";
 
     try {
       const body = (await response.json()) as ApiErrorResponse;

@@ -1548,7 +1548,7 @@ function DesignerWorkspace({
 
       <ConfirmDialog
         confirmLabel="Publicar versión"
-        description="La versión validada pasará a ser la versión activa del workflow. La versión activa anterior quedará inactiva y esta versión dejará de ser editable."
+        description="La versión validada pasará a ser la versión activa del flujo de trabajo. La versión activa anterior quedará inactiva y esta versión dejará de ser editable."
         isLoading={publishMutation.isPending}
         onConfirm={() => {
           if (!publishConfirmed) {
@@ -1562,7 +1562,7 @@ function DesignerWorkspace({
           if (!open) setPublishConfirmed(false);
         }}
         open={publishOpen}
-        title="Publicar workflow"
+        title="Publicar flujo de trabajo"
         tone="default"
       >
         <div className="grid gap-4 border border-[var(--border)] bg-[var(--surface-soft)] p-4 text-sm leading-6 text-[var(--foreground-soft)]">

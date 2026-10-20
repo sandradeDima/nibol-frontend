@@ -286,9 +286,13 @@ export const getNodeMetadata = (
         : strategy;
     }
     case "CONDITION":
-      return `${configuration.rules.length} regla${configuration.rules.length === 1 ? "" : "s"} · ${configuration.logicalOperator}`;
+      return `${configuration.rules.length} regla${configuration.rules.length === 1 ? "" : "s"} · ${
+        configuration.logicalOperator === "AND"
+          ? "Todas deben cumplirse"
+          : "Basta con una"
+      }`;
     case "NOTIFICATION":
-      return `${configuration.channel === "EMAIL" ? "Email" : "Interna"} · ${configuration.recipientStrategy.toLowerCase().replaceAll("_", " ")}`;
+      return `${configuration.channel === "EMAIL" ? "Correo electrónico" : "Interna"} · ${configuration.recipientStrategy.toLowerCase().replaceAll("_", " ")}`;
     case "END":
       return configuration.finalResult;
     case "SLA":
@@ -322,7 +326,7 @@ export const validateConfiguration = (
     configuration.nodeType === "START" &&
     configuration.processType !== processType
   ) {
-    errors.push("El proceso debe coincidir con el workflow.");
+    errors.push("El proceso debe coincidir con el flujo de trabajo.");
   }
 
   if (

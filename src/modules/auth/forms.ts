@@ -1,25 +1,25 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.email("Enter a valid email address."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  email: z.email("Ingrese un correo electrónico válido."),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
 });
 
 export const registerSchema = loginSchema.extend({
-  name: z.string().min(2, "Name must be at least 2 characters."),
+  name: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.email("Enter a valid email address."),
+  email: z.email("Ingrese un correo electrónico válido."),
 });
 
 export const resetPasswordSchema = z
   .object({
-    confirmPassword: z.string().min(8, "Confirm your new password."),
-    newPassword: z.string().min(8, "Password must be at least 8 characters."),
+    confirmPassword: z.string().min(8, "Confirme su nueva contraseña."),
+    newPassword: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
   })
   .refine((values) => values.newPassword === values.confirmPassword, {
-    message: "Passwords do not match.",
+    message: "Las contraseñas no coinciden.",
     path: ["confirmPassword"],
   });
 

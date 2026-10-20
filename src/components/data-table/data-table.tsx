@@ -579,7 +579,7 @@ export function DataTable<TRow>({
           {
             cell: ({ row }: { row: Row<TRow> }) => (
               <input
-                aria-label="Select row"
+                aria-label="Seleccionar fila"
                 checked={row.getIsSelected()}
                 className="h-4 w-4 border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--primary)]"
                 onChange={row.getToggleSelectedHandler()}
@@ -590,7 +590,7 @@ export function DataTable<TRow>({
             enableSorting: false,
             header: () => (
               <input
-                aria-label="Select all rows on page"
+                aria-label="Seleccionar todas las filas de la página"
                 checked={table.getIsAllPageRowsSelected()}
                 className="h-4 w-4 border-[var(--border-strong)] text-[var(--primary)] focus:ring-[var(--primary)]"
                 onChange={table.getToggleAllPageRowsSelectedHandler()}
@@ -810,7 +810,7 @@ export function DataTable<TRow>({
             type="button"
           >
             <RefreshCcw className="h-4 w-4" />
-            Retry
+            Reintentar
           </button>
         }
         description={tableQuery.error.message}
@@ -1079,7 +1079,7 @@ export function DataTable<TRow>({
           }
         }}
         open={Boolean(pendingAction)}
-        title={pendingAction?.action.confirmation?.title ?? "Confirm action"}
+        title={pendingAction?.action.confirmation?.title ?? "Confirmar acción"}
         tone={
           pendingAction?.action.confirmation?.tone ?? pendingAction?.action.tone
         }

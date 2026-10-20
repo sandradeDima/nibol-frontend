@@ -2,6 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 
 import { DataTable, type DataTableConfig } from "@/components/data-table";
@@ -15,7 +16,7 @@ import { useProducts } from "../hooks/useProducts";
 import type { ProductRecord } from "../types";
 
 const formatDate = (value: string): string => {
-  return format(new Date(value), "MMM d, yyyy");
+  return format(new Date(value), "d MMM yyyy", { locale: es });
 };
 
 const productColumns: ColumnDef<ProductRecord>[] = [

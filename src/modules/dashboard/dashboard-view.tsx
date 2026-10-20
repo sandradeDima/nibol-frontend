@@ -985,7 +985,7 @@ export function DashboardView({ data }: DashboardViewProps) {
         }
         description={data.subtitle}
         eyebrow={data.scope === "auditoria" ? "Auditoría" : "Área y gerencia"}
-        title="Dashboard de reportería"
+        title="Panel de reportería"
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
@@ -1106,7 +1106,7 @@ export function DashboardView({ data }: DashboardViewProps) {
       {metricCards.length === 0 ? (
         <EmptyState
           description="No se encontraron métricas para el rol actual."
-          title="Sin datos de dashboard"
+          title="Sin datos del panel de control"
         />
       ) : null}
     </main>

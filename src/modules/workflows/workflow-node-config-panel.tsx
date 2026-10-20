@@ -331,7 +331,7 @@ function AssignmentFields({
           <TextInput
             disabled={disabled}
             onChange={(value) => onChange("fieldReference", value || null)}
-            placeholder="Ej. ownerUserId"
+            placeholder="Usuario responsable (responsibleUserId)"
             value={configuration.fieldReference}
           />
         </Field>
@@ -495,8 +495,8 @@ function ConditionRules({
             onChange={(value) => onChange("logicalOperator", value)}
             value={configuration.logicalOperator}
           >
-            <option value="AND">Todas las reglas (AND)</option>
-            <option value="OR">Cualquier regla (OR)</option>
+            <option value="AND">Todas las reglas</option>
+            <option value="OR">Cualquier regla</option>
           </SelectInput>
         </Field>
         <Field label="Ruta alternativa">
@@ -1273,7 +1273,7 @@ function NotificationFields({
             value={configuration.channel}
           >
             <option value="INTERNAL">Interno</option>
-            <option value="EMAIL">Email</option>
+            <option value="EMAIL">Correo electrónico</option>
           </SelectInput>
         </Field>
         <Field label="Plantilla">
@@ -1366,7 +1366,7 @@ function NotificationFields({
       <Checkbox
         checked={configuration.includeWorkflowContext}
         disabled={disabled}
-        label="Incluir contexto del workflow"
+        label="Incluir contexto del flujo de trabajo"
         onChange={(value) => onChange("includeWorkflowContext", value)}
       />
       <Checkbox
@@ -1404,7 +1404,7 @@ function EndFields({
           <option value="EXPIRED">Vencido</option>
         </SelectInput>
       </Field>
-      <Field label="Estado final del workflow">
+      <Field label="Estado final del flujo de trabajo">
         <TextInput
           disabled={disabled}
           onChange={(value) => onChange("finalWorkflowStatus", value)}
@@ -1663,8 +1663,8 @@ export function WorkflowNodeConfigPanel({
             <p className="flex items-center gap-2">
               <Braces className="h-4 w-4" /> ID persistido: {node.id}
             </p>
-            <p>Node key: {node.nodeKey}</p>
-            <p>Tipo: {node.type}</p>
+            <p>Clave del nodo: {node.nodeKey}</p>
+            <p>Tipo: {NODE_TYPE_LABELS[node.type] ?? node.type}</p>
             <p>Esquema: v{draft.schemaVersion}</p>
           </div>
         </details>

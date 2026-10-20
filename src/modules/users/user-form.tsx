@@ -303,11 +303,11 @@ export function UserForm(props: UserFormProps) {
           </label>
 
           <label className="block space-y-2">
-            <span className="text-sm font-medium text-stone-700">Email</span>
+            <span className="text-sm font-medium text-stone-700">Correo electrónico</span>
             <input
               className="nibol-field h-auto py-3"
               disabled={isBusy}
-              placeholder="name@example.com"
+              placeholder="nombre@ejemplo.com"
               type="email"
               {...form.register("email")}
             />

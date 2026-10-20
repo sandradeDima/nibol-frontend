@@ -306,7 +306,7 @@ function WorkflowDuplicateDialog({
   const duplicateMutation = useMutation({
     mutationFn: async (values: WorkflowDuplicateFormValues) => {
       if (!row) {
-        throw new Error("Seleccione un workflow para duplicar.");
+        throw new Error("Seleccione un flujo de trabajo para duplicar.");
       }
 
       const parsed = workflowDuplicateFormSchema.parse(values);

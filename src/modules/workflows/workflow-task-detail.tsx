@@ -20,6 +20,7 @@ import { QUERY_KEYS } from "@/lib/constants";
 import {
   formatDate,
   formatProcessType,
+  formatWorkflowRuntimeLabel,
 } from "@/modules/workflows/presentation";
 import { workflowRuntimeService } from "@/services/workflow-runtime-service";
 import type { WorkflowRuntimeTaskAction } from "@/types";
@@ -211,7 +212,7 @@ export function WorkflowTaskDetail({
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="nibol-eyebrow">
-                  Tarea de workflow · visita {task.entrySequence}
+                  Tarea del flujo de trabajo · visita {task.entrySequence}
                 </p>
                 <h2 className="font-display mt-3 text-3xl leading-none font-bold text-[var(--foreground)] uppercase">
                   {task.node.name}
@@ -223,7 +224,7 @@ export function WorkflowTaskDetail({
                 </p>
               </div>
               <span className="nibol-badge nibol-badge-primary">
-                {task.status}
+                {formatWorkflowRuntimeLabel(task.status)}
               </span>
             </div>
             <div className="grid gap-4 border-t border-[var(--border)] pt-5 sm:grid-cols-2">
@@ -298,7 +299,7 @@ export function WorkflowTaskDetail({
               </h3>
               <p className="mt-2 text-sm leading-6 text-[var(--foreground-soft)]">
                 Las rutas condicionales se resolverán con la versión fijada de
-                este workflow.
+                este flujo de trabajo.
               </p>
             </div>
             <label
@@ -441,7 +442,7 @@ export function WorkflowTaskDetail({
 
       <ConfirmDialog
         confirmLabel={pendingAction?.label ?? "Confirmar"}
-        description="La decisión quedará registrada y el runtime continuará con la ruta controlada de la versión fijada."
+        description="La decisión quedará registrada y la ejecución continuará por la ruta controlada de la versión fijada."
         isLoading={actionMutation.isPending}
         onConfirm={() => {
           if (pendingAction) actionMutation.mutate(pendingAction);

@@ -2,6 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { MailCheck, ShieldX } from "lucide-react";
 
 import { DataTable, type DataTableConfig } from "@/components/data-table";
@@ -14,7 +15,7 @@ const formatDate = (value: string | null): string => {
     return "No aceptada";
   }
 
-  return format(new Date(value), "MMM d, yyyy");
+  return format(new Date(value), "d MMM yyyy", { locale: es });
 };
 
 const statusLabels: Record<InvitationStatus, string> = {
@@ -42,7 +43,7 @@ const invitationColumns: ColumnDef<InvitationTableRow>[] = [
         </p>
       </div>
     ),
-    header: "Email",
+    header: "Correo electrónico",
   },
   {
     accessorKey: "role.name",
@@ -110,7 +111,7 @@ export function InvitationTable() {
     csv: {
       columns: [
         {
-          header: "Email",
+          header: "Correo electrónico",
           key: "email",
           value: (row) => row.email,
         },

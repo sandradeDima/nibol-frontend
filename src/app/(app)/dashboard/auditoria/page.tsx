@@ -40,9 +40,9 @@ export default async function AuditoriaDashboardPage() {
           description={
             result.error instanceof Error
               ? result.error.message
-              : "No fue posible cargar el dashboard de Auditoría."
+              : "No fue posible cargar el panel de Auditoría."
           }
-          title="No se pudo preparar el dashboard global"
+          title="No se pudo preparar el panel global"
         />
       </main>
     );

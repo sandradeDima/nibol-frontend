@@ -359,7 +359,7 @@ export function WorkflowDetail({
             />
             <DefinitionFact
               icon={ShieldCheck}
-              label="Instancias de runtime"
+              label="Instancias en ejecución"
               value={String(workflow._count.instances)}
             />
             <DefinitionFact
@@ -599,7 +599,7 @@ function MetadataDialog({
 
   return (
     <FormDialog
-      description="Los cambios se registran en actividad y auditoría. Los workflows archivados no se pueden editar."
+      description="Los cambios se registran en actividad y auditoría. Los flujos de trabajo archivados no se pueden editar."
       footer={
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button
@@ -662,8 +662,8 @@ function MetadataDialog({
           </select>
           {isProcessLocked ? (
             <span className="text-xs leading-5 text-[var(--muted)]">
-              No se puede cambiar porque el workflow ya tiene una versión
-              publicada o instancias runtime.
+              No se puede cambiar porque el flujo de trabajo ya tiene una versión
+              publicada o instancias en ejecución.
             </span>
           ) : null}
         </label>

@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 import type { LogJsonValue } from "@/types";
 
@@ -25,12 +26,12 @@ const formatPrimitive = (value: LogJsonValue): string => {
 };
 
 export const formatLogDateTime = (value: string): string => {
-  return format(new Date(value), "MMM d, yyyy HH:mm");
+  return format(new Date(value), "d MMM yyyy HH:mm", { locale: es });
 };
 
 export const summarizeLogValue = (value: LogJsonValue | null): string => {
   if (value === null) {
-    return "None";
+    return "Ninguno";
   }
 
   if (Array.isArray(value)) {
@@ -39,7 +40,7 @@ export const summarizeLogValue = (value: LogJsonValue | null): string => {
           .slice(0, 4)
           .map((item) => formatPrimitive(item))
           .join(", ")
-      : "None";
+      : "Ninguno";
   }
 
   if (isLogRecord(value)) {
@@ -50,7 +51,7 @@ export const summarizeLogValue = (value: LogJsonValue | null): string => {
     const entries = Object.entries(value).filter(([, entry]) => entry !== null);
 
     if (entries.length === 0) {
-      return "None";
+      return "Ninguno";
     }
 
     return entries

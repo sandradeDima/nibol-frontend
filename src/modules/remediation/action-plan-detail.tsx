@@ -71,7 +71,7 @@ const getFileKind = (mimeType: string) => {
   if (mimeType.includes("sheet") || mimeType.includes("excel")) return "XLS";
   if (mimeType.includes("word")) return "DOC";
   if (mimeType.startsWith("image/")) return "IMG";
-  return "FILE";
+  return "Archivo";
 };
 
 function DocumentRow({

@@ -20,7 +20,7 @@ type LogoutButtonProps = {
 };
 
 export function LogoutButton({
-  children = "Sign out",
+  children = "Cerrar sesión",
   className,
   onLoggedOut,
   variant = "button",

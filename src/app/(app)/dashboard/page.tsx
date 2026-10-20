@@ -30,9 +30,9 @@ export default async function DashboardRoutePage() {
             description={
               result.error instanceof Error
                 ? result.error.message
-                : "No fue posible preparar el dashboard de seguimiento."
+                : "No fue posible preparar el panel de seguimiento."
             }
-            title="No se pudo preparar el dashboard"
+            title="No se pudo preparar el panel de control"
           />
         </main>
       );
@@ -54,9 +54,9 @@ export default async function DashboardRoutePage() {
           description={
             result.error instanceof Error
               ? result.error.message
-              : "No fue posible preparar el dashboard operativo."
+              : "No fue posible preparar el panel operativo."
           }
-          title="No se pudo preparar el dashboard"
+          title="No se pudo preparar el panel de control"
         />
       </main>
     );
