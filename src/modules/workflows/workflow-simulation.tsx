@@ -25,6 +25,7 @@ import { QUERY_KEYS } from "@/lib/constants";
 import {
   formatProcessType,
   formatVersionStatus,
+  formatWorkflowRuntimeLabel,
   getStatusBadgeClass,
 } from "@/modules/workflows/presentation";
 import { workflowService } from "@/services/workflow-service";
