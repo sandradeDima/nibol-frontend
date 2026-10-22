@@ -37,7 +37,7 @@ export const generatedPermissionResources = [
   },
   {
     key: "progress_evaluations",
-    label: "Evaluaciones de avance",
+    label: "Avances y evidencias",
   },
 ] as const;
 
