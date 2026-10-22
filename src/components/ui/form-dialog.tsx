@@ -8,7 +8,7 @@ import { X } from "lucide-react";
 import { useDialogFocus } from "./use-dialog-focus";
 
 type FormDialogProps = {
-  children: ReactNode;
+  children?: ReactNode;
   description?: string;
   footer?: ReactNode;
   onOpenChange: (open: boolean) => void;
@@ -107,7 +107,9 @@ export function FormDialog({
           </button>
         </div>
 
-        <div className="overflow-y-auto px-6 py-6 sm:px-7">{children}</div>
+        {children !== undefined && children !== null ? (
+          <div className="overflow-y-auto px-6 py-6 sm:px-7">{children}</div>
+        ) : null}
 
         {footer ? (
           <div className="border-t border-[var(--border)] bg-[var(--surface-soft)] px-6 py-4 sm:px-7">

@@ -190,6 +190,7 @@ export function NotificationCenter({
           value={String(unreadNotifications)}
         />
         <StatCard
+          description="Notificaciones registradas en la bandeja."
           icon={Inbox}
           label="Total"
           value={String(totalNotifications)}
