@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { useSearchParams } from "next/navigation";
+
 import { BadgeCheck, CalendarPlus2 } from "lucide-react";
 
 import { PendingProgressApprovals } from "@/modules/progress/pending-progress-approvals";
@@ -28,7 +30,16 @@ export function PendingApprovalsWorkspace({
   canViewExtensions,
   canViewProgress,
 }: PendingApprovalsWorkspaceProps) {
-  const initialTab: TabId = canViewProgress ? "progress" : "extensions";
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const initialTab: TabId =
+    requestedTab === "extensions" && canViewExtensions
+      ? "extensions"
+      : requestedTab === "progress" && canViewProgress
+        ? "progress"
+        : canViewProgress
+          ? "progress"
+          : "extensions";
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
   const availableTabs = [

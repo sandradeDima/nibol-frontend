@@ -5,9 +5,10 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BellRing, Send } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 import { ErrorState } from "@/components/ui/error-state";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { QUERY_KEYS } from "@/lib/constants";
 import {
   notificationComposerSchema,
@@ -36,22 +37,26 @@ export function NotificationComposer() {
       message: "",
       title: "",
       type: "info",
-      userId: "",
+      userIds: [],
     },
     resolver: zodResolver(notificationComposerSchema),
   });
 
   const createMutation = useMutation({
-    mutationFn: notificationService.createNotification,
-    onSuccess: async () => {
+    mutationFn: notificationService.createNotifications,
+    onSuccess: async ({ createdCount }) => {
       form.reset({
         message: "",
         title: "",
         type: "info",
-        userId: "",
+        userIds: [],
       });
       setSubmitError(null);
-      setSubmitMessage("Notificacion enviada.");
+      setSubmitMessage(
+        createdCount === 1
+          ? "Notificacion enviada."
+          : `Notificacion enviada a ${createdCount} destinatarios.`,
+      );
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.notifications,
       });
@@ -100,23 +105,32 @@ export function NotificationComposer() {
         <div className="grid gap-5">
           <label className="space-y-2">
             <span className="text-sm font-semibold text-stone-800">
-              Destinatario
+              Destinatarios
             </span>
-            <select
-              className="nibol-field"
-              {...form.register("userId")}
-              disabled={createMutation.isPending || recipientsQuery.isLoading}
-            >
-              <option value="">Seleccione un usuario</option>
-              {recipients.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name} ({user.email})
-                </option>
-              ))}
-            </select>
-            {form.formState.errors.userId ? (
+            <Controller
+              control={form.control}
+              name="userIds"
+              render={({ field }) => (
+                <SearchableSelect
+                  disabled={
+                    createMutation.isPending || recipientsQuery.isLoading
+                  }
+                  multiple
+                  onChange={field.onChange}
+                  options={recipients.map((user) => ({
+                    description: user.email,
+                    id: user.id,
+                    label: user.name,
+                    search: user.email,
+                  }))}
+                  placeholder="Buscar por nombre o correo"
+                  value={field.value}
+                />
+              )}
+            />
+            {form.formState.errors.userIds ? (
               <p className="text-sm text-rose-600">
-                {form.formState.errors.userId.message}
+                {form.formState.errors.userIds.message}
               </p>
             ) : null}
           </label>

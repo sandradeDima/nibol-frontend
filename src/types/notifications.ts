@@ -26,6 +26,13 @@ export interface CreateNotificationInput {
   userId: string;
 }
 
+export interface CreateNotificationsInput {
+  message: string;
+  title: string;
+  type: NotificationType;
+  userIds: string[];
+}
+
 export interface ListNotificationsParams {
   page?: number;
   perPage?: number;

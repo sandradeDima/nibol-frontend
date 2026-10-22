@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
-import { Bell, CheckCheck, LoaderCircle, Trash2 } from "lucide-react";
+import { Bell, CheckCheck, LoaderCircle } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { EmptyState } from "@/components/ui/empty-state";
@@ -16,10 +16,8 @@ import { getApiErrorMessage } from "@/utils";
 import { cn } from "@/utils";
 
 export function NotificationBell({
-  canDelete,
   canView,
 }: {
-  canDelete: boolean;
   canView: boolean;
 }) {
   const queryClient = useQueryClient();
@@ -32,6 +30,7 @@ export function NotificationBell({
       notificationService.listNotifications({
         page: 1,
         perPage: 5,
+        unreadOnly: true,
       }),
     queryKey: [...QUERY_KEYS.notifications, "recent"],
     staleTime: 15_000,
@@ -67,15 +66,6 @@ export function NotificationBell({
     },
   });
 
-  const deleteNotificationMutation = useMutation({
-    mutationFn: notificationService.deleteNotification,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.notifications,
-      });
-    },
-  });
-
   const handleDocumentPointerDown = useEffectEvent((event: PointerEvent) => {
     if (!containerRef.current?.contains(event.target as Node)) {
       setOpen(false);
@@ -104,8 +94,6 @@ export function NotificationBell({
     (markAllReadMutation.error &&
       getApiErrorMessage(markAllReadMutation.error)) ||
     (markReadMutation.error && getApiErrorMessage(markReadMutation.error)) ||
-    (deleteNotificationMutation.error &&
-      getApiErrorMessage(deleteNotificationMutation.error)) ||
     null;
 
   return (
@@ -145,7 +133,7 @@ export function NotificationBell({
             <div className="space-y-1">
               <p className="nibol-eyebrow">Centro de alertas</p>
               <h2 className="font-display text-2xl leading-none font-bold text-[var(--foreground)] uppercase">
-                Notificaciones recientes
+                Notificaciones sin leer
               </h2>
               <p className="text-sm text-[var(--muted)]">
                 {unreadCount} elemento{unreadCount === 1 ? "" : "s"} sin leer
@@ -161,7 +149,7 @@ export function NotificationBell({
               type="button"
             >
               <CheckCheck className="h-4 w-4" />
-              Marcar todo
+              Limpiar del menú
             </button>
           </div>
 
@@ -181,9 +169,9 @@ export function NotificationBell({
           ) : notifications.length === 0 ? (
             <div className="mt-5">
               <EmptyState
-                description="Los eventos automaticos y las notificaciones manuales apareceran en este panel."
+                description="Las notificaciones leídas siguen disponibles en el centro de notificaciones."
                 icon={Bell}
-                title="No hay notificaciones"
+                title="No hay alertas sin leer"
               />
             </div>
           ) : (
@@ -264,21 +252,6 @@ export function NotificationBell({
                             >
                               Abrir registro
                             </Link>
-                          ) : null}
-                          {canDelete ? (
-                            <button
-                              className="nibol-btn-secondary px-3 py-2 text-xs"
-                              disabled={deleteNotificationMutation.isPending}
-                              onClick={() => {
-                                void deleteNotificationMutation.mutateAsync(
-                                  notification.id,
-                                );
-                              }}
-                              type="button"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Eliminar
-                            </button>
                           ) : null}
                         </div>
                       </div>

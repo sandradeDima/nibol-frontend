@@ -467,6 +467,7 @@ export function ExtensionRequestReviewWorkspace({
   const [selectedId, setSelectedId] = useState<string | null>(
     searchParams.get("extensionId"),
   );
+  const workflowTaskId = searchParams.get("workflowTaskId");
   const [comment, setComment] = useState("");
   const [error, setError] = useState<string | null>(null);
   const listQuery = useQuery({
@@ -537,9 +538,10 @@ export function ExtensionRequestReviewWorkspace({
     [filterOptionsQuery.data?.data],
   );
   const activeSelectedId =
-    selectedId && rows.some((row) => row.id === selectedId)
-      ? selectedId
-      : (rows[0]?.id ?? null);
+    selectedId ??
+    (workflowTaskId
+      ? (rows.find((row) => row.reviewTask?.id === workflowTaskId)?.id ?? null)
+      : (rows[0]?.id ?? null));
   const selectedFromList = rows.find((item) => item.id === activeSelectedId);
   const detailQuery = useQuery({
     enabled: Boolean(activeSelectedId),
@@ -736,7 +738,7 @@ export function ExtensionRequestReviewWorkspace({
                 const area =
                   row.observationArea?.area ??
                   row.actionPlan?.observationArea.area;
-                const selected = row.id === selectedId;
+                const selected = row.id === activeSelectedId;
                 return (
                   <button
                     aria-pressed={selected}

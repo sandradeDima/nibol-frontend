@@ -13,11 +13,20 @@ export const resolveNotificationTarget = (
   notification: AppNotification,
 ): string | null => {
   const storedTarget = notification.targetUrl?.trim();
-  if (storedTarget) return storedTarget;
-
   const entityType = normalize(notification.entityType);
   const eventType = normalize(notification.eventType);
   const entityId = notification.entityId?.trim() || null;
+
+  if (
+    entityType.includes("workflow_task") &&
+    eventType === "workflow.task.assigned" &&
+    entityId &&
+    (!storedTarget || storedTarget.includes("/aprobaciones/flujos/")) &&
+    /ampliaci[oó]n de plazo/i.test(notification.message)
+  ) {
+    return `/aprobaciones/pendientes?tab=extensions&workflowTaskId=${encodeURIComponent(entityId)}`;
+  }
+  if (storedTarget) return storedTarget;
 
   if (entityType.includes("workflow_task")) {
     return entityId

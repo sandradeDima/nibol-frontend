@@ -2,6 +2,7 @@ import { apiClient } from "@/services/api-client";
 import type {
   ApiSuccessResponse,
   CreateNotificationInput,
+  CreateNotificationsInput,
   NotificationListResult,
   AppNotification,
   AutomaticAlertEmailPreview,
@@ -63,6 +64,16 @@ export const notificationService = {
       "/notifications",
       input,
     );
+
+    return response.data.data;
+  },
+
+  async createNotifications(
+    input: CreateNotificationsInput,
+  ): Promise<{ createdCount: number }> {
+    const response = await apiClient.post<
+      ApiSuccessResponse<{ createdCount: number }>
+    >("/notifications/bulk", input);
 
     return response.data.data;
   },

@@ -29,9 +29,6 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canViewNotifications =
     authorization.permissions.includes("notifications.view");
-  const canDeleteNotifications = authorization.permissions.includes(
-    "notifications.delete",
-  );
 
   const handleDocumentPointerDown = useEffectEvent((event: PointerEvent) => {
     const target = event.target;
@@ -57,10 +54,7 @@ export function UserMenu({ authorization, session }: UserMenuProps) {
 
   return (
     <div className="flex items-center gap-3">
-      <NotificationBell
-        canDelete={canDeleteNotifications}
-        canView={canViewNotifications}
-      />
+      <NotificationBell canView={canViewNotifications} />
 
       <div className="relative" ref={containerRef}>
         <button
