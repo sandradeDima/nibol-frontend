@@ -160,14 +160,13 @@ export function ExtensionRequestReviewDetail({
             </span>
           </div>
         </div>
-        <dl className="grid gap-px bg-[var(--border)] sm:grid-cols-4">
+        <dl className="grid gap-px bg-[var(--border)] sm:grid-cols-3">
           {[
             [
               "Fecha original",
               request.actionPlan?.originalDueDate ?? request.previousDueDate,
             ],
-            ["Fecha actual", request.effectiveDueDate],
-            ["Fecha propuesta", request.proposedDueDate],
+            ["Nueva Fecha Solicitada", request.proposedDueDate],
             ["Duración", `+${request.impactDays} días`],
           ].map(([label, value]) => (
             <div className="bg-white p-4" key={label}>

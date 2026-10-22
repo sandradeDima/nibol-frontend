@@ -158,7 +158,7 @@ export function ProgressReviewDetail({
           </div>
           <div className="bg-white p-4">
             <p className="text-xs font-bold tracking-wider text-stone-500 uppercase">
-              Fecha efectiva
+              Fecha de Compromiso
             </p>
             <p className="mt-2 font-semibold">
               {formatDateOnly(item.effectiveDueDate)}
