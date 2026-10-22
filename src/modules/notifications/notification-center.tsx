@@ -190,7 +190,6 @@ export function NotificationCenter({
           value={String(unreadNotifications)}
         />
         <StatCard
-          description="Esta bandeja concentra el historial interno para futuras extensiones por correo, SMS o WhatsApp."
           icon={Inbox}
           label="Total"
           value={String(totalNotifications)}

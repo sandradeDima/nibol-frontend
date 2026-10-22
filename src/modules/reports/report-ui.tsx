@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { ComponentType, FormEvent, ReactNode } from "react";
 
 import Link from "next/link";
@@ -27,6 +28,7 @@ import type {
   ReportOptions,
   ReportType,
 } from "@/types";
+import { FormDialog } from "@/components/ui/form-dialog";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { getRiskLevelColor } from "@/modules/observations/presentation";
 import { cn } from "@/utils";
@@ -1224,12 +1226,12 @@ export function ReportKpi({
 }
 
 export const REPORT_CHART_COLORS = {
-  CONCLUDED: "var(--success)",
-  CON_AVANCE: "#F59E0B",
-  INICIADO: "var(--info)",
-  NOT_STARTED: "var(--muted)",
-  STARTED: "var(--info)",
-  WITH_PROGRESS: "#F59E0B",
+  CONCLUDED: "#1DB65F",
+  CON_AVANCE: "#FFBA00",
+  INICIADO: "#38B6E9",
+  NOT_STARTED: "#EFF000",
+  STARTED: "#38B6E9",
+  WITH_PROGRESS: "#FFBA00",
   VIGENTE: "var(--success)",
   VENCIDO: "var(--accent)",
   SI: "#F59E0B",
@@ -1712,6 +1714,7 @@ const formatCellValue = (value: unknown): string => {
 };
 
 export function ReportExportButtons({
+  includeActionPlansPrompt = false,
   disabled = false,
   excelLabel = "Excel",
   loading = false,
@@ -1719,28 +1722,67 @@ export function ReportExportButtons({
 }: {
   disabled?: boolean;
   excelLabel?: string;
+  includeActionPlansPrompt?: boolean;
   loading?: boolean;
-  onExport: (format: "excel" | "pdf") => void;
+  onExport: (format: "excel" | "pdf", includeActionPlans?: boolean) => void;
 }) {
+  const [pdfOptionsOpen, setPdfOptionsOpen] = useState(false);
+  const choosePdfOptions = (includeActionPlans: boolean) => {
+    setPdfOptionsOpen(false);
+    onExport("pdf", includeActionPlans);
+  };
+
   return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        className="nibol-btn-secondary px-3 py-2.5 text-sm"
-        disabled={disabled}
-        onClick={() => onExport("excel")}
-        type="button"
-      >
-        <Download className="h-4 w-4" /> {loading ? "Preparando…" : excelLabel}
-      </button>
-      <button
-        className="nibol-btn-secondary px-3 py-2.5 text-sm"
-        disabled={disabled}
-        onClick={() => onExport("pdf")}
-        type="button"
-      >
-        <Download className="h-4 w-4" /> {loading ? "Preparando…" : "PDF"}
-      </button>
-    </div>
+    <>
+      <div className="flex flex-wrap gap-2">
+        <button
+          className="nibol-btn-secondary px-3 py-2.5 text-sm"
+          disabled={disabled}
+          onClick={() => onExport("excel")}
+          type="button"
+        >
+          <Download className="h-4 w-4" /> {loading ? "Preparando…" : excelLabel}
+        </button>
+        <button
+          className="nibol-btn-secondary px-3 py-2.5 text-sm"
+          disabled={disabled}
+          onClick={() =>
+            includeActionPlansPrompt
+              ? setPdfOptionsOpen(true)
+              : onExport("pdf")
+          }
+          type="button"
+        >
+          <Download className="h-4 w-4" /> {loading ? "Preparando…" : "PDF"}
+        </button>
+      </div>
+      {includeActionPlansPrompt ? (
+        <FormDialog
+          description="Descargar con planes de Acción:"
+          footer={
+            <div className="flex justify-end gap-3">
+              <button
+                className="nibol-btn-secondary px-4 py-2.5 text-sm"
+                onClick={() => choosePdfOptions(false)}
+                type="button"
+              >
+                No
+              </button>
+              <button
+                className="nibol-btn-primary px-4 py-2.5 text-sm"
+                onClick={() => choosePdfOptions(true)}
+                type="button"
+              >
+                Sí
+              </button>
+            </div>
+          }
+          onOpenChange={setPdfOptionsOpen}
+          open={pdfOptionsOpen}
+          title="Descargar PDF"
+        />
+      ) : null}
+    </>
   );
 }
 

@@ -572,7 +572,10 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
 
   const resetFilters = () => applyFilters(DEFAULT_FILTERS);
 
-  const handleExport = async (format: "excel" | "pdf") => {
+  const handleExport = async (
+    format: "excel" | "pdf",
+    includeActionPlans?: boolean,
+  ) => {
     if (!canExport) return;
     setExporting(format);
     setExportError(null);
@@ -580,6 +583,7 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
       const blob = await reportService.downloadReport(filters, format, {
         reportName: "Tablero - Avance de planes NIBOL",
         type: "ACTION_PLANS",
+        includeActionPlans: format === "pdf" ? includeActionPlans : undefined,
         pdfView: "DASHBOARD",
       });
       triggerDownload(
@@ -610,8 +614,11 @@ export function ReportingDashboard({ canExport }: ReportingDashboardProps) {
             {canExport ? (
               <ReportExportButtons
                 disabled={exporting !== null}
+                includeActionPlansPrompt
                 loading={exporting !== null}
-                onExport={(format) => void handleExport(format)}
+                onExport={(format, includeActionPlans) =>
+                  void handleExport(format, includeActionPlans)
+                }
               />
             ) : null}
           </>

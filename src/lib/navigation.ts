@@ -104,11 +104,8 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     group: "Control",
     icon: "FolderKanban",
     label: "Avances y evidencias",
-    permissions: [
-      "observations.view",
-      "action_plans.view",
-      "progress_evaluations.view",
-    ],
+    modulePermission: "progress_evaluations.view",
+    permission: "progress_evaluations.view",
     route: "/avances-evidencias",
   },
   {

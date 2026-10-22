@@ -118,7 +118,10 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
     applyFilters(DEFAULT_FILTERS);
   };
 
-  const handleExport = async (format: "excel" | "pdf") => {
+  const handleExport = async (
+    format: "excel" | "pdf",
+    includeActionPlans?: boolean,
+  ) => {
     if (!canExport) return;
     setExporting(format);
     setExportError(null);
@@ -131,6 +134,7 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
               ? "Planes de acción próximos a vencer"
               : "Planes de acción vigentes",
         type: "ACTION_PLANS",
+        includeActionPlans: format === "pdf" ? includeActionPlans : undefined,
         pdfView: "ATTENTION",
       });
       triggerDownload(
@@ -161,8 +165,11 @@ export function VigentesVencidas({ canExport }: VigentesVencidasProps) {
             {canExport ? (
               <ReportExportButtons
                 disabled={exporting !== null || plansQuery.isPending}
+                includeActionPlansPrompt
                 loading={exporting !== null}
-                onExport={(format) => void handleExport(format)}
+                onExport={(format, includeActionPlans) =>
+                  void handleExport(format, includeActionPlans)
+                }
               />
             ) : null}
           </>

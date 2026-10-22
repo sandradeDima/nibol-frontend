@@ -125,7 +125,10 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
     previewMutation.mutate(input);
   };
 
-  const handleExport = async (format: "excel" | "pdf") => {
+  const handleExport = async (
+    format: "excel" | "pdf",
+    includeActionPlans?: boolean,
+  ) => {
     if (!canExport || !submitted) return;
     setExporting(format);
     setExportError(null);
@@ -136,6 +139,8 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
         {
           reportName: submitted.reportName,
           type: submitted.type,
+          includeActionPlans:
+            format === "pdf" ? includeActionPlans : undefined,
           pdfView: "GENERATOR",
         },
       );
@@ -171,14 +176,17 @@ export function ReportGenerator({ canExport }: ReportGeneratorProps) {
                 disabled={
                   !submitted || previewMutation.isPending || exporting !== null
                 }
+                includeActionPlansPrompt={
+                  submitted?.type === "ACTION_PLANS"
+                }
                 loading={exporting !== null}
                 excelLabel={
                   submitted?.type === "OBSERVATIONS"
                     ? "Excel · detalle"
                     : "Excel"
                 }
-                onExport={(format) => {
-                  void handleExport(format);
+                onExport={(format, includeActionPlans) => {
+                  void handleExport(format, includeActionPlans);
                 }}
               />
             ) : null}

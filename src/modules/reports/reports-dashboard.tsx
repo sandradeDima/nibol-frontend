@@ -139,7 +139,10 @@ export function ReportsDashboard({
     applyFilters(DEFAULT_FILTERS);
   };
 
-  const handleExport = async (format: "excel" | "pdf") => {
+  const handleExport = async (
+    format: "excel" | "pdf",
+    includeActionPlans?: boolean,
+  ) => {
     if (!canExport) return;
     setExporting(format);
     setExportError(null);
@@ -150,6 +153,7 @@ export function ReportsDashboard({
             ? "Observaciones y planes de acción NIBOL"
             : "Planes de acción NIBOL",
         type: format === "excel" ? "OBSERVATIONS" : "ACTION_PLANS",
+        includeActionPlans: format === "pdf" ? includeActionPlans : undefined,
         pdfView: "REPORTS",
       });
       triggerDownload(
@@ -279,8 +283,11 @@ export function ReportsDashboard({
             {canExport ? (
               <ReportExportButtons
                 disabled={exporting !== null}
+                includeActionPlansPrompt
                 loading={exporting !== null}
-                onExport={(format) => void handleExport(format)}
+                onExport={(format, includeActionPlans) =>
+                  void handleExport(format, includeActionPlans)
+                }
               />
             ) : null}
           </>

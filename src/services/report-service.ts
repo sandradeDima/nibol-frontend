@@ -101,6 +101,7 @@ export const buildReportQuery = (
   options?: {
     page?: number;
     perPage?: number;
+    includeActionPlans?: boolean;
     pdfView?: "REPORTS" | "DASHBOARD" | "GENERATOR" | "ATTENTION";
     reportName?: string;
     type?: ReportType;
@@ -110,6 +111,7 @@ export const buildReportQuery = (
   appendValue(params, "page", options?.page ?? 1);
   appendValue(params, "perPage", options?.perPage ?? 20);
   appendValue(params, "reportName", options?.reportName);
+  appendValue(params, "includeActionPlans", options?.includeActionPlans);
   appendValue(params, "pdfView", options?.pdfView);
   appendValue(params, "type", options?.type);
   appendValue(params, "periodField", filters.periodField ?? "createdAt");
@@ -159,6 +161,7 @@ export const reportService = {
     filters: ReportFilters,
     format: "excel" | "pdf",
     options?: {
+      includeActionPlans?: boolean;
       pdfView?: "REPORTS" | "DASHBOARD" | "GENERATOR" | "ATTENTION";
       reportName?: string;
       type?: ReportType;
