@@ -7,6 +7,7 @@ import type {
   AppNotification,
   AutomaticAlertEmailPreview,
   AutomaticNotificationRule,
+  NotificationCatalogItem,
   DeadlineReminderConfig,
   DeadlineReminderPolicy,
   DeadlineReminderPreview,
@@ -70,9 +71,9 @@ export const notificationService = {
 
   async createNotifications(
     input: CreateNotificationsInput,
-  ): Promise<{ createdCount: number }> {
+  ): Promise<{ createdCount: number; suppressed: boolean }> {
     const response = await apiClient.post<
-      ApiSuccessResponse<{ createdCount: number }>
+      ApiSuccessResponse<{ createdCount: number; suppressed: boolean }>
     >("/notifications/bulk", input);
 
     return response.data.data;
@@ -121,6 +122,13 @@ export const notificationService = {
     const response = await apiClient.get<
       ApiSuccessResponse<AutomaticNotificationRule[]>
     >("/automatic-jobs/rules");
+    return response.data.data;
+  },
+
+  async listNotificationCatalog(): Promise<NotificationCatalogItem[]> {
+    const response = await apiClient.get<
+      ApiSuccessResponse<NotificationCatalogItem[]>
+    >("/automatic-jobs/notification-catalog");
     return response.data.data;
   },
 

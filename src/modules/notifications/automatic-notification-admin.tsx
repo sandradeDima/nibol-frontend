@@ -283,17 +283,18 @@ export function AutomaticNotificationAdmin({
   const [previewDate, setPreviewDate] = useState(getDateKey);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const automaticRulesQuery = useQuery({
-    enabled: canExecute,
     queryFn: notificationService.listAutomaticRules,
     queryKey: [...QUERY_KEYS.notifications, "automatic-rules"],
   });
+  const notificationCatalogQuery = useQuery({
+    queryFn: notificationService.listNotificationCatalog,
+    queryKey: [...QUERY_KEYS.notifications, "notification-catalog"],
+  });
   const configQuery = useQuery({
-    enabled: canExecute,
     queryFn: notificationService.getDeadlineReminderConfig,
     queryKey: [...QUERY_KEYS.notifications, "deadline-reminder-config"],
   });
   const executionsQuery = useQuery({
-    enabled: canExecute,
     queryFn: () =>
       notificationService.listDeadlineReminderExecutions({
         page: 1,
@@ -328,6 +329,9 @@ export function AutomaticNotificationAdmin({
       await queryClient.invalidateQueries({
         queryKey: [...QUERY_KEYS.notifications, "automatic-rules"],
       });
+      await queryClient.invalidateQueries({
+        queryKey: [...QUERY_KEYS.notifications, "notification-catalog"],
+      });
     },
   });
   const emailPreviewQuery = useQuery({
@@ -355,9 +359,12 @@ export function AutomaticNotificationAdmin({
   const config = configQuery.data;
   const automaticRules = automaticRulesQuery.data ?? [];
   const executions = executionsQuery.data?.data ?? [];
+  const catalog = notificationCatalogQuery.data ?? [];
+  const catalogCategories = [...new Set(catalog.map((item) => item.category))];
   const latest = executions[0];
   const error =
     automaticRulesQuery.error ||
+    notificationCatalogQuery.error ||
     configQuery.error ||
     executionsQuery.error ||
     updateMutation.error ||
@@ -459,6 +466,98 @@ export function AutomaticNotificationAdmin({
           {getApiErrorMessage(error)}
         </p>
       ) : null}
+
+      <section className="nibol-panel p-6">
+        <div>
+          <p className="nibol-eyebrow">Catálogo</p>
+          <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
+            Notificaciones del sistema
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+            Active o pause cada tipo de aviso. Los ejemplos muestran el título y
+            mensaje que recibirá el usuario con datos ilustrativos.
+          </p>
+        </div>
+        <div className="mt-6 space-y-6">
+          {notificationCatalogQuery.isPending ? (
+            <p className="text-sm text-[var(--muted)]">
+              Cargando catálogo de notificaciones...
+            </p>
+          ) : null}
+          {catalogCategories.map((category) => (
+            <section className="min-w-0" key={category}>
+              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[var(--border)] pb-2">
+                <h3 className="font-semibold text-[var(--foreground)]">
+                  {category}
+                </h3>
+                <span className="text-xs text-[var(--muted)]">
+                  {catalog.filter((item) => item.category === category).length} tipos
+                </span>
+              </div>
+              <div className="divide-y divide-[var(--border)]">
+                {catalog
+                  .filter((item) => item.category === category)
+                  .map((item) => (
+                    <article
+                      className="grid gap-4 py-4 md:grid-cols-[minmax(0,1fr)_8rem]"
+                      key={item.key}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                          <h4 className="text-sm font-semibold text-[var(--foreground)]">
+                            {item.name}
+                          </h4>
+                          <code className="text-[11px] text-[var(--muted)]">
+                            {item.eventType === "*"
+                              ? "Otros tipos de evento"
+                              : (item.eventType ?? "Sin tipo de evento")}
+                          </code>
+                        </div>
+                        <p className="mt-1 max-w-3xl text-sm leading-5 text-[var(--muted)]">
+                          {item.description}
+                        </p>
+                        <div className="mt-3 border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2.5">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+                            Ejemplo
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-[var(--foreground)]">
+                            {item.exampleTitle}
+                          </p>
+                          <p className="mt-1 whitespace-pre-line text-sm leading-5 text-[var(--muted)]">
+                            {item.exampleMessage}
+                          </p>
+                        </div>
+                        <p className="mt-2 text-xs text-[var(--muted)]">
+                          Canal: {item.channels}
+                        </p>
+                      </div>
+                      <label className="flex items-center justify-between gap-2 text-sm font-medium text-[var(--foreground)] md:justify-end md:self-start">
+                        <span>{item.enabled ? "Activa" : "Pausada"}</span>
+                        <input
+                          aria-label={"Activar o pausar " + item.name}
+                          checked={item.enabled}
+                          className="h-4 w-4 accent-[var(--primary)]"
+                          disabled={
+                            !canExecute ||
+                            notificationCatalogQuery.isError ||
+                            automaticRuleMutation.isPending
+                          }
+                          onChange={(event) =>
+                            automaticRuleMutation.mutate({
+                              key: item.key,
+                              value: String(event.target.checked),
+                            })
+                          }
+                          type="checkbox"
+                        />
+                      </label>
+                    </article>
+                  ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </section>
 
       <section className="nibol-panel p-6">
         <div>
@@ -614,7 +713,7 @@ export function AutomaticNotificationAdmin({
               </button>
               <button
                 className="nibol-btn-primary"
-                disabled={runMutation.isPending}
+                disabled={!canExecute || runMutation.isPending}
                 onClick={() =>
                   void runMutation.mutateAsync({
                     cutoffDateKey: previewDate,
@@ -649,7 +748,9 @@ export function AutomaticNotificationAdmin({
               <p className="mt-4 text-xs text-[var(--muted)]">
                 {!previewMutation.data.policy.enabled
                   ? "Los recordatorios están desactivados para este rol."
-                  : !previewMutation.data.channels.notifyByEmail &&
+                  : !previewMutation.data.channels.enabled
+                    ? "Este tipo de notificación está pausado."
+                    : !previewMutation.data.channels.notifyByEmail &&
                       !previewMutation.data.channels.notifyInApp
                     ? "No se entregará ningún aviso: todos los canales están desactivados."
                     : `Entrega activa: ${[

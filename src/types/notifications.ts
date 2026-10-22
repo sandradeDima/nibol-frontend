@@ -59,6 +59,18 @@ export interface AutomaticNotificationRule {
   valueType: string;
 }
 
+export interface NotificationCatalogItem {
+  category: string;
+  channels: string;
+  description: string;
+  enabled: boolean;
+  eventType: "*" | string | null;
+  exampleMessage: string;
+  exampleTitle: string;
+  key: string;
+  name: string;
+}
+
 export interface AutomaticAlertEmailPreview {
   html: string;
   subject: string;
@@ -128,6 +140,7 @@ export interface DeadlineReminderConfig {
 
 export interface DeadlineReminderPreview {
   channels: {
+    enabled: boolean;
     notifyByEmail: boolean;
     notifyInApp: boolean;
   };

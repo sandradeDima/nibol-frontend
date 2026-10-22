@@ -145,14 +145,29 @@ export function NotificationCenter({
     return notifications.filter((notification) => {
       const eventType = notification.eventType ?? "";
       if (activeTab === "deadlines")
-        return eventType.includes("DUE") || eventType.includes("OVERDUE");
+        return (
+          eventType.includes("DUE") ||
+          eventType.includes("OVERDUE") ||
+          eventType === "DEADLINE_REMINDER_DIGEST" ||
+          eventType.startsWith("workflow.timer.")
+        );
       if (activeTab === "approvals")
         return (
           eventType.includes("REVIEW") ||
           eventType.includes("APPROVED") ||
-          eventType.includes("RETURNED")
+          eventType.includes("RETURNED") ||
+          eventType.startsWith("workflow.")
         );
-      return eventType.length === 0;
+      return !(
+        eventType.includes("DUE") ||
+        eventType.includes("OVERDUE") ||
+        eventType === "DEADLINE_REMINDER_DIGEST" ||
+        eventType.startsWith("workflow.timer.") ||
+        eventType.includes("REVIEW") ||
+        eventType.includes("APPROVED") ||
+        eventType.includes("RETURNED") ||
+        eventType.startsWith("workflow.")
+      );
     });
   }, [activeTab, notificationListQuery.data?.data]);
   const pagination = notificationListQuery.data?.pagination;

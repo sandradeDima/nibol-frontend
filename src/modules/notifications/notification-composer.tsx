@@ -44,7 +44,7 @@ export function NotificationComposer() {
 
   const createMutation = useMutation({
     mutationFn: notificationService.createNotifications,
-    onSuccess: async ({ createdCount }) => {
+    onSuccess: async ({ createdCount, suppressed }) => {
       form.reset({
         message: "",
         title: "",
@@ -53,9 +53,11 @@ export function NotificationComposer() {
       });
       setSubmitError(null);
       setSubmitMessage(
-        createdCount === 1
-          ? "Notificacion enviada."
-          : `Notificacion enviada a ${createdCount} destinatarios.`,
+        suppressed
+          ? "Las notificaciones manuales están desactivadas en la configuración."
+          : createdCount === 1
+            ? "Notificación enviada."
+            : `Notificación enviada a ${createdCount} destinatarios.`,
       );
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.notifications,
