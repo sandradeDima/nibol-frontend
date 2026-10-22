@@ -576,7 +576,9 @@ export function ActionPlanDetailView({
               ],
               [
                 "Fecha de reprogramación",
-                formatRemediationDate(plan.effectiveDueDate),
+                plan.reprogrammed
+                  ? formatRemediationDate(plan.effectiveDueDate)
+                  : "",
               ],
               ["Reprogramado", plan.reprogrammed ? "Sí" : "No"],
               ["Documentos", `${plan.evidenceCount} asociados`],
@@ -967,15 +969,17 @@ export function ActionPlanDetailView({
             </div>
             <dl className="mt-5 grid grid-cols-2 gap-4 text-sm">
               <div>
-                <dt className="text-stone-500">Original</dt>
+                <dt className="text-stone-500">Fecha de compromiso</dt>
                 <dd className="mt-1 font-semibold">
                   {formatRemediationDate(plan.originalDueDate)}
                 </dd>
               </div>
               <div>
-                <dt className="text-stone-500">Actual</dt>
+                <dt className="text-stone-500">Fecha de reprogramación</dt>
                 <dd className="mt-1 font-semibold">
-                  {formatRemediationDate(plan.effectiveDueDate)}
+                  {plan.reprogrammed
+                    ? formatRemediationDate(plan.effectiveDueDate)
+                    : ""}
                 </dd>
               </div>
             </dl>
