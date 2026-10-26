@@ -128,8 +128,8 @@ export function NotificationBell({
       </button>
 
       {open ? (
-        <div className="absolute top-[calc(100%+0.75rem)] right-0 z-50 w-[min(30rem,92vw)] border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-panel-strong)]">
-          <div className="flex items-start justify-between gap-4">
+        <div className="absolute top-[calc(100%+0.75rem)] right-0 z-50 flex max-h-[calc(100dvh-6rem)] w-[min(30rem,92vw)] flex-col border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-panel-strong)]">
+          <div className="flex shrink-0 items-start justify-between gap-4">
             <div className="space-y-1">
               <p className="nibol-eyebrow">Centro de alertas</p>
               <h2 className="font-display text-2xl leading-none font-bold text-[var(--foreground)] uppercase">
@@ -154,20 +154,20 @@ export function NotificationBell({
           </div>
 
           {actionError ? (
-            <p className="mt-4 border border-[color:color-mix(in_srgb,var(--accent)_18%,white)] bg-[var(--accent-soft)] px-4 py-3 text-sm font-medium text-[var(--accent)]">
+            <p className="mt-4 shrink-0 border border-[color:color-mix(in_srgb,var(--accent)_18%,white)] bg-[var(--accent-soft)] px-4 py-3 text-sm font-medium text-[var(--accent)]">
               {actionError}
             </p>
           ) : null}
 
           {recentNotificationsQuery.isLoading ? (
-            <div className="mt-5 flex min-h-44 items-center justify-center border border-dashed border-[var(--border)] bg-[var(--surface-soft)]">
+            <div className="mt-5 flex min-h-0 flex-1 items-center justify-center overflow-y-auto border border-dashed border-[var(--border)] bg-[var(--surface-soft)]">
               <div className="flex items-center gap-3 text-sm font-medium text-[var(--muted)]">
                 <LoaderCircle className="h-4 w-4 animate-spin" />
                 Cargando notificaciones...
               </div>
             </div>
           ) : notifications.length === 0 ? (
-            <div className="mt-5">
+            <div className="mt-5 min-h-0 flex-1 overflow-y-auto">
               <EmptyState
                 description="Las notificaciones leídas siguen disponibles en el centro de notificaciones."
                 icon={Bell}
@@ -175,7 +175,7 @@ export function NotificationBell({
               />
             </div>
           ) : (
-            <div className="mt-5 space-y-3">
+            <div className="mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1">
               {notifications.map((notification) => {
                 const targetUrl = resolveNotificationTarget(notification);
                 return (
@@ -262,7 +262,7 @@ export function NotificationBell({
             </div>
           )}
 
-          <div className="mt-5">
+          <div className="mt-5 shrink-0">
             <Link
               className="nibol-btn-primary justify-center"
               href="/notifications"
