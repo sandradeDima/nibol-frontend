@@ -52,7 +52,9 @@ export default async function ObservationDetailPage({
           "recommended_action_plans.view",
         )}
         currentUserId={authorization.userId}
+        isAdmin={authorization.isAdmin}
         observationId={id}
+        roleCode={authorization.roleCode}
       />
     </main>
   );

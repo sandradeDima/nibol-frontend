@@ -212,6 +212,7 @@ export function ActionPlanDetailView({
   currentUserId,
   initialEditing = false,
   isAdmin,
+  roleCode,
 }: {
   canApproveProgress: boolean;
   canDelete: boolean;
@@ -226,6 +227,7 @@ export function ActionPlanDetailView({
   currentUserId: string;
   initialEditing?: boolean;
   isAdmin: boolean;
+  roleCode: string | null;
 }) {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -257,6 +259,41 @@ export function ActionPlanDetailView({
     queryKey: ["progress-evaluations", "action-plan", actionPlanId],
   });
   const plan = planQuery.data;
+  const isOperationalRole = [
+    "AREA_RESPONSIBLE",
+    "PROCESS_OWNER",
+    "EXECUTOR",
+  ].includes(roleCode ?? "");
+  const canEditForPlan = Boolean(
+    plan &&
+    (isAdmin ||
+      (!isOperationalRole && canEdit) ||
+      (roleCode === "AREA_RESPONSIBLE" &&
+        (plan.areaResponsible.id === currentUserId ||
+          plan.processOwner.id === currentUserId)) ||
+      (roleCode === "PROCESS_OWNER" && plan.processOwner.id === currentUserId)),
+  );
+  const canAssignExecutorForPlan = Boolean(
+    plan &&
+    (isAdmin ||
+      (!isOperationalRole && canEdit) ||
+      (roleCode === "AREA_RESPONSIBLE" &&
+        plan.areaResponsible.id === currentUserId) ||
+      (roleCode === "PROCESS_OWNER" && plan.processOwner.id === currentUserId)),
+  );
+  const canUploadEvidenceForPlan = Boolean(
+    plan &&
+    (isAdmin ||
+      (!isOperationalRole && canUploadEvidence) ||
+      (roleCode === "AREA_RESPONSIBLE" &&
+        (plan.areaResponsible.id === currentUserId ||
+          plan.processOwner.id === currentUserId ||
+          plan.responsibleUser.id === currentUserId)) ||
+      (roleCode === "PROCESS_OWNER" &&
+        (plan.processOwner.id === currentUserId ||
+          plan.responsibleUser.id === currentUserId)) ||
+      (roleCode === "EXECUTOR" && plan.responsibleUser.id === currentUserId)),
+  );
   const canRequestExtensionForPlan = Boolean(
     canRequestExtension &&
     plan &&
@@ -478,7 +515,7 @@ export function ActionPlanDetailView({
                 Volver a la observación
               </Link>
               <div className="flex flex-wrap items-center gap-2">
-                {canViewObservation && canUploadEvidence ? (
+                {canViewObservation && canUploadEvidenceForPlan ? (
                   <Link
                     className="nibol-btn-primary shrink-0 px-3 py-2 text-sm whitespace-nowrap"
                     href={`${buildObservationUrl({
@@ -496,7 +533,7 @@ export function ActionPlanDetailView({
                     {pendingCount === 1 ? "pendiente" : "pendientes"}
                   </span>
                 ) : null}
-                {canEdit ? (
+                {canEditForPlan ? (
                   <button
                     className="nibol-btn-secondary shrink-0 bg-white px-3 py-2 text-sm whitespace-nowrap"
                     onClick={() => {
@@ -596,10 +633,11 @@ export function ActionPlanDetailView({
         </section>
       </div>
 
-      {editing ? (
+      {editing && canEditForPlan ? (
         observationQuery.data && executorOptionsQuery.data ? (
           <ActionPlanEditor
             areas={observationQuery.data.areas}
+            canAssignExecutor={canAssignExecutorForPlan}
             error={error}
             initial={{
               description: plan.description,

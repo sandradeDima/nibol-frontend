@@ -54,7 +54,9 @@ type Props = {
   canSubmitProgress: boolean;
   canViewRecommended: boolean;
   currentUserId: string;
+  isAdmin: boolean;
   observationId: string;
+  roleCode: string | null;
 };
 
 type ObservationTab = "detail" | "plans" | "comments" | "history";
@@ -121,7 +123,9 @@ export function ObservationDetail({
   canSubmitProgress,
   canViewRecommended,
   currentUserId,
+  isAdmin,
   observationId,
+  roleCode,
 }: Props) {
   const queryClient = useQueryClient();
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -601,7 +605,9 @@ export function ObservationDetail({
             canDeleteEvidence={canDeleteEvidence}
             canSubmitProgress={canSubmitProgress}
             currentUserId={currentUserId}
+            isAdmin={isAdmin}
             observationId={observationId}
+            roleCode={roleCode}
             section="comments"
           />
         </div>
@@ -647,7 +653,10 @@ export function ObservationDetail({
               canEditRecommended={canEditRecommended}
               canSubmitRecommended={canSubmitRecommended}
               canViewRecommended={canViewRecommended}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
               observationId={observationId}
+              roleCode={roleCode}
             />
           </div>
           <div className="scroll-mt-24" id="avances-evidencias">
@@ -657,7 +666,9 @@ export function ObservationDetail({
               canDeleteEvidence={canDeleteEvidence}
               canSubmitProgress={canSubmitProgress}
               currentUserId={currentUserId}
+              isAdmin={isAdmin}
               observationId={observationId}
+              roleCode={roleCode}
               section="plans"
               key={`plans-${activePlanId ?? "all"}`}
             />

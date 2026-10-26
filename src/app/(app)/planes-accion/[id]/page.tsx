@@ -28,9 +28,12 @@ export default async function ActionPlanPage({
           authorization.permissions.includes("observations.view")
         }
         canEdit={authorization.permissions.includes("action_plans.edit")}
-        canRequestExtension={authorization.permissions.includes(
-          "deadline_extensions.request",
-        )}
+        canRequestExtension={
+          authorization.permissions.includes("deadline_extensions.request") ||
+          ["AREA_RESPONSIBLE", "PROCESS_OWNER"].includes(
+            authorization.roleCode ?? "",
+          )
+        }
         canReturnProgress={
           authorization.isAdmin ||
           (authorization.permissions.includes("action_plans.evaluate") &&
@@ -49,6 +52,7 @@ export default async function ActionPlanPage({
         currentUserId={authorization.userId}
         initialEditing={edit === "1"}
         isAdmin={authorization.isAdmin}
+        roleCode={authorization.roleCode}
       />
       {authorization.permissions.includes("action_plans.history.view") ? (
         <section className="nibol-panel mt-6 min-w-0 p-6">

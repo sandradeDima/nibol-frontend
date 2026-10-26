@@ -12,7 +12,7 @@ import { QUERY_KEYS } from "@/lib/constants";
 import { apiClient } from "@/services/api-client";
 import { progressService } from "@/services/progress-service";
 import { remediationService } from "@/services/remediation-service";
-import type { ProgressEvaluationType } from "@/types";
+import type { ActionPlanDetail, ProgressEvaluationType } from "@/types";
 import { getApiErrorMessage, getUploadErrorMessage } from "@/utils";
 import { getProgressStatusLabel } from "./presentation";
 
@@ -22,13 +22,20 @@ type EvaluationDraft = {
   type: ProgressEvaluationType;
 };
 
+type AssignedPlan = Pick<
+  ActionPlanDetail,
+  "areaResponsible" | "processOwner" | "responsibleUser"
+>;
+
 export function ObservationCollaborationWorkspace({
   activePlanId,
   activeEvaluationId,
   canDeleteEvidence,
   canSubmitProgress,
   currentUserId,
+  isAdmin,
   observationId,
+  roleCode,
   section = "all",
 }: {
   activePlanId?: string | null;
@@ -36,7 +43,9 @@ export function ObservationCollaborationWorkspace({
   canDeleteEvidence: boolean;
   canSubmitProgress: boolean;
   currentUserId: string;
+  isAdmin: boolean;
   observationId: string;
+  roleCode: string | null;
   section?: "all" | "plans" | "comments";
 }) {
   const showPlans = section === "all" || section === "plans";
@@ -59,6 +68,30 @@ export function ObservationCollaborationWorkspace({
       ),
     queryKey: ["action-plans", observationId],
   });
+  const canSubmitPlanProgress = (plan: AssignedPlan) => {
+    if (isAdmin) return true;
+    if (
+      !roleCode ||
+      !["AREA_RESPONSIBLE", "PROCESS_OWNER", "EXECUTOR"].includes(roleCode)
+    )
+      return canSubmitProgress;
+    if (
+      roleCode === "AREA_RESPONSIBLE" &&
+      plan.areaResponsible.id === currentUserId &&
+      canSubmitProgress
+    )
+      return true;
+    return plan.responsibleUser.id === currentUserId;
+  };
+  const canManageOwnRolePlan = (plan: AssignedPlan) =>
+    isAdmin ||
+    (!roleCode ||
+      !["AREA_RESPONSIBLE", "PROCESS_OWNER", "EXECUTOR"].includes(roleCode)) ||
+    (roleCode === "AREA_RESPONSIBLE" &&
+      plan.areaResponsible.id === currentUserId) ||
+    (roleCode === "PROCESS_OWNER" && plan.processOwner.id === currentUserId) ||
+    (roleCode === "EXECUTOR" && plan.responsibleUser.id === currentUserId);
+  const progressPlans = plans.data?.data.filter(canSubmitPlanProgress) ?? [];
   const evaluations = useQuery({
     queryFn: () =>
       progressService.listProgressEvaluations(
@@ -98,6 +131,10 @@ export function ObservationCollaborationWorkspace({
       );
       if (!selectedPlan)
         throw new Error("Seleccione un plan de acción válido.");
+      if (!canSubmitPlanProgress(selectedPlan))
+        throw new Error(
+          "No tiene permiso para registrar avances en este plan.",
+        );
       if (
         !evaluation.reportedProgressPercent.trim() ||
         !Number.isInteger(reportedProgressPercent) ||
@@ -216,7 +253,7 @@ export function ObservationCollaborationWorkspace({
       ) : null}
       {showPlans ? (
         <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1.25fr]">
-          {canSubmitProgress ? (
+          {progressPlans.length ? (
             <form
               className="rounded-2xl border border-stone-200 bg-stone-50 p-5"
               onSubmit={(event) => {
@@ -235,7 +272,7 @@ export function ObservationCollaborationWorkspace({
                     onChange={(event) => setSelectedPlanId(event.target.value)}
                   >
                     <option value="">Seleccione el plan</option>
-                    {plans.data?.data.map((plan) => (
+                    {progressPlans.map((plan) => (
                       <option key={plan.id} value={plan.id}>
                         {plan.area.name} · {plan.description}
                       </option>
@@ -411,6 +448,7 @@ export function ObservationCollaborationWorkspace({
                                   {Math.ceil(file.sizeBytes / 1024)} KB
                                 </span>
                                 {canDeleteEvidence &&
+                                canManageOwnRolePlan(item.actionPlan) &&
                                 file.id &&
                                 item.submittedByUser.id === currentUserId &&
                                 ["DRAFT", "RETURNED"].includes(
@@ -443,6 +481,7 @@ export function ObservationCollaborationWorkspace({
                         Ver plan de acción
                       </Link>
                       {canSubmitProgress &&
+                      canManageOwnRolePlan(item.actionPlan) &&
                       item.submittedByUser.id === currentUserId &&
                       item.reviewStatus === "DRAFT" ? (
                         <button
@@ -455,7 +494,7 @@ export function ObservationCollaborationWorkspace({
                           Eliminar borrador
                         </button>
                       ) : null}
-                      {canSubmitProgress &&
+                      {canSubmitPlanProgress(item.actionPlan) &&
                       item.submittedByUser.id === currentUserId &&
                       ["DRAFT", "RETURNED"].includes(item.reviewStatus) ? (
                         <button

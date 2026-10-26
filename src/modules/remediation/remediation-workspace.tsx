@@ -21,6 +21,7 @@ import { extensionRequestService } from "@/services/extension-request-service";
 import { observationService } from "@/services/observation-service";
 import { remediationService } from "@/services/remediation-service";
 import { cn, getApiErrorMessage } from "@/utils";
+import type { ObservationArea } from "@/types";
 
 import {
   ActionPlanEditor,
@@ -49,7 +50,10 @@ export function RemediationWorkspace({
   canEditRecommended,
   canSubmitRecommended,
   canViewRecommended,
+  currentUserId,
+  isAdmin,
   observationId,
+  roleCode,
 }: {
   activeExtensionId?: string | null;
   activePlanId?: string | null;
@@ -60,7 +64,10 @@ export function RemediationWorkspace({
   canEditRecommended: boolean;
   canSubmitRecommended: boolean;
   canViewRecommended: boolean;
+  currentUserId: string;
+  isAdmin: boolean;
   observationId: string;
+  roleCode: string | null;
 }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -170,6 +177,57 @@ export function RemediationWorkspace({
   });
   const data = observation.data;
   const rows = plans.data?.data ?? [];
+  const isOperationalRole = [
+    "AREA_RESPONSIBLE",
+    "PROCESS_OWNER",
+    "EXECUTOR",
+  ].includes(roleCode ?? "");
+  const canCreateInArea = (area: ObservationArea) =>
+    isAdmin ||
+    (!isOperationalRole && canCreateActionPlans) ||
+    (roleCode === "AREA_RESPONSIBLE" &&
+      (area.areaResponsible.id === currentUserId ||
+        area.processOwner.id === currentUserId)) ||
+    (roleCode === "PROCESS_OWNER" && area.processOwner.id === currentUserId);
+  const canEditPlan = (plan: (typeof rows)[number]) =>
+    isAdmin ||
+    (!isOperationalRole && canEditActionPlans) ||
+    (roleCode === "AREA_RESPONSIBLE" &&
+      (plan.areaResponsible.id === currentUserId ||
+        plan.processOwner.id === currentUserId)) ||
+    (roleCode === "PROCESS_OWNER" && plan.processOwner.id === currentUserId);
+  const canAssignExecutorInArea = (area?: ObservationArea) =>
+    isAdmin ||
+    (!isOperationalRole && canAssignRecommendedExecutor) ||
+    Boolean(
+      area &&
+      roleCode === "AREA_RESPONSIBLE" &&
+      area.areaResponsible.id === currentUserId,
+    ) ||
+    Boolean(
+      area &&
+      roleCode === "PROCESS_OWNER" &&
+      area.processOwner.id === currentUserId,
+    );
+  const canAssignExecutorOnPlan = (plan: (typeof rows)[number]) =>
+    isAdmin ||
+    (!isOperationalRole && canAssignRecommendedExecutor) ||
+    (roleCode === "AREA_RESPONSIBLE" &&
+      plan.areaResponsible.id === currentUserId) ||
+    (roleCode === "PROCESS_OWNER" && plan.processOwner.id === currentUserId);
+  const createableAreas = data?.areas.filter(canCreateInArea) ?? [];
+  const selectedArea = data?.areas.find(
+    (area) => area.id === form.observationAreaId,
+  );
+  const executorCandidates = canAssignExecutorInArea(selectedArea)
+    ? (executorOptions.data?.executorCandidates ?? [])
+    : [selectedArea?.areaResponsible, selectedArea?.processOwner].filter(
+        (user): user is ObservationArea["areaResponsible"] =>
+          Boolean(user && user.id === currentUserId),
+      );
+  const canCreateAnyActionPlan = Boolean(
+    canCreateActionPlans && createableAreas.length,
+  );
 
   useEffect(() => {
     const evidenceHash = window.location.hash === "#avances-evidencias";
@@ -212,7 +270,7 @@ export function RemediationWorkspace({
             forma independiente.
           </p>
         </div>
-        {canCreateActionPlans ? (
+        {canCreateAnyActionPlan ? (
           <button
             className="nibol-btn-primary px-4 py-2.5 text-sm"
             onClick={() => setShowForm((value) => !value)}
@@ -243,7 +301,7 @@ export function RemediationWorkspace({
         </div>
       ) : null}
 
-      {showForm && canCreateActionPlans && data ? (
+      {showForm && canCreateAnyActionPlan && data ? (
         <form
           className="mt-6 grid gap-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-5 md:grid-cols-2"
           onSubmit={(event) => {
@@ -261,15 +319,22 @@ export function RemediationWorkspace({
               className="nibol-field"
               required
               value={form.observationAreaId}
-              onChange={(event) =>
+              onChange={(event) => {
+                const observationAreaId = event.target.value;
+                const area = data.areas.find(
+                  (candidate) => candidate.id === observationAreaId,
+                );
                 setForm((current) => ({
                   ...current,
-                  observationAreaId: event.target.value,
-                }))
-              }
+                  observationAreaId,
+                  responsibleUserId: canAssignExecutorInArea(area)
+                    ? current.responsibleUserId
+                    : currentUserId,
+                }));
+              }}
             >
               <option value="">Seleccione</option>
-              {data.areas.map((area) => (
+              {createableAreas.map((area) => (
                 <option key={area.id} value={area.id}>
                   {area.area.name}
                 </option>
@@ -288,7 +353,7 @@ export function RemediationWorkspace({
                   ? "Cargando ejecutores…"
                   : "Buscar ejecutor por nombre o correo"
               }
-              users={executorOptions.data?.executorCandidates ?? []}
+              users={executorCandidates}
               value={form.responsibleUserId}
             />
             <span className="block text-xs font-normal text-stone-500">
@@ -382,7 +447,7 @@ export function RemediationWorkspace({
               ) : canViewRecommended ? (
                 <RemediationApprovalPanel
                   area={area.area}
-                  canAssignExecutor={canAssignRecommendedExecutor}
+                  canAssignExecutor={canAssignExecutorInArea(area)}
                   canCreate={canCreateRecommended}
                   canEdit={canEditRecommended}
                   canSubmit={canSubmitRecommended}
@@ -403,6 +468,7 @@ export function RemediationWorkspace({
                     editingPlanId === plan.id ? (
                       <ActionPlanEditor
                         areas={data.areas}
+                        canAssignExecutor={canAssignExecutorOnPlan(plan)}
                         error={error}
                         initial={{
                           description: plan.description,
@@ -556,7 +622,7 @@ export function RemediationWorkspace({
                             </p>
                           </div>
                         ) : null}
-                        {canEditActionPlans ? (
+                        {canEditPlan(plan) ? (
                           <button
                             aria-label="Editar plan de acción"
                             className="absolute top-4 right-4 flex h-11 w-11 items-center justify-center rounded-lg text-stone-500 transition hover:bg-amber-50 hover:text-amber-800"

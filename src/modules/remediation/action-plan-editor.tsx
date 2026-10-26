@@ -15,6 +15,7 @@ export type ActionPlanEditorValues = Omit<ActionPlanPayload, "sortOrder">;
 
 export function ActionPlanEditor({
   areas,
+  canAssignExecutor = true,
   error,
   initial,
   isSaving,
@@ -23,6 +24,7 @@ export function ActionPlanEditor({
   users,
 }: {
   areas: ObservationArea[];
+  canAssignExecutor?: boolean;
   error: string | null;
   initial: ActionPlanEditorValues;
   isSaving: boolean;
@@ -70,6 +72,7 @@ export function ActionPlanEditor({
         Ejecutor
         <UserSearchSelect
           id="action-plan-editor-responsible"
+          disabled={!canAssignExecutor}
           onChange={setResponsibleUserId}
           users={users}
           value={responsibleUserId}
