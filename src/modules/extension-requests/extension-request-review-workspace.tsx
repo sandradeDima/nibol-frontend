@@ -86,6 +86,7 @@ type ExtensionRequestReviewDetailProps = {
   comment: string;
   error: string | null;
   isProcessing: boolean;
+  pendingOnly?: boolean;
   onApprove: () => void;
   onCommentChange: (value: string) => void;
   onDownload: (file: { downloadPath: string; originalName: string }) => void;
@@ -99,6 +100,7 @@ export function ExtensionRequestReviewDetail({
   comment,
   error,
   isProcessing,
+  pendingOnly = false,
   onApprove,
   onCommentChange,
   onDownload,
@@ -163,7 +165,7 @@ export function ExtensionRequestReviewDetail({
         <dl className="grid gap-px bg-[var(--border)] sm:grid-cols-3">
           {[
             [
-              "Fecha original",
+              pendingOnly ? "Fecha de compromiso" : "Fecha original",
               request.actionPlan?.originalDueDate ?? request.previousDueDate,
             ],
             ["Nueva Fecha Solicitada", request.proposedDueDate],
@@ -825,6 +827,7 @@ export function ExtensionRequestReviewWorkspace({
                 comment={comment}
                 error={error}
                 isProcessing={reviewMutation.isPending || download.isPending}
+                pendingOnly={pendingOnly}
                 onApprove={() => decide("approve")}
                 onCommentChange={setComment}
                 onDownload={(file) => download.mutate(file)}
