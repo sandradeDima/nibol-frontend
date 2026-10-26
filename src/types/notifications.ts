@@ -61,9 +61,9 @@ export interface AutomaticNotificationRule {
 
 export interface NotificationCatalogItem {
   category: string;
-  channels: string;
+  channelKeys: { email: string; internal: string };
+  channels: { email: boolean; internal: boolean };
   description: string;
-  enabled: boolean;
   eventType: "*" | string | null;
   exampleMessage: string;
   exampleTitle: string;

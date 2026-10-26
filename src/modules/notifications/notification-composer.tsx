@@ -44,7 +44,7 @@ export function NotificationComposer() {
 
   const createMutation = useMutation({
     mutationFn: notificationService.createNotifications,
-    onSuccess: async ({ createdCount, suppressed }) => {
+    onSuccess: async ({ createdCount, emailCount, suppressed }) => {
       form.reset({
         message: "",
         title: "",
@@ -52,12 +52,16 @@ export function NotificationComposer() {
         userIds: [],
       });
       setSubmitError(null);
+      const deliveries = [
+        createdCount > 0 && `en la plataforma a ${createdCount} destinatarios`,
+        emailCount > 0 && `por correo a ${emailCount} destinatarios`,
+      ].filter(Boolean);
       setSubmitMessage(
         suppressed
           ? "Las notificaciones manuales están desactivadas en la configuración."
-          : createdCount === 1
-            ? "Notificación enviada."
-            : `Notificación enviada a ${createdCount} destinatarios.`,
+          : deliveries.length > 0
+            ? `Notificación enviada ${deliveries.join(" y ")}.`
+            : "No se pudo enviar la notificación a ningún destinatario.",
       );
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.notifications,
@@ -92,8 +96,8 @@ export function NotificationComposer() {
             Enviar notificacion
           </h2>
           <p className="text-sm leading-7 text-stone-700">
-            Envie una alerta interna reutilizable desde el mismo flujo que luego
-            podra extenderse a correo, SMS o WhatsApp.
+            Envíe una notificación a los destinatarios seleccionados por los
+            canales activos: plataforma y/o correo.
           </p>
         </div>
       </div>

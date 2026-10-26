@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -50,36 +50,6 @@ const DEFAULT_FILTERS: ReportFilters = {
   ...getReportDateRange(12),
 };
 
-const STATIC_METRICS_FILTERS: ReportFilters = { periodField: "createdAt" };
-const KPI_SHORTCUT_FILTERS: Array<keyof ReportFilters> = [
-  "activeOnly",
-  "dueSoon",
-  "overdue",
-  "statusId",
-  "progressStatus",
-  "deadlineStatus",
-  "reprogrammed",
-];
-
-type KpiShortcut =
-  | "CLOSED_OBSERVATIONS"
-  | "CONCLUDED"
-  | "NOT_STARTED"
-  | "PENDING_OBSERVATIONS"
-  | "REPROGRAMMED"
-  | "STARTED"
-  | "TOTAL"
-  | "TOTAL_OBSERVATIONS"
-  | "VENCIDOS"
-  | "VIGENTES"
-  | "WITH_PROGRESS";
-
-const clearKpiShortcutFilters = (filters: ReportFilters): ReportFilters => {
-  const next = { ...filters } as Record<string, unknown>;
-  KPI_SHORTCUT_FILTERS.forEach((key) => delete next[key]);
-  return next as ReportFilters;
-};
-
 export function ReportsDashboard({
   canExport,
   canViewAudit,
@@ -98,7 +68,6 @@ export function ReportsDashboard({
   );
   const [draft, setDraft] = useState<ReportFilters>(initialFilters);
   const filters = initialFilters;
-  const reportResultsRef = useRef<HTMLElement>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
   const optionsQuery = useQuery({
@@ -111,12 +80,6 @@ export function ReportsDashboard({
     queryKey: ["reports", "dashboard", filters],
     staleTime: 30_000,
   });
-  const staticMetricsQuery = useQuery({
-    queryFn: () => reportService.getDashboard(STATIC_METRICS_FILTERS),
-    queryKey: ["reports", "dashboard", "static-metrics"],
-    staleTime: 30_000,
-  });
-
   const updateDraft = (
     key: keyof ReportFilters,
     value: string | string[] | number | boolean | undefined,
@@ -171,88 +134,7 @@ export function ReportsDashboard({
     }
   };
 
-  const applyShortcut = (shortcut: KpiShortcut) => {
-    const next = clearKpiShortcutFilters(filters);
-    const closedStatusId = optionsQuery.data?.observationStatuses.find(
-      (status) => status.isFinal,
-    )?.id;
-
-    switch (shortcut) {
-      case "CLOSED_OBSERVATIONS":
-        if (!closedStatusId) return;
-        next.statusId = closedStatusId;
-        break;
-      case "CONCLUDED":
-        next.progressStatus = "CONCLUDED";
-        break;
-      case "NOT_STARTED":
-        next.progressStatus = "NOT_STARTED";
-        break;
-      case "PENDING_OBSERVATIONS":
-        next.activeOnly = true;
-        break;
-      case "REPROGRAMMED":
-        next.reprogrammed = true;
-        break;
-      case "STARTED":
-        next.progressStatus = "STARTED";
-        break;
-      case "VENCIDOS":
-        next.deadlineStatus = "VENCIDO";
-        break;
-      case "VIGENTES":
-        next.deadlineStatus = "VIGENTE";
-        break;
-      case "WITH_PROGRESS":
-        next.progressStatus = "WITH_PROGRESS";
-        break;
-      case "TOTAL":
-      case "TOTAL_OBSERVATIONS":
-        break;
-    }
-
-    applyFilters(next);
-    window.setTimeout(() => {
-      reportResultsRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 0);
-  };
-
-  const isShortcutActive = (shortcut: KpiShortcut) => {
-    switch (shortcut) {
-      case "CLOSED_OBSERVATIONS":
-        return (
-          filters.statusId ===
-          optionsQuery.data?.observationStatuses.find(
-            (status) => status.isFinal,
-          )?.id
-        );
-      case "CONCLUDED":
-        return filters.progressStatus === "CONCLUDED";
-      case "PENDING_OBSERVATIONS":
-        return filters.activeOnly === true;
-      case "NOT_STARTED":
-        return filters.progressStatus === "NOT_STARTED";
-      case "REPROGRAMMED":
-        return filters.reprogrammed === true;
-      case "STARTED":
-        return filters.progressStatus === "STARTED";
-      case "VENCIDOS":
-        return filters.deadlineStatus === "VENCIDO";
-      case "VIGENTES":
-        return filters.deadlineStatus === "VIGENTE";
-      case "WITH_PROGRESS":
-        return filters.progressStatus === "WITH_PROGRESS";
-      case "TOTAL":
-      case "TOTAL_OBSERVATIONS":
-        return KPI_SHORTCUT_FILTERS.every((key) => filters[key] === undefined);
-    }
-  };
-
   const data = dashboardQuery.data;
-  const staticData = staticMetricsQuery.data;
   const generatorHref = `/reportes/generador${buildReportQuery(filters)}`;
 
   return (
@@ -298,7 +180,7 @@ export function ReportsDashboard({
       />
 
       <ReportFilterBar
-        description="Los KPI superiores reflejan el alcance autorizado; el mismo alcance alimenta los resultados y las exportaciones."
+        description="Los KPI reflejan los filtros seleccionados dentro del alcance autorizado; los mismos filtros alimentan los resultados y las exportaciones."
         draft={draft}
         onApply={() => applyFilters({ ...draft })}
         onChange={updateDraft}
@@ -313,17 +195,14 @@ export function ReportsDashboard({
           {exportError}
         </div>
       ) : null}
-      {optionsQuery.isError ||
-      dashboardQuery.isError ||
-      staticMetricsQuery.isError ? (
+      {optionsQuery.isError || dashboardQuery.isError ? (
         <ReportError
           onRetry={() => {
             void optionsQuery.refetch();
             void dashboardQuery.refetch();
-            void staticMetricsQuery.refetch();
           }}
         />
-      ) : !optionsQuery.data || !staticData ? (
+      ) : !optionsQuery.data || !data ? (
         <ReportLoading label="Calculando indicadores y distribución del corte seleccionado…" />
       ) : (
         <>
@@ -333,7 +212,7 @@ export function ReportsDashboard({
                 Observaciones
               </p>
               <h2 className="mt-1 text-xl font-semibold text-[var(--foreground)]">
-                Estado del universo autorizado
+                Estado del corte seleccionado
               </h2>
               <p className="mt-1 text-sm text-[var(--foreground-soft)]">
                 Las observaciones se cuentan una sola vez, aunque tengan varios
@@ -342,33 +221,23 @@ export function ReportsDashboard({
             </div>
             <section className="grid gap-3 md:grid-cols-3">
               <ReportKpi
-                active={isShortcutActive("TOTAL_OBSERVATIONS")}
-                description="Observaciones dentro del alcance autorizado."
+                description="Observaciones que cumplen los filtros seleccionados."
                 icon="total"
                 label="Total observaciones"
-                onClick={() => applyShortcut("TOTAL_OBSERVATIONS")}
                 tone="accent"
-                value={formatReportNumber(staticData.summary.totalObservations)}
+                value={formatReportNumber(data.summary.totalObservations)}
               />
               <ReportKpi
-                active={isShortcutActive("PENDING_OBSERVATIONS")}
                 description="Observaciones cuyo estado todavía no es final."
                 icon="open"
                 label="Pendientes"
-                onClick={() => applyShortcut("PENDING_OBSERVATIONS")}
-                value={formatReportNumber(
-                  staticData.summary.pendingObservations,
-                )}
+                value={formatReportNumber(data.summary.pendingObservations)}
               />
               <ReportKpi
-                active={isShortcutActive("CLOSED_OBSERVATIONS")}
                 description="Observaciones con estado final registrado."
                 icon="closed"
                 label="Cerradas"
-                onClick={() => applyShortcut("CLOSED_OBSERVATIONS")}
-                value={formatReportNumber(
-                  staticData.summary.closedObservations,
-                )}
+                value={formatReportNumber(data.summary.closedObservations)}
               />
             </section>
           </section>
@@ -383,74 +252,58 @@ export function ReportsDashboard({
           </div>
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <ReportKpi
-              active={isShortcutActive("TOTAL")}
-              description="Todos los planes dentro del alcance autorizado."
+              description="Planes que cumplen los filtros seleccionados."
               icon="total"
               label="Total de planes"
-              onClick={() => applyShortcut("TOTAL")}
               tone="accent"
-              value={formatReportNumber(staticData.summary.total)}
+              value={formatReportNumber(data.summary.total)}
             />
             <ReportKpi
-              active={isShortcutActive("NOT_STARTED")}
               description="Planes sin avance oficial aprobado."
               icon="open"
               label="No iniciado"
-              onClick={() => applyShortcut("NOT_STARTED")}
-              value={formatReportNumber(staticData.summary.noIniciado)}
+              value={formatReportNumber(data.summary.noIniciado)}
             />
             <ReportKpi
-              active={isShortcutActive("STARTED")}
               description="Planes con ejecución iniciada."
               icon="inProcess"
               label="Iniciado"
-              onClick={() => applyShortcut("STARTED")}
-              value={formatReportNumber(staticData.summary.iniciado)}
+              value={formatReportNumber(data.summary.iniciado)}
             />
             <ReportKpi
-              active={isShortcutActive("WITH_PROGRESS")}
               description="Planes con avance oficial del 60%."
               icon="progress"
               label="Con avance"
-              onClick={() => applyShortcut("WITH_PROGRESS")}
-              value={formatReportNumber(staticData.summary.conAvance)}
+              value={formatReportNumber(data.summary.conAvance)}
             />
             <ReportKpi
-              active={isShortcutActive("CONCLUDED")}
               description="Planes con cierre oficial al 100%."
               icon="closed"
               label="Concluido"
-              onClick={() => applyShortcut("CONCLUDED")}
-              value={formatReportNumber(staticData.summary.concluido)}
+              value={formatReportNumber(data.summary.concluido)}
             />
             <ReportKpi
-              active={isShortcutActive("VIGENTES")}
               description="No vencidos; incluye concluidos no atrasados."
               icon="dueSoon"
               label="Vigentes"
-              onClick={() => applyShortcut("VIGENTES")}
-              value={formatReportNumber(staticData.summary.vigentes)}
+              value={formatReportNumber(data.summary.vigentes)}
             />
             <ReportKpi
-              active={isShortcutActive("VENCIDOS")}
               description="Planes no concluidos cuya fecha efectiva ya pasó."
               icon="overdue"
               label="Vencidos"
-              onClick={() => applyShortcut("VENCIDOS")}
               tone="danger"
-              value={formatReportNumber(staticData.summary.vencidos)}
+              value={formatReportNumber(data.summary.vencidos)}
             />
             <ReportKpi
-              active={isShortcutActive("REPROGRAMMED")}
               description="Tienen una ampliación aprobada y fecha efectiva distinta."
               icon="reprogrammed"
               label="Reprogramados"
-              onClick={() => applyShortcut("REPROGRAMMED")}
-              value={formatReportNumber(staticData.summary.reprogramados)}
+              value={formatReportNumber(data.summary.reprogramados)}
             />
           </section>
 
-          <section ref={reportResultsRef} className="scroll-mt-24">
+          <section>
             {dashboardQuery.isPending || !data ? (
               <ReportLoading label="Calculando resultados del corte seleccionado…" />
             ) : (

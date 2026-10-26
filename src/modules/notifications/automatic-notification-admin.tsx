@@ -491,7 +491,8 @@ export function AutomaticNotificationAdmin({
                   {category}
                 </h3>
                 <span className="text-xs text-[var(--muted)]">
-                  {catalog.filter((item) => item.category === category).length} tipos
+                  {catalog.filter((item) => item.category === category).length}{" "}
+                  tipos
                 </span>
               </div>
               <div className="divide-y divide-[var(--border)]">
@@ -517,40 +518,52 @@ export function AutomaticNotificationAdmin({
                           {item.description}
                         </p>
                         <div className="mt-3 border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2.5">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+                          <p className="text-[11px] font-semibold tracking-[0.08em] text-[var(--muted)] uppercase">
                             Ejemplo
                           </p>
                           <p className="mt-1 text-sm font-medium text-[var(--foreground)]">
                             {item.exampleTitle}
                           </p>
-                          <p className="mt-1 whitespace-pre-line text-sm leading-5 text-[var(--muted)]">
+                          <p className="mt-1 text-sm leading-5 whitespace-pre-line text-[var(--muted)]">
                             {item.exampleMessage}
                           </p>
                         </div>
-                        <p className="mt-2 text-xs text-[var(--muted)]">
-                          Canal: {item.channels}
-                        </p>
                       </div>
-                      <label className="flex items-center justify-between gap-2 text-sm font-medium text-[var(--foreground)] md:justify-end md:self-start">
-                        <span>{item.enabled ? "Activa" : "Pausada"}</span>
-                        <input
-                          aria-label={"Activar o pausar " + item.name}
-                          checked={item.enabled}
-                          className="h-4 w-4 accent-[var(--primary)]"
-                          disabled={
-                            !canExecute ||
-                            notificationCatalogQuery.isError ||
-                            automaticRuleMutation.isPending
-                          }
-                          onChange={(event) =>
-                            automaticRuleMutation.mutate({
-                              key: item.key,
-                              value: String(event.target.checked),
-                            })
-                          }
-                          type="checkbox"
-                        />
-                      </label>
+                      <fieldset className="flex flex-col gap-3 text-sm font-medium text-[var(--foreground)] md:items-end md:self-start">
+                        <legend className="sr-only">
+                          Canales de {item.name}
+                        </legend>
+                        {(
+                          [
+                            ["internal", "Plataforma"],
+                            ["email", "Correo"],
+                          ] as const
+                        ).map(([channel, label]) => (
+                          <label
+                            className="flex items-center gap-2"
+                            key={channel}
+                          >
+                            <input
+                              aria-label={`${label}: ${item.name}`}
+                              checked={item.channels[channel]}
+                              className="h-4 w-4 accent-[var(--primary)]"
+                              disabled={
+                                !canExecute ||
+                                notificationCatalogQuery.isError ||
+                                automaticRuleMutation.isPending
+                              }
+                              onChange={(event) =>
+                                automaticRuleMutation.mutate({
+                                  key: item.channelKeys[channel],
+                                  value: String(event.target.checked),
+                                })
+                              }
+                              type="checkbox"
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </fieldset>
                     </article>
                   ))}
               </div>
@@ -751,18 +764,18 @@ export function AutomaticNotificationAdmin({
                   : !previewMutation.data.channels.enabled
                     ? "Este tipo de notificación está pausado."
                     : !previewMutation.data.channels.notifyByEmail &&
-                      !previewMutation.data.channels.notifyInApp
-                    ? "No se entregará ningún aviso: todos los canales están desactivados."
-                    : `Entrega activa: ${[
-                        previewMutation.data.channels.notifyByEmail
-                          ? "correo electrónico"
-                          : null,
-                        previewMutation.data.channels.notifyInApp
-                          ? "dentro de NIBOL"
-                          : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" y ")}.`}
+                        !previewMutation.data.channels.notifyInApp
+                      ? "No se entregará ningún aviso: todos los canales están desactivados."
+                      : `Entrega activa: ${[
+                          previewMutation.data.channels.notifyByEmail
+                            ? "correo electrónico"
+                            : null,
+                          previewMutation.data.channels.notifyInApp
+                            ? "dentro de NIBOL"
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" y ")}.`}
               </p>
               <div className="mt-4 max-h-96 space-y-2 overflow-y-auto">
                 {previewMutation.data.recipients.length === 0 ? (

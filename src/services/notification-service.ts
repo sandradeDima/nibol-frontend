@@ -69,11 +69,17 @@ export const notificationService = {
     return response.data.data;
   },
 
-  async createNotifications(
-    input: CreateNotificationsInput,
-  ): Promise<{ createdCount: number; suppressed: boolean }> {
+  async createNotifications(input: CreateNotificationsInput): Promise<{
+    createdCount: number;
+    emailCount: number;
+    suppressed: boolean;
+  }> {
     const response = await apiClient.post<
-      ApiSuccessResponse<{ createdCount: number; suppressed: boolean }>
+      ApiSuccessResponse<{
+        createdCount: number;
+        emailCount: number;
+        suppressed: boolean;
+      }>
     >("/notifications/bulk", input);
 
     return response.data.data;
