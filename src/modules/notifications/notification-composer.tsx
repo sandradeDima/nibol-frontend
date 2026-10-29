@@ -53,14 +53,14 @@ export function NotificationComposer() {
       });
       setSubmitError(null);
       const deliveries = [
-        createdCount > 0 && `en la plataforma a ${createdCount} destinatarios`,
-        emailCount > 0 && `por correo a ${emailCount} destinatarios`,
+        createdCount > 0 && `${createdCount} notificaciones en la plataforma`,
+        emailCount > 0 && `correo programado para ${emailCount} destinatarios`,
       ].filter(Boolean);
       setSubmitMessage(
         suppressed
           ? "Las notificaciones manuales están desactivadas en la configuración."
           : deliveries.length > 0
-            ? `Notificación enviada ${deliveries.join(" y ")}.`
+            ? `Notificación guardada: ${deliveries.join(" y ")}.`
             : "No se pudo enviar la notificación a ningún destinatario.",
       );
       await queryClient.invalidateQueries({
