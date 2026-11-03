@@ -39,10 +39,14 @@ export interface ReportFilters {
   progressMax?: number;
   progressMin?: number;
   progressStatus?: "NOT_STARTED" | "STARTED" | "WITH_PROGRESS" | "CONCLUDED";
+  progressStatuses?: Array<
+    "NOT_STARTED" | "STARTED" | "WITH_PROGRESS" | "CONCLUDED"
+  >;
   processOwnerId?: string[];
   reprogrammed?: boolean;
   responsibleUserId?: string;
   riskLevelId?: string;
+  riskLevelIds?: string[];
   search?: string;
   observationStatusIds?: string[];
   statusId?: string;

@@ -60,6 +60,8 @@ export const parseReportFilters = (
     "executorId",
     "observationStatusIds",
     "processOwnerId",
+    "progressStatuses",
+    "riskLevelIds",
   ].forEach((key) => {
     const value = read(key);
     const values = value

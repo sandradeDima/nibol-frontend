@@ -492,29 +492,37 @@ export function ReportFilterBar({
     };
   };
   const allowedHierarchyIds = getAllowedHierarchyIds(draft);
-  const relationship = options?.areaRelationships?.find(
-    (item) => item.areaId === draft.areaId,
-  );
-  const areaResponsibleIds = relationship
-    ? new Set(relationship.areaResponsibleIds)
+  const selectedAreaIds = draft.areaIds?.length
+    ? draft.areaIds
+    : draft.areaId
+      ? [draft.areaId]
+      : [];
+  const relationships = selectedAreaIds.length
+    ? (options?.areaRelationships ?? []).filter((item) =>
+        selectedAreaIds.includes(item.areaId),
+      )
+    : [];
+  const areaResponsibleIds = selectedAreaIds.length
+    ? new Set(relationships.flatMap((item) => item.areaResponsibleIds))
+    : null;
+  const processOwnerIds = selectedAreaIds.length
+    ? new Set(relationships.flatMap((item) => item.processOwnerIds))
+    : null;
+  const allExecutorIds = selectedAreaIds.length
+    ? new Set(relationships.flatMap((item) => item.executorIds))
     : null;
   const selectedResponsibleIds = draft.areaResponsibleId ?? [];
-  const responsibleExecutorIds = relationship
-    ? new Set(
-        relationship.responsibleExecutorIds
-          .filter(({ areaResponsibleId }) =>
-            selectedResponsibleIds.includes(areaResponsibleId),
-          )
-          .flatMap(({ executorIds }) => executorIds),
-      )
-    : null;
-  const executorIds = relationship
-    ? responsibleExecutorIds && selectedResponsibleIds.length
-      ? responsibleExecutorIds
-      : new Set(relationship.executorIds)
-    : null;
-  const processOwnerIds = relationship
-    ? new Set(relationship.processOwnerIds)
+  const executorIds = selectedAreaIds.length
+    ? selectedResponsibleIds.length
+      ? new Set(
+          relationships
+            .flatMap((item) => item.responsibleExecutorIds)
+            .filter(({ areaResponsibleId }) =>
+              selectedResponsibleIds.includes(areaResponsibleId),
+            )
+            .flatMap(({ executorIds }) => executorIds),
+        )
+      : allExecutorIds
     : null;
   const updateFilter = (
     key: keyof ReportFilters,
@@ -563,51 +571,68 @@ export function ReportFilterBar({
         );
       return;
     }
+    if (key === "areaIds" || key === "areaId") {
+      onChange(key, value);
+      const nextAreaIds = Array.isArray(value)
+        ? value.filter((item): item is string => typeof item === "string")
+        : typeof value === "string" && value
+          ? [value]
+          : [];
+      const nextRelationships = options?.areaRelationships?.filter((item) =>
+        nextAreaIds.includes(item.areaId),
+      );
+      const keepSelected = (
+        selected: string[] | undefined,
+        allowed: string[] | undefined,
+      ) => {
+        if (!selected?.length || !nextAreaIds.length || !allowed)
+          return selected;
+        const allowedSet = new Set(allowed);
+        const next = selected.filter((id) => allowedSet.has(id));
+        return next.length ? next : undefined;
+      };
+      onChange(
+        "areaResponsibleId",
+        keepSelected(
+          draft.areaResponsibleId,
+          nextRelationships?.flatMap((item) => item.areaResponsibleIds),
+        ),
+      );
+      onChange(
+        "executorId",
+        keepSelected(
+          draft.executorId,
+          nextRelationships?.flatMap((item) => item.executorIds),
+        ),
+      );
+      onChange(
+        "processOwnerId",
+        keepSelected(
+          draft.processOwnerId,
+          nextRelationships?.flatMap((item) => item.processOwnerIds),
+        ),
+      );
+      if (key === "areaIds") onChange("areaId", undefined);
+      return;
+    }
     onChange(key, value);
     if (key === "areaResponsibleId") {
-      if (!relationship) return;
+      if (!selectedAreaIds.length) return;
       const selected = Array.isArray(value) ? value : [];
       const allowed = selected.length
-        ? relationship.responsibleExecutorIds
+        ? relationships
+            .flatMap((item) => item.responsibleExecutorIds)
             .filter(({ areaResponsibleId }) =>
               selected.includes(areaResponsibleId),
             )
             .flatMap(({ executorIds }) => executorIds)
-        : relationship.executorIds;
+        : [...(allExecutorIds ?? [])];
       onChange(
         "executorId",
         draft.executorId?.filter((id) => allowed.includes(id)),
       );
       return;
     }
-    if (key !== "areaId") return;
-    const nextRelationship = options?.areaRelationships?.find(
-      (item) => item.areaId === value,
-    );
-    const keepSelected = (
-      selected: string[] | undefined,
-      allowed: string[] | undefined,
-    ) => {
-      if (!selected?.length || !allowed) return selected;
-      const allowedSet = new Set(allowed);
-      const next = selected.filter((id) => allowedSet.has(id));
-      return next.length ? next : undefined;
-    };
-    onChange(
-      "areaResponsibleId",
-      keepSelected(
-        draft.areaResponsibleId,
-        nextRelationship?.areaResponsibleIds,
-      ),
-    );
-    onChange(
-      "executorId",
-      keepSelected(draft.executorId, nextRelationship?.executorIds),
-    );
-    onChange(
-      "processOwnerId",
-      keepSelected(draft.processOwnerId, nextRelationship?.processOwnerIds),
-    );
   };
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -767,61 +792,95 @@ export function ReportFilterBar({
             {capabilities.area ? (
               <label className="min-w-0 space-y-2">
                 <span className="report-field-label">Área</span>
-                <ReportOptionSelect
+                <SearchableSelect
+                  id="report-area"
+                  multiple
                   onChange={(value) =>
-                    updateFilter("areaId", value || undefined)
+                    updateFilter("areaIds", value.length ? value : undefined)
                   }
                   options={(options?.areas ?? []).map((area) => ({
                     id: area.id,
                     label: area.name,
                   }))}
                   placeholder="Todas las áreas"
-                  value={draft.areaId ?? ""}
+                  showSelectionActions
+                  showSelectedValues={false}
+                  value={draft.areaIds ?? (draft.areaId ? [draft.areaId] : [])}
                 />
               </label>
             ) : null}
             <label className="space-y-2">
               <span className="report-field-label">Nivel de riesgo</span>
-              <ReportOptionSelect
-                onChange={(value) =>
-                  onChange("riskLevelId", value || undefined)
-                }
+              <SearchableSelect
+                id="report-risk-level"
+                multiple
+                onChange={(value) => {
+                  onChange("riskLevelIds", value.length ? value : undefined)
+                  onChange("riskLevelId", undefined)
+                }}
                 options={(options?.riskLevels ?? []).map((risk) => ({
                   id: risk.id,
                   label: risk.name,
                 }))}
                 placeholder="Todos los niveles"
-                value={draft.riskLevelId ?? ""}
+                showSelectionActions
+                showSelectedValues={false}
+                value={
+                  draft.riskLevelIds ??
+                  (draft.riskLevelId ? [draft.riskLevelId] : [])
+                }
               />
             </label>
             <label className="space-y-2">
               <span className="report-field-label">
                 Estado del plan de acción
               </span>
-              <ReportOptionSelect
-                onChange={(value) =>
-                  onChange("progressStatus", value || undefined)
-                }
+              <SearchableSelect
+                id="report-progress-status"
+                multiple
+                onChange={(value) => {
+                  onChange(
+                    "progressStatuses",
+                    value.length ? value : undefined,
+                  )
+                  onChange("progressStatus", undefined)
+                }}
                 options={(options?.progressStatuses ?? []).map((status) => ({
                   id: status.key,
                   label: status.label,
                 }))}
                 placeholder="Todos los estados"
-                value={draft.progressStatus ?? ""}
+                showSelectionActions
+                showSelectedValues={false}
+                value={
+                  draft.progressStatuses ??
+                  (draft.progressStatus ? [draft.progressStatus] : [])
+                }
               />
             </label>
             <label className="space-y-2">
               <span className="report-field-label">Estado de observación</span>
-              <ReportOptionSelect
-                onChange={(value) =>
-                  updateFilter("statusId", value || undefined)
-                }
+              <SearchableSelect
+                id="report-observation-status"
+                multiple
+                onChange={(value) => {
+                  updateFilter(
+                    "observationStatusIds",
+                    value.length ? value : undefined,
+                  )
+                  onChange("statusId", undefined)
+                }}
                 options={(options?.observationStatuses ?? []).map((status) => ({
                   id: status.id,
                   label: status.name,
                 }))}
                 placeholder="Todos los estados"
-                value={draft.statusId ?? ""}
+                showSelectionActions
+                showSelectedValues={false}
+                value={
+                  draft.observationStatusIds ??
+                  (draft.statusId ? [draft.statusId] : [])
+                }
               />
             </label>
             {capabilities.processOwner ? (
@@ -1226,9 +1285,11 @@ export function ReportKpi({
 }
 
 export const REPORT_CHART_COLORS = {
+  CONCLUIDO: "#1DB65F",
   CONCLUDED: "#1DB65F",
   CON_AVANCE: "#FFBA00",
   INICIADO: "#38B6E9",
+  NO_INICIADO: "#EFF000",
   NOT_STARTED: "#EFF000",
   STARTED: "#38B6E9",
   WITH_PROGRESS: "#FFBA00",
@@ -1550,7 +1611,8 @@ export function ReportFilterSummary({
     [
       "Riesgo",
       selected(
-        filters.riskLevelId ? [filters.riskLevelId] : undefined,
+        filters.riskLevelIds ??
+          (filters.riskLevelId ? [filters.riskLevelId] : undefined),
         options?.riskLevels,
         (risk) => risk.name,
       ),
@@ -1577,7 +1639,13 @@ export function ReportFilterSummary({
     ],
     [
       "Estado del plan de acción",
-      filters.progressStatus ? progressLabels[filters.progressStatus] : "Todos",
+      filters.progressStatuses?.length
+        ? filters.progressStatuses
+            .map((status) => progressLabels[status])
+            .join(", ")
+        : filters.progressStatus
+          ? progressLabels[filters.progressStatus]
+          : "Todos",
     ],
     [
       "Estado según plazo",

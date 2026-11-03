@@ -164,10 +164,7 @@ export function ExtensionRequestReviewDetail({
         </div>
         <dl className="grid gap-px bg-[var(--border)] sm:grid-cols-3">
           {[
-            [
-              pendingOnly ? "Fecha de compromiso" : "Fecha original",
-              request.actionPlan?.originalDueDate ?? request.previousDueDate,
-            ],
+            ["Fecha de compromiso", request.previousDueDate],
             ["Nueva Fecha Solicitada", request.proposedDueDate],
             ["Duración", `+${request.impactDays} días`],
           ].map(([label, value]) => (
