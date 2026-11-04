@@ -6,6 +6,8 @@ export default async function ExtensionRequestsPage() {
   const authorization = await requireAnyPermission([
     "deadline_extensions.view",
     "deadline_extensions.request",
+    "deadline_extensions.approve",
+    "deadline_extensions.reject",
   ]);
 
   return (

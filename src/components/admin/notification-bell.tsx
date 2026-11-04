@@ -33,6 +33,7 @@ export function NotificationBell({
         unreadOnly: true,
       }),
     queryKey: [...QUERY_KEYS.notifications, "recent"],
+    refetchInterval: open ? 15_000 : false,
     staleTime: 15_000,
   });
 
@@ -45,6 +46,7 @@ export function NotificationBell({
         unreadOnly: true,
       }),
     queryKey: [...QUERY_KEYS.notifications, "unread"],
+    refetchInterval: 15_000,
     staleTime: 10_000,
   });
 

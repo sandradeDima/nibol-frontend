@@ -73,6 +73,7 @@ export function NotificationCenter({
         unreadOnly: activeTab === "unread",
       }),
     enabled: isHydrated,
+    refetchInterval: 15_000,
     queryKey: [
       ...QUERY_KEYS.notifications,
       "list",
@@ -97,6 +98,7 @@ export function NotificationCenter({
       }),
     enabled: isHydrated,
     queryKey: [...QUERY_KEYS.notifications, "total"],
+    refetchInterval: 15_000,
     staleTime: 30_000,
   });
 
@@ -109,6 +111,7 @@ export function NotificationCenter({
       }),
     enabled: isHydrated,
     queryKey: [...QUERY_KEYS.notifications, "unread"],
+    refetchInterval: 15_000,
     staleTime: 15_000,
   });
 

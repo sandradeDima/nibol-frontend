@@ -145,7 +145,12 @@ const CORE_SIDEBAR_ITEMS: SidebarConfigItem[] = [
     group: "Control",
     icon: "CalendarPlus2",
     label: "Ampliaciones de plazo",
-    permissions: ["deadline_extensions.view", "deadline_extensions.request"],
+    permissions: [
+      "deadline_extensions.view",
+      "deadline_extensions.request",
+      "deadline_extensions.approve",
+      "deadline_extensions.reject",
+    ],
     route: "/ampliaciones-plazo",
   },
   {
