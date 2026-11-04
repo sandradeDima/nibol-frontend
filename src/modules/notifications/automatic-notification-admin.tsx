@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Eye,
   Mail,
@@ -486,23 +487,32 @@ export function AutomaticNotificationAdmin({
               Cargando catálogo de notificaciones...
             </p>
           ) : null}
-          {catalogCategories.map((category) => (
-            <section className="min-w-0" key={category}>
-              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[var(--border)] pb-2">
-                <h3 className="font-semibold text-[var(--foreground)]">
-                  {category}
-                </h3>
-                <span className="text-xs text-[var(--muted)]">
-                  {catalog.filter((item) => item.category === category).length}{" "}
-                  tipos
-                </span>
-              </div>
-              <div className="divide-y divide-[var(--border)]">
-                {catalog
-                  .filter((item) => item.category === category)
-                  .map((item) => (
+          {catalogCategories.map((category) => {
+            const categoryItems = catalog.filter(
+              (item) => item.category === category,
+            );
+
+            return (
+              <details
+                className="group min-w-0 border border-[var(--border)] bg-white"
+                key={category}
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)] [&::-webkit-details-marker]:hidden">
+                  <span className="font-semibold text-[var(--foreground)]">
+                    {category}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-3 text-xs text-[var(--muted)]">
+                    {categoryItems.length} tipos
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="h-4 w-4 transition-transform group-open:rotate-180"
+                    />
+                  </span>
+                </summary>
+                <div className="divide-y divide-[var(--border)] border-t border-[var(--border)] px-4">
+                  {categoryItems.map((item) => (
                     <article
-                      className="grid gap-4 py-4 md:grid-cols-[minmax(0,1fr)_8rem]"
+                      className="grid gap-3 py-3 md:grid-cols-[minmax(0,1fr)_10rem]"
                       key={item.key}
                     >
                       <div className="min-w-0">
@@ -519,19 +529,21 @@ export function AutomaticNotificationAdmin({
                         <p className="mt-1 max-w-3xl text-sm leading-5 text-[var(--muted)]">
                           {item.description}
                         </p>
-                        <div className="mt-3 border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2.5">
-                          <p className="text-[11px] font-semibold tracking-[0.08em] text-[var(--muted)] uppercase">
-                            Ejemplo
-                          </p>
-                          <p className="mt-1 text-sm font-medium text-[var(--foreground)]">
-                            {item.exampleTitle}
-                          </p>
-                          <p className="mt-1 text-sm leading-5 whitespace-pre-line text-[var(--muted)]">
-                            {item.exampleMessage}
-                          </p>
-                        </div>
+                        <details className="mt-2">
+                          <summary className="w-fit cursor-pointer text-xs font-semibold text-[var(--primary)] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]">
+                            Ver ejemplo
+                          </summary>
+                          <div className="mt-2 border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2.5">
+                            <p className="text-sm font-medium text-[var(--foreground)]">
+                              {item.exampleTitle}
+                            </p>
+                            <p className="mt-1 text-sm leading-5 whitespace-pre-line text-[var(--muted)]">
+                              {item.exampleMessage}
+                            </p>
+                          </div>
+                        </details>
                       </div>
-                      <fieldset className="flex flex-col gap-3 text-sm font-medium text-[var(--foreground)] md:items-end md:self-start">
+                      <fieldset className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-medium text-[var(--foreground)] md:justify-end md:self-start">
                         <legend className="sr-only">
                           Canales de {item.name}
                         </legend>
@@ -568,9 +580,10 @@ export function AutomaticNotificationAdmin({
                       </fieldset>
                     </article>
                   ))}
-              </div>
-            </section>
-          ))}
+                </div>
+              </details>
+            );
+          })}
         </div>
       </section>
 

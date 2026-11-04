@@ -18,16 +18,11 @@ const roleColumns: ColumnDef<RoleTableRow>[] = [
   {
     accessorKey: "name",
     cell: ({ row }) => (
-      <div className="min-w-[14rem] space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="font-semibold text-stone-950">{row.original.name}</p>
-          {row.original.isAdmin ? (
-            <span className="nibol-badge nibol-badge-primary">Protegido</span>
-          ) : null}
-        </div>
-        <p className="text-sm leading-6 text-stone-600">
-          {row.original.description || "Sin descripcion registrada."}
-        </p>
+      <div className="flex min-w-[12rem] flex-wrap items-center gap-2">
+        <p className="font-semibold text-stone-950">{row.original.name}</p>
+        {row.original.isAdmin ? (
+          <span className="nibol-badge nibol-badge-primary">Protegido</span>
+        ) : null}
       </div>
     ),
     header: "Nombre",
@@ -35,7 +30,7 @@ const roleColumns: ColumnDef<RoleTableRow>[] = [
   {
     accessorKey: "description",
     cell: ({ row }) => (
-      <span className="text-stone-700">
+      <span className="line-clamp-2 max-w-2xl leading-5 text-stone-700">
         {row.original.description || "Sin descripcion registrada."}
       </span>
     ),
