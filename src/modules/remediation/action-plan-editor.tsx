@@ -97,7 +97,7 @@ export function ActionPlanEditor({
           type="date"
         />
       </label>
-      <div className="flex items-end justify-end gap-2">
+      <div className="nibol-sticky-actions flex items-end justify-end gap-2 md:col-span-2">
         <button
           className="nibol-btn-secondary px-4 py-2.5 text-sm"
           onClick={onCancel}

@@ -309,16 +309,18 @@ export function ProfileSettings() {
             </div>
           ) : null}
 
-          <button
-            className="nibol-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={updateProfileMutation.isPending}
-            type="submit"
-          >
-            <Save className="h-4 w-4" />
-            {updateProfileMutation.isPending
-              ? "Guardando perfil..."
-              : "Guardar perfil"}
-          </button>
+          <div className="nibol-sticky-actions">
+            <button
+              className="nibol-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={updateProfileMutation.isPending}
+              type="submit"
+            >
+              <Save className="h-4 w-4" />
+              {updateProfileMutation.isPending
+                ? "Guardando perfil..."
+                : "Guardar perfil"}
+            </button>
+          </div>
         </form>
 
         <form
@@ -400,16 +402,18 @@ export function ProfileSettings() {
             </div>
           ) : null}
 
-          <button
-            className="nibol-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={changePasswordMutation.isPending}
-            type="submit"
-          >
-            <KeyRound className="h-4 w-4" />
-            {changePasswordMutation.isPending
-              ? "Actualizando contrasena..."
-              : "Cambiar contrasena"}
-          </button>
+          <div className="nibol-sticky-actions">
+            <button
+              className="nibol-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={changePasswordMutation.isPending}
+              type="submit"
+            >
+              <KeyRound className="h-4 w-4" />
+              {changePasswordMutation.isPending
+                ? "Actualizando contrasena..."
+                : "Cambiar contrasena"}
+            </button>
+          </div>
         </form>
       </section>
     </div>

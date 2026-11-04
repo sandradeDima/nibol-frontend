@@ -209,7 +209,7 @@ export function ProductForm(props: ProductFormProps) {
         </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="nibol-sticky-actions flex flex-wrap gap-3">
         <button
           className="nibol-btn-primary disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isBusy}

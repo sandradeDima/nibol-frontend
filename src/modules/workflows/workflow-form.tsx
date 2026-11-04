@@ -294,7 +294,7 @@ export function WorkflowCreateForm() {
         </aside>
       </section>
 
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <div className="nibol-sticky-actions flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Link
           className="nibol-btn-secondary justify-center"
           href="/configuracion/flujos"

@@ -209,7 +209,7 @@ export function RemediationApprovalPanel({
               }
             />
           </label>
-          <div className="flex flex-wrap justify-end gap-2 md:col-span-2">
+          <div className="nibol-sticky-actions flex flex-wrap justify-end gap-2 md:col-span-2">
             {plan ? (
               <button
                 className="nibol-btn-secondary px-4 py-2.5 text-sm"

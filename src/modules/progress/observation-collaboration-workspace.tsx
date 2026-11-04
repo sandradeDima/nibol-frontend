@@ -375,14 +375,16 @@ export function ObservationCollaborationWorkspace({
                     evaluación.
                   </span>
                 </div>
-                <button
-                  className="nibol-btn-primary w-full justify-center px-4 py-2.5 text-sm"
-                  disabled={createEvaluation.isPending}
-                  type="submit"
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  Guardar evaluación
-                </button>
+                <div className="nibol-sticky-actions">
+                  <button
+                    className="nibol-btn-primary w-full justify-center px-4 py-2.5 text-sm"
+                    disabled={createEvaluation.isPending}
+                    type="submit"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Guardar evaluación
+                  </button>
+                </div>
               </div>
             </form>
           ) : null}

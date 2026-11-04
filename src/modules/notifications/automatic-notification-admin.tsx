@@ -255,15 +255,17 @@ function PolicyCard({
         </label>
       </div>
       {canEdit ? (
-        <button
-          className="nibol-btn-secondary mt-5 px-3 py-2 text-xs"
-          disabled={pending}
-          onClick={() => onSave(policy.role)}
-          type="button"
-        >
-          <Save className="h-4 w-4" />
-          {pending ? "Guardando..." : "Guardar política"}
-        </button>
+        <div className="nibol-sticky-actions mt-5">
+          <button
+            className="nibol-btn-secondary px-3 py-2 text-xs"
+            disabled={pending}
+            onClick={() => onSave(policy.role)}
+            type="button"
+          >
+            <Save className="h-4 w-4" />
+            {pending ? "Guardando..." : "Guardar política"}
+          </button>
+        </div>
       ) : null}
     </article>
   );

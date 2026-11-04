@@ -1332,7 +1332,7 @@ function DesignerWorkspace({
     );
 
   return (
-    <div className="grid gap-5">
+    <div className="space-y-5">
       <header className="nibol-panel grid gap-5 px-5 py-5 sm:px-7">
         <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
           <Link
@@ -1371,87 +1371,28 @@ function DesignerWorkspace({
             Diseñador
           </span>
         </div>
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="grid gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="nibol-eyebrow">Configuración · Flujo visual</p>
-              {dirty ? (
-                <span className="nibol-badge nibol-badge-accent">
-                  Cambios sin guardar
-                </span>
-              ) : (
-                <span className="nibol-badge nibol-badge-success">
-                  Guardado
-                </span>
-              )}
-            </div>
-            <div>
-              <h1 className="font-display text-4xl leading-none font-bold tracking-[-0.04em] uppercase sm:text-5xl">
-                Diseñador Visual de Flujo
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--foreground-soft)]">
-                {designerQuery.data.definition.name} ·{" "}
-                {formatProcessType(designerQuery.data.definition.processType)} ·
-                versión {designerQuery.data.version.versionNumber}.0
-              </p>
-            </div>
+        <div className="grid gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="nibol-eyebrow">Configuración · Flujo visual</p>
+            {dirty ? (
+              <span className="nibol-badge nibol-badge-accent">
+                Cambios sin guardar
+              </span>
+            ) : (
+              <span className="nibol-badge nibol-badge-success">
+                Guardado
+              </span>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              className="nibol-btn-secondary"
-              onClick={leaveDesigner}
-              type="button"
-            >
-              <ArrowLeft className="h-4 w-4" /> Volver
-            </button>
-            {canSimulate ? (
-              <Link
-                className="nibol-btn-secondary"
-                href={`/configuracion/flujos/${workflowId}/versiones/${versionId}/simulacion`}
-              >
-                <ShieldCheck className="h-4 w-4" /> Simular flujo
-              </Link>
-            ) : null}
-            <button
-              className="nibol-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={readOnly || !dirty || saveMutation.isPending}
-              onClick={() => saveMutation.mutate()}
-              type="button"
-            >
-              <Save className="h-4 w-4" />{" "}
-              {saveMutation.isPending ? "Guardando…" : "Guardar borrador"}
-            </button>
-            <button
-              className="nibol-btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!canValidate || validateMutation.isPending}
-              onClick={runValidation}
-              title={
-                canValidate
-                  ? "Ejecutar validación completa"
-                  : "Requiere el permiso workflows.validate"
-              }
-              type="button"
-            >
-              <ShieldCheck className="h-4 w-4" />{" "}
-              {validateMutation.isPending ? "Validando…" : "Validar flujo"}
-            </button>
-            <button
-              className="nibol-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!canPublishCurrentVersion}
-              onClick={() => {
-                setPublishConfirmed(false);
-                setPublishOpen(true);
-              }}
-              title={
-                canPublishCurrentVersion
-                  ? "Publicar la última versión validada"
-                  : "Guarde los cambios y ejecute una validación sin errores antes de publicar"
-              }
-              type="button"
-            >
-              <Send className="h-4 w-4" />
-              {publishMutation.isPending ? "Publicando…" : "Publicar flujo"}
-            </button>
+          <div>
+            <h1 className="font-display text-4xl leading-none font-bold tracking-[-0.04em] uppercase sm:text-5xl">
+              Diseñador Visual de Flujo
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--foreground-soft)]">
+              {designerQuery.data.definition.name} ·{" "}
+              {formatProcessType(designerQuery.data.definition.processType)} ·
+              versión {designerQuery.data.version.versionNumber}.0
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--border)] pt-4 text-xs text-[var(--muted)]">
@@ -1473,6 +1414,64 @@ function DesignerWorkspace({
           </span>
         </div>
       </header>
+
+      <div className="nibol-sticky-actions flex flex-wrap justify-end gap-2">
+        <button
+          className="nibol-btn-secondary"
+          onClick={leaveDesigner}
+          type="button"
+        >
+          <ArrowLeft className="h-4 w-4" /> Volver
+        </button>
+        {canSimulate ? (
+          <Link
+            className="nibol-btn-secondary"
+            href={`/configuracion/flujos/${workflowId}/versiones/${versionId}/simulacion`}
+          >
+            <ShieldCheck className="h-4 w-4" /> Simular flujo
+          </Link>
+        ) : null}
+        <button
+          className="nibol-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={readOnly || !dirty || saveMutation.isPending}
+          onClick={() => saveMutation.mutate()}
+          type="button"
+        >
+          <Save className="h-4 w-4" />{" "}
+          {saveMutation.isPending ? "Guardando…" : "Guardar borrador"}
+        </button>
+        <button
+          className="nibol-btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!canValidate || validateMutation.isPending}
+          onClick={runValidation}
+          title={
+            canValidate
+              ? "Ejecutar validación completa"
+              : "Requiere el permiso workflows.validate"
+          }
+          type="button"
+        >
+          <ShieldCheck className="h-4 w-4" />{" "}
+          {validateMutation.isPending ? "Validando…" : "Validar flujo"}
+        </button>
+        <button
+          className="nibol-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!canPublishCurrentVersion}
+          onClick={() => {
+            setPublishConfirmed(false);
+            setPublishOpen(true);
+          }}
+          title={
+            canPublishCurrentVersion
+              ? "Publicar la última versión validada"
+              : "Guarde los cambios y ejecute una validación sin errores antes de publicar"
+          }
+          type="button"
+        >
+          <Send className="h-4 w-4" />
+          {publishMutation.isPending ? "Publicando…" : "Publicar flujo"}
+        </button>
+      </div>
 
       {!readOnly && designerQuery.data.version.status === "DRAFT" ? null : (
         <div className="flex items-start gap-3 border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-4 text-sm leading-6 text-[var(--foreground-soft)]">

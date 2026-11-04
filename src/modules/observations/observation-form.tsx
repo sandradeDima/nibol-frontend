@@ -275,6 +275,15 @@ export function ObservationForm(props: ObservationFormProps) {
   });
 
   useEffect(() => {
+    if (props.mode !== "create" || !reportId || !riskLevelId || !dueDate)
+      return;
+    form.setValue("commitmentDate", dueDate, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }, [dueDate, form, props.mode, reportId, riskLevelId]);
+
+  useEffect(() => {
     if (
       optionsQuery.isLoading ||
       !commitmentDate ||
@@ -443,31 +452,17 @@ export function ObservationForm(props: ObservationFormProps) {
           },
         )}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            className="nibol-btn-secondary px-4 py-2.5 text-sm"
-            href={
-              observationId
-                ? `/observaciones/${observationId}`
-                : "/observaciones"
-            }
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver
-          </Link>
-          <button
-            className="nibol-btn-primary px-5 py-2.5 text-sm"
-            disabled={unavailable || mutation.isPending}
-            type="submit"
-          >
-            <Save className="h-4 w-4" />
-            {mutation.isPending
-              ? "Guardando…"
-              : props.mode === "create"
-                ? "Crear observación"
-                : "Guardar cambios"}
-          </button>
-        </div>
+        <Link
+          className="nibol-btn-secondary px-4 py-2.5 text-sm"
+          href={
+            observationId
+              ? `/observaciones/${observationId}`
+              : "/observaciones"
+          }
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Volver
+        </Link>
 
         {submitError ? (
           <div
@@ -1080,6 +1075,21 @@ export function ObservationForm(props: ObservationFormProps) {
             ))}
           </div>
         </section>
+
+        <div className="nibol-sticky-actions flex flex-wrap justify-end gap-3">
+          <button
+            className="nibol-btn-primary px-5 py-2.5 text-sm"
+            disabled={unavailable || mutation.isPending}
+            type="submit"
+          >
+            <Save className="h-4 w-4" />
+            {mutation.isPending
+              ? "Guardando…"
+              : props.mode === "create"
+                ? "Crear observación"
+                : "Guardar cambios"}
+          </button>
+        </div>
       </form>
     </>
   );
