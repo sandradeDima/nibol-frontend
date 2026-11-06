@@ -12,9 +12,7 @@ import { cn } from "@/utils";
 import { PendingExtensionRequestApprovals } from "./pending-extension-request-approvals";
 
 type PendingApprovalsWorkspaceProps = {
-  canApproveExtensions: boolean;
   canApproveProgress: boolean;
-  canRejectExtensions: boolean;
   canReturnProgress: boolean;
   canViewExtensions: boolean;
   canViewProgress: boolean;
@@ -23,9 +21,7 @@ type PendingApprovalsWorkspaceProps = {
 type TabId = "extensions" | "progress";
 
 export function PendingApprovalsWorkspace({
-  canApproveExtensions,
   canApproveProgress,
-  canRejectExtensions,
   canReturnProgress,
   canViewExtensions,
   canViewProgress,
@@ -74,10 +70,7 @@ export function PendingApprovalsWorkspace({
         canReturnProgress={canReturnProgress}
       />
     ) : (
-      <PendingExtensionRequestApprovals
-        canApprove={canApproveExtensions}
-        canReject={canRejectExtensions}
-      />
+      <PendingExtensionRequestApprovals />
     );
   }
 
@@ -121,10 +114,7 @@ export function PendingApprovalsWorkspace({
           canReturnProgress={canReturnProgress}
         />
       ) : (
-        <PendingExtensionRequestApprovals
-          canApprove={canApproveExtensions}
-          canReject={canRejectExtensions}
-        />
+        <PendingExtensionRequestApprovals />
       )}
     </section>
   );

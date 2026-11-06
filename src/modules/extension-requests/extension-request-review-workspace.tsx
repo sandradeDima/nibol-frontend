@@ -81,8 +81,6 @@ const uniqueUsers = (
   ).sort((left, right) => left.name.localeCompare(right.name));
 
 type ExtensionRequestReviewDetailProps = {
-  canApprove: boolean;
-  canReject: boolean;
   comment: string;
   error: string | null;
   isProcessing: boolean;
@@ -95,8 +93,6 @@ type ExtensionRequestReviewDetailProps = {
 };
 
 export function ExtensionRequestReviewDetail({
-  canApprove,
-  canReject,
   comment,
   error,
   isProcessing,
@@ -116,15 +112,14 @@ export function ExtensionRequestReviewDetail({
   const canDecide =
     request.status === "SENT_TO_MANAGER" &&
     Boolean(request.reviewTask?.canAct) &&
-    (canApprove || canReject);
+    Boolean(
+      request.reviewTask?.allowedActions.includes("APPROVE") ||
+        request.reviewTask?.allowedActions.includes("REJECT"),
+    );
   const canApproveRequest =
-    canDecide &&
-    canApprove &&
-    Boolean(request.reviewTask?.allowedActions.includes("APPROVE"));
+    canDecide && Boolean(request.reviewTask?.allowedActions.includes("APPROVE"));
   const canRejectRequest =
-    canDecide &&
-    canReject &&
-    Boolean(request.reviewTask?.allowedActions.includes("REJECT"));
+    canDecide && Boolean(request.reviewTask?.allowedActions.includes("REJECT"));
   const observationHref = request.observation
     ? buildObservationUrl({
         observationId: request.observation.id,
@@ -428,15 +423,11 @@ export function ExtensionRequestReviewDetail({
 }
 
 export function ExtensionRequestReviewWorkspace({
-  canApprove,
-  canReject,
   pendingOnly = false,
   canRequest = false,
   currentUserId = "",
   isAdmin = false,
 }: {
-  canApprove: boolean;
-  canReject: boolean;
   pendingOnly?: boolean;
   canRequest?: boolean;
   currentUserId?: string;
@@ -820,8 +811,6 @@ export function ExtensionRequestReviewWorkspace({
                 isAdmin={isAdmin}
               />
               <ExtensionRequestReviewDetail
-                canApprove={canApprove}
-                canReject={canReject}
                 comment={comment}
                 error={error}
                 isProcessing={reviewMutation.isPending || download.isPending}

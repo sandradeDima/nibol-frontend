@@ -15,15 +15,11 @@ import { ExtensionRequestReviewDetail } from "./extension-request-review-workspa
 import { ExtensionRequestSubmit } from "./extension-request-submit";
 
 export function ExtensionRequestDetail({
-  canApprove,
-  canReject,
   canRequest,
   currentUserId,
   requestId,
   isAdmin = false,
 }: {
-  canApprove: boolean;
-  canReject: boolean;
   canRequest: boolean;
   currentUserId: string;
   requestId: string;
@@ -112,8 +108,6 @@ export function ExtensionRequestDetail({
         <ArrowLeft className="h-4 w-4" /> Volver a ampliaciones
       </Link>
       <ExtensionRequestReviewDetail
-        canApprove={canApprove}
-        canReject={canReject}
         comment={comment}
         error={error}
         isProcessing={action.isPending || download.isPending}

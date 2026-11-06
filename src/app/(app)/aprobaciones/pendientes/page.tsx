@@ -6,6 +6,7 @@ import { PendingApprovalsWorkspace } from "@/modules/extension-requests/pending-
 export default async function PendingApprovalsPage() {
   const authorization = await requireAnyPermission([
     "action_plans.evaluate",
+    "deadline_extensions.view",
     "deadline_extensions.approve",
     "deadline_extensions.reject",
   ]);
@@ -29,13 +30,8 @@ export default async function PendingApprovalsPage() {
           (authorization.permissions.includes("action_plans.evaluate") &&
             authorization.permissions.includes("action_plans.return"))
         }
-        canApproveExtensions={authorization.permissions.includes(
-          "deadline_extensions.approve",
-        )}
-        canRejectExtensions={authorization.permissions.includes(
-          "deadline_extensions.reject",
-        )}
         canViewExtensions={hasAnyPermission(authorization.permissions, [
+          "deadline_extensions.view",
           "deadline_extensions.approve",
           "deadline_extensions.reject",
         ])}

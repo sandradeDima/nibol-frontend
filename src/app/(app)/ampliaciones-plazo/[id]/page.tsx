@@ -29,12 +29,6 @@ export default async function ExtensionRequestDetailPage({
 
       <ExtensionRequestDetail
         isAdmin={authorization.isAdmin}
-        canApprove={authorization.permissions.includes(
-          "deadline_extensions.approve",
-        )}
-        canReject={authorization.permissions.includes(
-          "deadline_extensions.reject",
-        )}
         canRequest={authorization.permissions.includes(
           "deadline_extensions.request",
         )}

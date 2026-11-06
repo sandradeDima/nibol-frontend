@@ -24,12 +24,6 @@ export default async function ExtensionRequestsPage() {
           "deadline_extensions.request",
         )}
         currentUserId={authorization.userId}
-        canApprove={authorization.permissions.includes(
-          "deadline_extensions.approve",
-        )}
-        canReject={authorization.permissions.includes(
-          "deadline_extensions.reject",
-        )}
       />
     </main>
   );
