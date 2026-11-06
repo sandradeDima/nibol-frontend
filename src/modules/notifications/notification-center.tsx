@@ -17,7 +17,10 @@ import { ErrorState } from "@/components/ui/error-state";
 import { SearchField } from "@/components/ui/search-field";
 import { StatCard } from "@/components/ui/stat-card";
 import { QUERY_KEYS } from "@/lib/constants";
-import { resolveNotificationTarget } from "@/lib/notification-links";
+import {
+  getNotificationTargetLabel,
+  resolveNotificationTarget,
+} from "@/lib/notification-links";
 import { NotificationComposer } from "@/modules/notifications/notification-composer";
 import { notificationTypeOptions } from "@/modules/notifications/forms";
 import {
@@ -404,7 +407,7 @@ export function NotificationCenter({
                                 );
                             }}
                           >
-                            Abrir registro
+                            {getNotificationTargetLabel(notification)}
                           </Link>
                         ) : null}
                         {canDelete ? (

@@ -9,7 +9,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { QUERY_KEYS } from "@/lib/constants";
-import { resolveNotificationTarget } from "@/lib/notification-links";
+import {
+  getNotificationTargetLabel,
+  resolveNotificationTarget,
+} from "@/lib/notification-links";
 import { NotificationTypeBadge } from "@/modules/notifications/notification-item";
 import { notificationService } from "@/services/notification-service";
 import { getApiErrorMessage } from "@/utils";
@@ -252,7 +255,7 @@ export function NotificationBell({
                                 setOpen(false);
                               }}
                             >
-                              Abrir registro
+                              {getNotificationTargetLabel(notification)}
                             </Link>
                           ) : null}
                         </div>

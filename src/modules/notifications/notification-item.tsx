@@ -35,14 +35,14 @@ const notificationTypeConfig: Record<
       "border-[color:color-mix(in_srgb,var(--info)_18%,white)] bg-[var(--info-soft)] text-[var(--info)]",
     icon: Bell,
     iconClassName: "bg-[var(--info-soft)] text-[var(--info)]",
-    label: "Informacion",
+    label: "Información",
   },
   success: {
     badgeClassName:
       "border-[color:color-mix(in_srgb,var(--success)_18%,white)] bg-[var(--success-soft)] text-[var(--success)]",
     icon: CheckCircle2,
     iconClassName: "bg-[var(--success-soft)] text-[var(--success)]",
-    label: "Exito",
+    label: "Éxito",
   },
   warning: {
     badgeClassName:

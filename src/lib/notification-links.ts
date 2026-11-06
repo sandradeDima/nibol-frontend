@@ -76,3 +76,27 @@ export const resolveNotificationTarget = (
   }
   return null;
 };
+
+export const getNotificationTargetLabel = (
+  notification: AppNotification,
+): string => {
+  const entityType = normalize(notification.entityType);
+  const eventType = normalize(notification.eventType);
+  const isExtensionTask =
+    entityType.includes("workflow_task") &&
+    normalize(notification.eventType) === "workflow.task.assigned" &&
+    /ampliaci[oó]n de plazo/i.test(
+      `${notification.title} ${notification.message}`,
+    );
+  if (entityType === "deadline_extension_request" || isExtensionTask)
+    return "Ver solicitud";
+  if (eventType === "progress_pending_review") return "Ver evaluación";
+  if (
+    ["progress_approved", "progress_returned", "action_plan_completed"].includes(
+      eventType,
+    )
+  )
+    return "Ver plan de acción";
+  if (eventType === "observation_closed") return "Ver observación";
+  return "Abrir registro";
+};
