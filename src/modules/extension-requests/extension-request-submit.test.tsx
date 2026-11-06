@@ -10,6 +10,11 @@ import { ExtensionRequestSubmit } from "./extension-request-submit";
 
 const draft = {
   id: "existing-request",
+  classification: null,
+  managerComment: null,
+  previousDueDate: "2026-01-01T00:00:00.000Z",
+  proposedDueDate: "2026-02-01T00:00:00.000Z",
+  reason: "Justificación de prueba",
   status: "DRAFT",
   requestedByUser: { id: "owner" },
   actionPlan: { responsibleUser: { id: "owner" } },

@@ -813,6 +813,7 @@ export function ExtensionRequestReviewWorkspace({
           ) : detail ? (
             <>
               <ExtensionRequestSubmit
+                key={detail.id}
                 request={detail}
                 canRequest={canRequest}
                 currentUserId={currentUserId}

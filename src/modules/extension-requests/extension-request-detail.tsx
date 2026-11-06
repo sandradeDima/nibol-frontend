@@ -124,6 +124,7 @@ export function ExtensionRequestDetail({
         request={request}
       />
       <ExtensionRequestSubmit
+        key={request.id}
         request={request}
         canRequest={canRequest}
         currentUserId={currentUserId}
