@@ -66,12 +66,14 @@ function ObservationActionsMenu({
   canEdit,
   canViewActionPlans,
   onDelete,
+  returnTo,
   row,
 }: {
   canDelete: boolean;
   canEdit: boolean;
   canViewActionPlans: boolean;
   onDelete: () => void;
+  returnTo: string;
   row: ObservationTableRow;
 }) {
   const [open, setOpen] = useState(false);
@@ -137,6 +139,7 @@ function ObservationActionsMenu({
                         ? row.actionPlans[0]?.id
                         : undefined,
                     tab: "plans",
+                    returnTo,
                   })}
                   onClick={() => setOpen(false)}
                   role="menuitem"
@@ -195,6 +198,8 @@ export function ObservationTable({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const currentQuery = searchParams.toString();
+  const returnTo = `${pathname}${currentQuery ? `?${currentQuery}` : ""}`;
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [pendingDelete, setPendingDelete] =
@@ -643,7 +648,10 @@ export function ObservationTable({
                     <Link
                       aria-label="Ver observación"
                       className="nibol-btn-primary shrink-0 justify-center px-2 py-2 text-[11px]"
-                      href={buildObservationUrl({ observationId: row.id })}
+                      href={buildObservationUrl({
+                        observationId: row.id,
+                        returnTo,
+                      })}
                       title="Ver"
                     >
                       <Eye className="h-3.5 w-3.5" />
@@ -654,6 +662,7 @@ export function ObservationTable({
                       canEdit={canEdit}
                       canViewActionPlans={canViewActionPlans}
                       onDelete={() => setPendingDelete(row)}
+                      returnTo={returnTo}
                       row={row}
                     />
                   </div>
@@ -774,7 +783,10 @@ export function ObservationTable({
                 <Link
                   aria-label="Ver observación"
                   className="nibol-btn-primary px-3 py-2 text-xs"
-                  href={buildObservationUrl({ observationId: row.id })}
+                  href={buildObservationUrl({
+                    observationId: row.id,
+                    returnTo,
+                  })}
                 >
                   <Eye className="h-3.5 w-3.5" />
                   Ver
@@ -789,6 +801,7 @@ export function ObservationTable({
                           ? row.actionPlans[0]?.id
                           : undefined,
                       tab: "plans",
+                      returnTo,
                     })}
                   >
                     <ClipboardList className="h-3.5 w-3.5" />

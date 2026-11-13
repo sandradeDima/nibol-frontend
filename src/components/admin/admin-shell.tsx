@@ -216,7 +216,7 @@ function SidebarBrand({ collapsed }: { collapsed: boolean }) {
                 NIBOL Bolivia
               </p>
               <p className="max-w-[16rem] text-sm leading-6 text-slate-300">
-                Sistema de seguimiento de riesgos para control corporativo.
+                Sistema de seguimiento de hallazgos y planes de acción
               </p>
             </div>
           ) : null}

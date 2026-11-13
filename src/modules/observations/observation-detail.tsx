@@ -93,6 +93,11 @@ const getLegacyTab = (): ObservationTab | null => {
       : null;
 };
 
+const getObservationReturnTo = (value: string | null) =>
+  value && /^\/(?:dashboard|observaciones)(?:\?.*)?$/.test(value)
+    ? value
+    : "/observaciones";
+
 const subscribeToHash = (onChange: () => void) => {
   window.addEventListener("hashchange", onChange);
   return () => window.removeEventListener("hashchange", onChange);
@@ -253,7 +258,7 @@ export function ObservationDetail({
               <div className="flex min-w-0 flex-wrap gap-2">
                 <Link
                   className="nibol-btn-secondary bg-white px-4 py-2.5 text-sm"
-                  href="/observaciones"
+                  href={getObservationReturnTo(searchParams.get("returnTo"))}
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Volver

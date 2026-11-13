@@ -11,6 +11,7 @@ export const buildObservationUrl = ({
   extensionId,
   observationId,
   planId,
+  returnTo,
   tab,
 }: {
   advanceId?: string;
@@ -18,6 +19,7 @@ export const buildObservationUrl = ({
   extensionId?: string;
   observationId: string;
   planId?: string;
+  returnTo?: string;
   tab?: ObservationTab;
 }): string => {
   const params = new URLSearchParams();
@@ -26,6 +28,7 @@ export const buildObservationUrl = ({
   if (advanceId) params.set("advanceId", advanceId);
   if (extensionId) params.set("extensionId", extensionId);
   if (evidenceId) params.set("evidenceId", evidenceId);
+  if (returnTo) params.set("returnTo", returnTo);
   const query = params.toString();
   return `/observaciones/${encodeURIComponent(observationId)}${query ? `?${query}` : ""}`;
 };

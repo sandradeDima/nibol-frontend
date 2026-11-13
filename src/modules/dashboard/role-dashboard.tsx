@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { SearchField } from "@/components/ui/search-field";
@@ -98,6 +99,46 @@ type ListSelection = {
   paramsKey: string;
   card: RoleDashboardCard;
 };
+
+const DASHBOARD_STATE_QUERY_KEYS = [
+  "dashboard.activeCard",
+  "dashboard.areaId",
+  "dashboard.areaResponsibleUserIds",
+  "dashboard.executorIds",
+  "dashboard.listAreaId",
+  "dashboard.listExecutorId",
+  "dashboard.listLabel",
+  "dashboard.listResponsibleId",
+  "dashboard.observationState",
+  "dashboard.search",
+] as const;
+
+const isRoleDashboardCard = (
+  value: string | null,
+): value is RoleDashboardCard =>
+  value === "CLOSED" ||
+  value === "OVERDUE" ||
+  value === "PENDING" ||
+  value === "TOTAL";
+
+const parseDashboardIds = (value: string | null) =>
+  value?.split(",").filter(Boolean) ?? [];
+
+const buildRoleDashboardQuery = (
+  areaId: string,
+  areaResponsibleUserIds: string[],
+  executorIds: string[],
+  observationState: "" | "PENDING" | "CONCLUDED",
+  search: string,
+): RoleDashboardQuery => ({
+  areaId: areaId || undefined,
+  areaResponsibleUserId: areaResponsibleUserIds.length
+    ? areaResponsibleUserIds
+    : undefined,
+  executorId: executorIds.length ? executorIds : undefined,
+  observationState: observationState || undefined,
+  search: search.trim() || undefined,
+});
 
 const buildObservationHref = (
   roleCode: RoleDashboardData["roleCode"],
@@ -383,19 +424,48 @@ function HierarchyRow({
 }
 
 export function RoleDashboard({ data }: { data: RoleDashboardData }) {
-  const [areaId, setAreaId] = useState(data.selectedAreaId ?? "");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const initialAreaId =
+    searchParams.get("dashboard.areaId") ?? data.selectedAreaId ?? "";
+  const initialAreaResponsibleUserIds = searchParams.has(
+    "dashboard.areaResponsibleUserIds",
+  )
+    ? parseDashboardIds(searchParams.get("dashboard.areaResponsibleUserIds"))
+    : (data.selectedResponsibleIds ??
+      (data.selectedResponsibleId ? [data.selectedResponsibleId] : []));
+  const initialExecutorIds = searchParams.has("dashboard.executorIds")
+    ? parseDashboardIds(searchParams.get("dashboard.executorIds"))
+    : (data.selectedExecutorIds ??
+      (data.selectedExecutorId ? [data.selectedExecutorId] : []));
+  const initialObservationStateValue = searchParams.get(
+    "dashboard.observationState",
+  );
+  const initialObservationState: "" | "PENDING" | "CONCLUDED" =
+    initialObservationStateValue === "PENDING" ||
+    initialObservationStateValue === "CONCLUDED"
+      ? initialObservationStateValue
+      : (data.selectedObservationState ?? "");
+  const initialSearch = searchParams.get("dashboard.search") ?? "";
+  const initialParamsKey = JSON.stringify(
+    buildRoleDashboardQuery(
+      initialAreaId,
+      initialAreaResponsibleUserIds,
+      initialExecutorIds,
+      initialObservationState,
+      initialSearch,
+    ),
+  );
+  const initialActiveCard = searchParams.get("dashboard.activeCard");
+  const [areaId, setAreaId] = useState(initialAreaId);
   const [areaResponsibleUserIds, setAreaResponsibleUserIds] = useState(
-    data.selectedResponsibleIds ??
-      (data.selectedResponsibleId ? [data.selectedResponsibleId] : []),
+    initialAreaResponsibleUserIds,
   );
-  const [executorIds, setExecutorIds] = useState(
-    data.selectedExecutorIds ??
-      (data.selectedExecutorId ? [data.selectedExecutorId] : []),
+  const [executorIds, setExecutorIds] = useState(initialExecutorIds);
+  const [observationState, setObservationState] = useState(
+    initialObservationState,
   );
-  const [observationState, setObservationState] = useState<
-    "" | "PENDING" | "CONCLUDED"
-  >(data.selectedObservationState ?? "");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [collapsedAreas, setCollapsedAreas] = useState<Set<string>>(
     () => new Set(data.hierarchy.map((area) => area.id)),
   );
@@ -413,25 +483,39 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
   );
   const hierarchyRef = useRef<HTMLElement | null>(null);
   const resultsRef = useRef<HTMLElement | null>(null);
-  const [activeCard, setActiveCard] = useState<RoleDashboardCard | null>(null);
+  const [activeCard, setActiveCard] = useState<RoleDashboardCard | null>(() =>
+    isRoleDashboardCard(initialActiveCard) ? initialActiveCard : null,
+  );
   const [listSelection, setListSelection] = useState<ListSelection | null>(
-    null,
+    () => {
+      const listAreaId = searchParams.get("dashboard.listAreaId");
+      if (!listAreaId || !isRoleDashboardCard(initialActiveCard)) return null;
+      return {
+        areaId: listAreaId,
+        responsibleId:
+          searchParams.get("dashboard.listResponsibleId") ?? undefined,
+        executorId: searchParams.get("dashboard.listExecutorId") ?? undefined,
+        label:
+          searchParams.get("dashboard.listLabel") ?? "Observaciones filtradas",
+        paramsKey: initialParamsKey,
+        card: initialActiveCard,
+      };
+    },
   );
 
-  const params = useMemo<RoleDashboardQuery>(
-    () => ({
-      areaId: areaId || undefined,
-      areaResponsibleUserId: areaResponsibleUserIds.length
-        ? areaResponsibleUserIds
-        : undefined,
-      executorId: executorIds.length ? executorIds : undefined,
-      observationState: observationState || undefined,
-      search: search.trim() || undefined,
-    }),
+  const params = useMemo(
+    () =>
+      buildRoleDashboardQuery(
+        areaId,
+        areaResponsibleUserIds,
+        executorIds,
+        observationState,
+        search,
+      ),
     [areaId, areaResponsibleUserIds, executorIds, observationState, search],
   );
   const paramsKey = JSON.stringify(params);
-  const initialParamsKey = useMemo(
+  const serverParamsKey = useMemo(
     () =>
       JSON.stringify({
         areaId: data.selectedAreaId ?? undefined,
@@ -457,7 +541,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
     ],
   );
   const query = useQuery({
-    initialData: paramsKey === initialParamsKey ? data : undefined,
+    initialData: paramsKey === serverParamsKey ? data : undefined,
     queryFn: () => dashboardService.getRoleDashboard(params),
     queryKey: ["dashboard", "role", paramsKey],
   });
@@ -466,6 +550,46 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
     listSelection?.paramsKey === paramsKey && listSelection.card === activeCard
       ? listSelection
       : null;
+  const dashboardQuery = useMemo(() => {
+    const next = new URLSearchParams(searchParams.toString());
+    DASHBOARD_STATE_QUERY_KEYS.forEach((key) => next.delete(key));
+    if (areaId) next.set("dashboard.areaId", areaId);
+    if (areaResponsibleUserIds.length)
+      next.set(
+        "dashboard.areaResponsibleUserIds",
+        areaResponsibleUserIds.join(","),
+      );
+    if (executorIds.length)
+      next.set("dashboard.executorIds", executorIds.join(","));
+    if (observationState)
+      next.set("dashboard.observationState", observationState);
+    if (search.trim()) next.set("dashboard.search", search.trim());
+    if (activeCard) next.set("dashboard.activeCard", activeCard);
+    if (selectedList) {
+      next.set("dashboard.listAreaId", selectedList.areaId);
+      if (selectedList.responsibleId)
+        next.set("dashboard.listResponsibleId", selectedList.responsibleId);
+      if (selectedList.executorId)
+        next.set("dashboard.listExecutorId", selectedList.executorId);
+      next.set("dashboard.listLabel", selectedList.label);
+    }
+    return next;
+  }, [
+    activeCard,
+    areaId,
+    areaResponsibleUserIds,
+    executorIds,
+    observationState,
+    search,
+    searchParams,
+    selectedList,
+  ]);
+  const dashboardQueryString = dashboardQuery.toString();
+  const dashboardReturnTo = `${pathname}${dashboardQueryString ? `?${dashboardQueryString}` : ""}`;
+  useEffect(() => {
+    if (dashboardQueryString === searchParams.toString()) return;
+    window.history.replaceState(null, "", dashboardReturnTo);
+  }, [dashboardQueryString, dashboardReturnTo, searchParams]);
   const listQuery = useQuery({
     enabled: Boolean(selectedList),
     queryFn: () =>
@@ -1073,6 +1197,7 @@ export function RoleDashboard({ data }: { data: RoleDashboardData }) {
             isFetching={listQuery.isFetching}
             items={resultRows}
             label={selectedList.label}
+            returnTo={dashboardReturnTo}
           />
         </section>
       ) : null}
@@ -1086,12 +1211,14 @@ function RoleObservationResults({
   isFetching,
   items,
   label,
+  returnTo,
 }: {
   activeCard: RoleDashboardCard;
   isError: boolean;
   isFetching: boolean;
   items: RoleDashboardObservationRow[];
   label: string;
+  returnTo: string;
 }) {
   const titles: Record<RoleDashboardCard, string> = {
     CLOSED: "Observaciones concluidas",
@@ -1215,7 +1342,7 @@ function RoleObservationResults({
                   <td className="sticky right-0 z-10 border-l border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-right group-hover:bg-[var(--surface-soft)]">
                     <Link
                       className="inline-flex items-center gap-1 font-semibold whitespace-nowrap text-[var(--primary)] hover:underline"
-                      href={item.href}
+                      href={`${item.href}${item.href.includes("?") ? "&" : "?"}returnTo=${encodeURIComponent(returnTo)}`}
                     >
                       Ver detalle
                       <ChevronRight
